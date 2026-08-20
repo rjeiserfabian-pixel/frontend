@@ -4,6 +4,10 @@ import DashboardLayout from './shared/layouts/DashboardLayout';
 import DashboardPage from './modules/dashboard/pages/DashboardPage';
 import UsuariosPage from './modules/seguridad/pages/UsuariosPage';
 import RolesPage from './modules/seguridad/pages/RolesPage';
+import CategoriasPage from './modules/inventario/pages/CategoriasPage';
+import MarcasPage from './modules/inventario/pages/MarcasPage';
+import RepuestosPage from './modules/inventario/pages/RepuestosPage';
+import VehiculosPage from './modules/vehiculos/pages/VehiculosPage';
 
 function App() {
   return (
@@ -17,6 +21,10 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/roles" element={<RolesPage />} />
+          <Route path="/inventario/categorias" element={<CategoriasPage />} />
+          <Route path="/inventario/marcas" element={<MarcasPage />} />
+          <Route path="/inventario/repuestos" element={<RepuestosPage />} />
+          <Route path="/vehiculos" element={<VehiculosPage />} />
         </Route>
         
         {/* Redirección por defecto */}
