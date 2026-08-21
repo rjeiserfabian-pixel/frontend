@@ -27,6 +27,7 @@ export default function RepuestosPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategoria, setFilterCategoria] = useState('');
   const [filterMarca, setFilterMarca] = useState('');
+  const [filterUbicacion, setFilterUbicacion] = useState('');
   const [orderBy, setOrderBy] = useState('');
   const [order, setOrder] = useState('asc');
 
@@ -79,6 +80,7 @@ export default function RepuestosPage() {
         search: searchQuery,
         categoria: filterCategoria,
         marca: filterMarca,
+        ubicacion: filterUbicacion,
         ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined
       };
       
@@ -108,7 +110,7 @@ export default function RepuestosPage() {
       fetchData();
     }, 400); // debounce para no saturar al buscar
     return () => clearTimeout(delayDebounceFn);
-  }, [page, searchQuery, filterCategoria, filterMarca, orderBy, order]);
+  }, [page, searchQuery, filterCategoria, filterMarca, filterUbicacion, orderBy, order]);
 
   const handleOpenModal = (repuesto = null) => {
     if (repuesto) {
@@ -405,8 +407,17 @@ export default function RepuestosPage() {
           size="small"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: 250 }}
+          sx={{ minWidth: 200 }}
           InputProps={{ endAdornment: <Search size={20} style={{ opacity: 0.5 }} /> }}
+        />
+        <TextField
+          label="Filtrar por Ubicación"
+          placeholder="Ej. Pasillo A, Estante 2..."
+          variant="outlined"
+          size="small"
+          value={filterUbicacion}
+          onChange={(e) => setFilterUbicacion(e.target.value)}
+          sx={{ minWidth: 200 }}
         />
         <Autocomplete
           size="small"
@@ -458,6 +469,7 @@ export default function RepuestosPage() {
                   </TableCell>
                   <TableCell><strong>Categoría</strong></TableCell>
                   <TableCell><strong>Marca</strong></TableCell>
+                  <TableCell><strong>Ubicación</strong></TableCell>
                   <TableCell><strong>Stock</strong></TableCell>
                   <TableCell>
                     <TableSortLabel active={orderBy === 'precio_lista'} direction={orderBy === 'precio_lista' ? order : 'asc'} onClick={() => handleRequestSort('precio_lista')}>
@@ -470,7 +482,7 @@ export default function RepuestosPage() {
               <TableBody>
                 {repuestos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">No hay repuestos registrados.</TableCell>
+                    <TableCell colSpan={8} align="center">No hay repuestos registrados.</TableCell>
                   </TableRow>
                 ) : (
                   repuestos.map((row) => {
@@ -482,6 +494,48 @@ export default function RepuestosPage() {
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell>{row.categoria_nombre}</TableCell>
                       <TableCell>{row.marca_nombre}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const inv = row.inventario_stock || [];
+                          if (inv.length === 0) return <span style={{color: 'gray'}}>—</span>;
+                          const sorted = [...inv].sort((a, b) => b.stock_disponible - a.stock_disponible);
+                          const primary = sorted[0];
+                          const ubi = primary.ubicacion_detalle || primary.ubicacion_codigo;
+                          
+                          const tooltipContent = (
+                            <Box sx={{ p: 0.5 }}>
+                              <Typography variant="subtitle2" sx={{ mb: 1, borderBottom: '1px solid #ffffff55' }}>Distribución de Stock:</Typography>
+                              {sorted.map(i => (
+                                <Box key={i.id} sx={{ mb: 1.5 }}>
+                                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block', lineHeight: 1.2, mb: 0.5 }}>
+                                    {i.sucursal_nombre} › {i.almacen_nombre}
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                    <span>{i.ubicacion_detalle || i.ubicacion_codigo}</span>
+                                    <strong>{i.stock_disponible} und</strong>
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          );
+
+                          return (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2, mb: 0.5 }}>
+                                {primary.sucursal_nombre} › {primary.almacen_nombre}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span>{ubi}</span>
+                                {inv.length > 1 && (
+                                  <Tooltip title={tooltipContent} arrow placement="top">
+                                    <Chip label={`+${inv.length - 1}`} size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem', cursor: 'pointer' }} />
+                                  </Tooltip>
+                                )}
+                              </Box>
+                            </Box>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <Chip label={stockNum} color={stockColor} size="small" variant={stockColor === 'error' ? 'filled' : 'outlined'} />
                       </TableCell>
