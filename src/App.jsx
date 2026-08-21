@@ -8,6 +8,10 @@ import CategoriasPage from './modules/inventario/pages/CategoriasPage';
 import MarcasPage from './modules/inventario/pages/MarcasPage';
 import RepuestosPage from './modules/inventario/pages/RepuestosPage';
 import VehiculosPage from './modules/vehiculos/pages/VehiculosPage';
+import SucursalesPage from './modules/inventario/pages/SucursalesPage';
+import AlmacenesPage from './modules/inventario/pages/AlmacenesPage';
+import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
+import KardexPage from './modules/inventario/pages/KardexPage';
 
 function App() {
   return (
@@ -24,6 +28,10 @@ function App() {
           <Route path="/inventario/categorias" element={<CategoriasPage />} />
           <Route path="/inventario/marcas" element={<MarcasPage />} />
           <Route path="/inventario/repuestos" element={<RepuestosPage />} />
+          <Route path="/inventario/sucursales" element={<SucursalesPage />} />
+          <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
+          <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
+          <Route path="/inventario/kardex" element={<KardexPage />} />
           <Route path="/vehiculos" element={<VehiculosPage />} />
         </Route>
         
