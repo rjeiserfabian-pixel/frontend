@@ -42,8 +42,15 @@ export const inventarioService = {
   },
 
   // --- Repuestos ---
-  getRepuestos: async (page = 1) => {
-    const response = await api.get(`${URL_REPUESTOS}?page=${page}`);
+  getRepuestos: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', params.page);
+    if (params.search) query.append('search', params.search);
+    if (params.categoria) query.append('categoria', params.categoria);
+    if (params.marca) query.append('marca', params.marca);
+    if (params.ordering) query.append('ordering', params.ordering);
+    
+    const response = await api.get(`${URL_REPUESTOS}?${query.toString()}`);
     return response.data;
   },
   createRepuesto: async (data) => {
@@ -56,6 +63,16 @@ export const inventarioService = {
   },
   deleteRepuesto: async (id) => {
     const response = await api.delete(`${URL_REPUESTOS}${id}/`);
+    return response.data;
+  },
+  exportarExcel: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await api.get(`${URL_REPUESTOS}exportar_excel/?${query}`, { responseType: 'blob' });
+    return response.data;
+  },
+  exportarPDF: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await api.get(`${URL_REPUESTOS}exportar_pdf/?${query}`, { responseType: 'blob' });
     return response.data;
   },
 

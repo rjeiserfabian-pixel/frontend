@@ -4,9 +4,10 @@ import {
   TableContainer, TableHead, TableRow, IconButton, 
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Grid, MenuItem, Select, InputLabel, FormControl, Divider,
-  Drawer, Chip, Tooltip, Popover, List, ListItem, ListItemText
+  Drawer, Chip, Tooltip, Popover, List, ListItem, ListItemText,
+  TablePagination, TableSortLabel, Autocomplete
 } from '@mui/material';
-import { Plus, Edit2, Trash2, X, Warehouse, Tag } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Warehouse, Tag, Download, FileText, Search } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
@@ -19,13 +20,23 @@ export default function RepuestosPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Estados de tabla (Nuevos)
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategoria, setFilterCategoria] = useState('');
+  const [filterMarca, setFilterMarca] = useState('');
+  const [orderBy, setOrderBy] = useState('');
+  const [order, setOrder] = useState('asc');
+
   // --- Estado para el Drawer de Stock ---
   const [stockDrawerOpen, setStockDrawerOpen] = useState(false);
   const [repuestoSeleccionado, setRepuestoSeleccionado] = useState(null);
   const [stockData, setStockData] = useState([]);
   const [loadingStock, setLoadingStock] = useState(false);
   const [ajusteModal, setAjusteModal] = useState({ open: false, stockItem: null });
-  const [ajusteValor, setAjusteValor] = useState({ cantidad: 0, motivo: '' });
+  const [ajusteValor, setAjusteValor] = useState({ cantidad: 0, stock_minimo: 5, motivo: '' });
   
   // Estado para asignar nueva ubicación
   const [asignarModalOpen, setAsignarModalOpen] = useState(false);
@@ -63,14 +74,27 @@ export default function RepuestosPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resRepuestos, resCategorias, resMarcas] = await Promise.all([
-        inventarioService.getRepuestos(),
-        inventarioService.getCategorias(),
-        inventarioService.getMarcas()
-      ]);
+      const params = {
+        page: page + 1,
+        search: searchQuery,
+        categoria: filterCategoria,
+        marca: filterMarca,
+        ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined
+      };
+      
+      const resRepuestos = await inventarioService.getRepuestos(params);
       setRepuestos(resRepuestos.results || resRepuestos);
-      setCategorias(resCategorias.results || resCategorias);
-      setMarcas(resMarcas.results || resMarcas);
+      setTotalCount(resRepuestos.count || (resRepuestos.results ? resRepuestos.results.length : resRepuestos.length) || 0);
+
+      // Cargar categorias y marcas solo si no se han cargado
+      if (categorias.length === 0 || marcas.length === 0) {
+        const [resCategorias, resMarcas] = await Promise.all([
+          inventarioService.getCategorias(),
+          inventarioService.getMarcas()
+        ]);
+        setCategorias(resCategorias.results || resCategorias);
+        setMarcas(resMarcas.results || resMarcas);
+      }
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'Error al cargar los datos', 'error');
@@ -80,8 +104,11 @@ export default function RepuestosPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      fetchData();
+    }, 400); // debounce para no saturar al buscar
+    return () => clearTimeout(delayDebounceFn);
+  }, [page, searchQuery, filterCategoria, filterMarca, orderBy, order]);
 
   const handleOpenModal = (repuesto = null) => {
     if (repuesto) {
@@ -193,7 +220,7 @@ export default function RepuestosPage() {
 
   const handleAbrirAjuste = (stockItem) => {
     setAjusteModal({ open: true, stockItem });
-    setAjusteValor({ cantidad: stockItem.stock_disponible, motivo: '' });
+    setAjusteValor({ cantidad: stockItem.stock_disponible, stock_minimo: stockItem.stock_minimo !== undefined ? stockItem.stock_minimo : 5, motivo: '' });
   };
 
   const handleGuardarAjuste = async () => {
@@ -213,6 +240,7 @@ export default function RepuestosPage() {
     try {
       await inventarioService.updateStock(stockItem.id, {
         stock_disponible: Number(ajusteValor.cantidad),
+        stock_minimo: Number(ajusteValor.stock_minimo),
         motivo: ajusteValor.motivo,
       });
       Swal.fire({
@@ -320,6 +348,42 @@ export default function RepuestosPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const params = { search: searchQuery, categoria: filterCategoria, marca: filterMarca, ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined };
+      const blob = await inventarioService.exportarExcel(params);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'repuestos.xlsx';
+      a.click();
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo exportar a Excel', 'error');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const params = { search: searchQuery, categoria: filterCategoria, marca: filterMarca, ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined };
+      const blob = await inventarioService.exportarPDF(params);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reporte_repuestos.pdf';
+      a.click();
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo exportar a PDF', 'error');
+    }
+  };
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -333,22 +397,73 @@ export default function RepuestosPage() {
         </Button>
       </Box>
 
+      {/* --- BARRA DE HERRAMIENTAS (BUSCADOR Y FILTROS) --- */}
+      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
+        <TextField
+          label="Buscar (Código/Nombre)"
+          variant="outlined"
+          size="small"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ minWidth: 250 }}
+          InputProps={{ endAdornment: <Search size={20} style={{ opacity: 0.5 }} /> }}
+        />
+        <Autocomplete
+          size="small"
+          options={categorias}
+          getOptionLabel={(option) => option.nombre}
+          value={categorias.find(c => c.id === filterCategoria) || null}
+          onChange={(event, newValue) => setFilterCategoria(newValue ? newValue.id : '')}
+          sx={{ minWidth: 200 }}
+          renderInput={(params) => <TextField {...params} label="Categoría" variant="outlined" />}
+          noOptionsText="No se encontraron categorías"
+        />
+        <Autocomplete
+          size="small"
+          options={marcas}
+          getOptionLabel={(option) => option.nombre}
+          value={marcas.find(m => m.id === filterMarca) || null}
+          onChange={(event, newValue) => setFilterMarca(newValue ? newValue.id : '')}
+          sx={{ minWidth: 200 }}
+          renderInput={(params) => <TextField {...params} label="Marca" variant="outlined" />}
+          noOptionsText="No se encontraron marcas"
+        />
+        
+        <Box sx={{ flexGrow: 1 }} />
+        
+        <Button variant="outlined" color="success" startIcon={<Download size={18} />} onClick={handleExportExcel}>Excel</Button>
+        <Button variant="outlined" color="error" startIcon={<FileText size={18} />} onClick={handleExportPDF}>PDF</Button>
+      </Paper>
+
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
           </Box>
         ) : (
+          <>
           <TableContainer>
             <Table>
               <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                 <TableRow>
-                  <TableCell><strong>Código</strong></TableCell>
-                  <TableCell><strong>Nombre</strong></TableCell>
+                  <TableCell>
+                    <TableSortLabel active={orderBy === 'codigo'} direction={orderBy === 'codigo' ? order : 'asc'} onClick={() => handleRequestSort('codigo')}>
+                      <strong>Código</strong>
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel active={orderBy === 'nombre'} direction={orderBy === 'nombre' ? order : 'asc'} onClick={() => handleRequestSort('nombre')}>
+                      <strong>Nombre</strong>
+                    </TableSortLabel>
+                  </TableCell>
                   <TableCell><strong>Categoría</strong></TableCell>
                   <TableCell><strong>Marca</strong></TableCell>
                   <TableCell><strong>Stock</strong></TableCell>
-                  <TableCell><strong>P. Lista</strong></TableCell>
+                  <TableCell>
+                    <TableSortLabel active={orderBy === 'precio_lista'} direction={orderBy === 'precio_lista' ? order : 'asc'} onClick={() => handleRequestSort('precio_lista')}>
+                      <strong>P. Lista</strong>
+                    </TableSortLabel>
+                  </TableCell>
                   <TableCell align="center"><strong>Acciones</strong></TableCell>
                 </TableRow>
               </TableHead>
@@ -358,14 +473,17 @@ export default function RepuestosPage() {
                     <TableCell colSpan={7} align="center">No hay repuestos registrados.</TableCell>
                   </TableRow>
                 ) : (
-                  repuestos.map((row) => (
+                  repuestos.map((row) => {
+                    const stockNum = row.stock_total_disponible !== undefined ? row.stock_total_disponible : row.stock;
+                    const stockColor = (row.stock_minimo_global !== undefined && stockNum <= row.stock_minimo_global) ? "error" : "success";
+                    return (
                     <TableRow key={row.id} hover>
                       <TableCell>{row.codigo}</TableCell>
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell>{row.categoria_nombre}</TableCell>
                       <TableCell>{row.marca_nombre}</TableCell>
                       <TableCell>
-                        <strong>{row.stock_total_disponible !== undefined ? row.stock_total_disponible : row.stock}</strong>
+                        <Chip label={stockNum} color={stockColor} size="small" variant={stockColor === 'error' ? 'filled' : 'outlined'} />
                       </TableCell>
                       <TableCell>S/ {row.precio_lista}</TableCell>
                       <TableCell align="center">
@@ -387,11 +505,25 @@ export default function RepuestosPage() {
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            labelRowsPerPage="Filas por página:"
+          />
+          </>
         )}
       </Paper>
 
@@ -414,12 +546,20 @@ export default function RepuestosPage() {
                   control={control}
                   rules={{ required: true }}
                   render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.categoria}>
-                      <InputLabel>Categoría</InputLabel>
-                      <Select {...field} label="Categoría" value={field.value || ''}>
-                        {categorias.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
-                      </Select>
-                    </FormControl>
+                    <Autocomplete
+                      options={categorias}
+                      getOptionLabel={(option) => option.nombre}
+                      value={categorias.find(c => c.id === field.value) || null}
+                      onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Categoría" 
+                          error={!!errors.categoria} 
+                        />
+                      )}
+                      noOptionsText="No se encontraron categorías"
+                    />
                   )}
                 />
               </Grid>
@@ -429,12 +569,20 @@ export default function RepuestosPage() {
                   control={control}
                   rules={{ required: true }}
                   render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.marca}>
-                      <InputLabel>Marca</InputLabel>
-                      <Select {...field} label="Marca" value={field.value || ''}>
-                        {marcas.map(m => <MenuItem key={m.id} value={m.id}>{m.nombre}</MenuItem>)}
-                      </Select>
-                    </FormControl>
+                    <Autocomplete
+                      options={marcas}
+                      getOptionLabel={(option) => option.nombre}
+                      value={marcas.find(m => m.id === field.value) || null}
+                      onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Marca" 
+                          error={!!errors.marca} 
+                        />
+                      )}
+                      noOptionsText="No se encontraron marcas"
+                    />
                   )}
                 />
               </Grid>
@@ -550,6 +698,7 @@ export default function RepuestosPage() {
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
                 <Chip label={`Disponible: ${item.stock_disponible}`} color="success" size="small" />
+                <Chip label={`Mínimo: ${item.stock_minimo}`} color="info" size="small" variant="outlined" />
                 <Chip label={`Reservado: ${item.stock_reservado}`} color="warning" size="small" />
                 <Chip label={`Merma: ${item.stock_merma}`} color="error" size="small" variant="outlined" />
               </Box>
@@ -580,6 +729,14 @@ export default function RepuestosPage() {
               inputProps={{ min: 0 }}
               value={ajusteValor.cantidad}
               onChange={(e) => setAjusteValor((prev) => ({ ...prev, cantidad: e.target.value }))}
+            />
+            <TextField
+              label="Stock Mínimo (Alerta)"
+              type="number"
+              fullWidth
+              inputProps={{ min: 0 }}
+              value={ajusteValor.stock_minimo}
+              onChange={(e) => setAjusteValor((prev) => ({ ...prev, stock_minimo: e.target.value }))}
             />
             <TextField
               label="Motivo del ajuste *"
