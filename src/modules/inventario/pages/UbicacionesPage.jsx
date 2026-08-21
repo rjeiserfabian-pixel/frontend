@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  CircularProgress, Grid, FormControl, InputLabel, Select, MenuItem
+  CircularProgress, Grid, FormControl, InputLabel, Select, MenuItem, TablePagination
 } from '@mui/material';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
@@ -16,15 +16,21 @@ function useUbicaciones() {
   const [almacenes, setAlmacenes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [resUbicaciones, resAlmacenes] = await Promise.all([
-        inventarioService.getUbicaciones(),
-        inventarioService.getAlmacenes(),
+        inventarioService.getUbicaciones(null, null, { page: page + 1 }),
+        inventarioService.getAlmacenes(null, { page: 1 }), // Solo necesitamos para el select
       ]);
       setUbicaciones(resUbicaciones.results || resUbicaciones);
       setAlmacenes(resAlmacenes.results || resAlmacenes);
+      setTotalCount(resUbicaciones.count !== undefined ? resUbicaciones.count : (resUbicaciones.results ? resUbicaciones.results.length : resUbicaciones.length));
     } catch (error) {
       console.error('Error al cargar ubicaciones:', error);
       Swal.fire('Error', 'No se pudo cargar la lista de ubicaciones.', 'error');
@@ -37,11 +43,11 @@ function useUbicaciones() {
     fetchData();
   }, [fetchData]);
 
-  return { ubicaciones, almacenes, loading, fetchData };
+  return { ubicaciones, almacenes, loading, fetchData, page, setPage, rowsPerPage, setRowsPerPage, totalCount };
 }
 
 export default function UbicacionesPage() {
-  const { ubicaciones, almacenes, loading, fetchData } = useUbicaciones();
+  const { ubicaciones, almacenes, loading, fetchData, page, setPage, rowsPerPage, totalCount } = useUbicaciones();
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -172,6 +178,17 @@ export default function UbicacionesPage() {
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+        {!loading && totalCount > 0 && (
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[25]}
+            labelRowsPerPage="Filas por página:"
+          />
         )}
       </Paper>
 

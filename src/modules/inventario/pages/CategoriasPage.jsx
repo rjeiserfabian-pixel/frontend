@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, 
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  CircularProgress
+  CircularProgress, TablePagination
 } from '@mui/material';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -15,14 +15,20 @@ export default function CategoriasPage() {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
   
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
   const fetchCategorias = async () => {
     try {
       setLoading(true);
-      const res = await inventarioService.getCategorias();
+      const res = await inventarioService.getCategorias({ page: page + 1 });
       setCategorias(res.results || res);
+      setTotalCount(res.count !== undefined ? res.count : (res.results ? res.results.length : res.length));
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'Error al cargar las categorías', 'error');
@@ -33,7 +39,7 @@ export default function CategoriasPage() {
 
   useEffect(() => {
     fetchCategorias();
-  }, []);
+  }, [page]);
 
   const handleOpenModal = (categoria = null) => {
     if (categoria) {
@@ -64,7 +70,29 @@ export default function CategoriasPage() {
       fetchCategorias();
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'Hubo un error al guardar', 'error');
+      let errorMessage = 'Hubo un error al guardar la categoría.';
+      
+      if (error.response && error.response.data && error.response.data.errores) {
+        const errData = error.response.data.errores;
+        if (errData.nombre) {
+          errorMessage = 'Ya existe una categoría registrada con este nombre.';
+        } else if (typeof errData === 'object') {
+          const firstKey = Object.keys(errData)[0];
+          if (firstKey && Array.isArray(errData[firstKey])) {
+            errorMessage = errData[firstKey][0];
+          }
+        }
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo guardar',
+        text: errorMessage,
+        didOpen: () => {
+          const container = document.querySelector('.swal2-container');
+          if (container) container.style.zIndex = '9999';
+        }
+      });
     }
   };
 
@@ -142,6 +170,17 @@ export default function CategoriasPage() {
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+        {!loading && totalCount > 0 && (
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[25]}
+            labelRowsPerPage="Filas por página:"
+          />
         )}
       </Paper>
 

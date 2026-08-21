@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  CircularProgress, Chip, FormControl, InputLabel, Select, MenuItem
+  CircularProgress, Chip, FormControl, InputLabel, Select, MenuItem, TablePagination, Autocomplete
 } from '@mui/material';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
@@ -16,15 +16,21 @@ function useAlmacenes() {
   const [sucursales, setSucursales] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [resAlmacenes, resSucursales] = await Promise.all([
-        inventarioService.getAlmacenes(),
-        inventarioService.getSucursales(),
+        inventarioService.getAlmacenes(null, { page: page + 1 }),
+        inventarioService.getSucursales({ page: 1 }), // Solo necesitamos para el select, aunque esto podría paginar sucursales, asumimos que no hay tantas para el combo
       ]);
       setAlmacenes(resAlmacenes.results || resAlmacenes);
       setSucursales(resSucursales.results || resSucursales);
+      setTotalCount(resAlmacenes.count !== undefined ? resAlmacenes.count : (resAlmacenes.results ? resAlmacenes.results.length : resAlmacenes.length));
     } catch (error) {
       console.error('Error al cargar almacenes:', error);
       Swal.fire('Error', 'No se pudo cargar la lista de almacenes.', 'error');
@@ -37,11 +43,11 @@ function useAlmacenes() {
     fetchData();
   }, [fetchData]);
 
-  return { almacenes, sucursales, loading, fetchData };
+  return { almacenes, sucursales, loading, fetchData, page, setPage, rowsPerPage, setRowsPerPage, totalCount };
 }
 
 export default function AlmacenesPage() {
-  const { almacenes, sucursales, loading, fetchData } = useAlmacenes();
+  const { almacenes, sucursales, loading, fetchData, page, setPage, rowsPerPage, totalCount } = useAlmacenes();
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -53,11 +59,12 @@ export default function AlmacenesPage() {
       reset({
         nombre: almacen.nombre,
         descripcion: almacen.descripcion || '',
+        direccion: almacen.direccion || '',
         sucursal: almacen.sucursal,
       });
     } else {
       setEditingId(null);
-      reset({ nombre: '', descripcion: '', sucursal: '' });
+      reset({ nombre: '', descripcion: '', direccion: '', sucursal: '' });
     }
     setOpenModal(true);
   };
@@ -132,6 +139,7 @@ export default function AlmacenesPage() {
                 <TableRow>
                   <TableCell><strong>Nombre</strong></TableCell>
                   <TableCell><strong>Sucursal</strong></TableCell>
+                  <TableCell><strong>Dirección</strong></TableCell>
                   <TableCell><strong>Descripción</strong></TableCell>
                   <TableCell><strong>Estado</strong></TableCell>
                   <TableCell align="center"><strong>Acciones</strong></TableCell>
@@ -140,7 +148,7 @@ export default function AlmacenesPage() {
               <TableBody>
                 {almacenes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                       No hay almacenes registrados.
                     </TableCell>
                   </TableRow>
@@ -149,6 +157,7 @@ export default function AlmacenesPage() {
                     <TableRow key={row.id} hover>
                       <TableCell><strong>{row.nombre}</strong></TableCell>
                       <TableCell>{row.sucursal_nombre}</TableCell>
+                      <TableCell>{row.direccion || '—'}</TableCell>
                       <TableCell>{row.descripcion || '—'}</TableCell>
                       <TableCell>
                         <Chip
@@ -172,6 +181,17 @@ export default function AlmacenesPage() {
             </Table>
           </TableContainer>
         )}
+        {!loading && totalCount > 0 && (
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[25]}
+            labelRowsPerPage="Filas por página:"
+          />
+        )}
       </Paper>
 
       {/* Modal Formulario */}
@@ -180,25 +200,26 @@ export default function AlmacenesPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent dividers>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Controller para el Select de MUI con react-hook-form */}
               <Controller
                 name="sucursal"
                 control={control}
                 rules={{ required: 'La sucursal es requerida' }}
                 render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.sucursal}>
-                    <InputLabel>Sucursal *</InputLabel>
-                    <Select {...field} label="Sucursal *" value={field.value || ''}>
-                      {sucursales.map((s) => (
-                        <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
-                      ))}
-                    </Select>
-                    {errors.sucursal && (
-                      <Typography variant="caption" color="error" sx={{ ml: 2 }}>
-                        {errors.sucursal.message}
-                      </Typography>
+                  <Autocomplete
+                    options={sucursales}
+                    getOptionLabel={(option) => option.nombre}
+                    value={sucursales.find((s) => s.id === field.value) || null}
+                    onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Sucursal *"
+                        error={!!errors.sucursal}
+                        helperText={errors.sucursal?.message}
+                      />
                     )}
-                  </FormControl>
+                    noOptionsText="No se encontraron sucursales"
+                  />
                 )}
               />
               <TextField
@@ -207,6 +228,11 @@ export default function AlmacenesPage() {
                 {...register('nombre', { required: 'El nombre es requerido' })}
                 error={!!errors.nombre}
                 helperText={errors.nombre?.message}
+              />
+              <TextField
+                label="Dirección (opcional)"
+                fullWidth
+                {...register('direccion')}
               />
               <TextField
                 label="Descripción (opcional)"

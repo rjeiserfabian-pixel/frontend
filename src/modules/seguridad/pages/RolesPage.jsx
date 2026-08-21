@@ -4,7 +4,7 @@ import {
   TableContainer, TableHead, TableRow, IconButton, 
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Grid, Card, CardContent, Checkbox, FormControlLabel,
-  Select, MenuItem, FormControl, Divider, Alert
+  Select, MenuItem, FormControl, Divider, Alert, TablePagination, Radio
 } from '@mui/material';
 import { Plus, Edit2, Trash2, Shield, Settings2, Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -19,6 +19,11 @@ export default function RolesPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+
   // Estados para la configuración de permisos
   const [rolSeleccionado, setRolSeleccionado] = useState(null);
   const [permisosAsignados, setPermisosAsignados] = useState({}); // { id_permiso: alcance }
@@ -30,12 +35,13 @@ export default function RolesPage() {
     try {
       setLoading(true);
       const [resRoles, resPermisos] = await Promise.all([
-        api.get('seguridad/roles/'),
+        api.get(`seguridad/roles/?page=${page + 1}`),
         api.get('seguridad/permisos/')
       ]);
       
       const rolesData = resRoles.data.data;
       setRoles(rolesData.results ? rolesData.results : (Array.isArray(rolesData) ? rolesData : []));
+      setTotalCount(rolesData.count !== undefined ? rolesData.count : (rolesData.results ? rolesData.results.length : rolesData.length));
 
       const permisosData = resPermisos.data.data;
       setTodosPermisos(permisosData.results ? permisosData.results : (Array.isArray(permisosData) ? permisosData : []));
@@ -48,7 +54,7 @@ export default function RolesPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page]);
 
   const handleOpen = (rol = null) => {
     if (rol) {
@@ -117,6 +123,13 @@ export default function RolesPage() {
 
   // Configuración de permisos
   const seleccionarRol = (rol) => {
+    // Si se hace clic en el rol que ya está seleccionado, lo desmarcamos
+    if (rolSeleccionado && (rolSeleccionado.id_rol === rol.id_rol || rolSeleccionado.id === rol.id)) {
+      setRolSeleccionado(null);
+      setPermisosAsignados({});
+      return;
+    }
+
     setRolSeleccionado(rol);
     // Mapear los permisos actuales del rol seleccionado
     const asignados = {};
@@ -205,9 +218,10 @@ export default function RolesPage() {
       <Grid container spacing={4}>
         {/* Lado izquierdo: Lista de Roles */}
         <Grid item xs={12} md={6} lg={5}>
-          <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px' }}>
-            <Table>
-              <TableHead sx={{ bgcolor: 'slate.50' }}>
+          <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600 }}>Rol</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>Acciones</TableCell>
@@ -234,13 +248,22 @@ export default function RolesPage() {
                       onClick={() => seleccionarRol(rol)}
                     >
                       <TableCell>
-                        <Box>
-                          <Typography fontWeight={isSelected ? "bold" : "500"} color={isSelected ? 'primary.main' : 'slate.800'}>
-                            {rol.nombre}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {rol.descripcion || 'Sin descripción'}
-                          </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Radio 
+                            checked={isSelected}
+                            onChange={() => {}} // El clic lo maneja el TableRow
+                            onClick={(e) => e.stopPropagation()} // Evitamos comportamiento raro, la fila se encarga
+                            size="small"
+                            sx={{ p: 0.5, pointerEvents: 'none' }}
+                          />
+                          <Box>
+                            <Typography fontWeight={isSelected ? "bold" : "500"} color={isSelected ? 'primary.main' : 'slate.800'}>
+                              {rol.nombre}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {rol.descripcion || 'Sin descripción'}
+                            </Typography>
+                          </Box>
                         </Box>
                       </TableCell>
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
@@ -264,6 +287,18 @@ export default function RolesPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          {!loading && totalCount > 0 && (
+            <TablePagination
+              component="div"
+              count={totalCount}
+              page={page}
+              onPageChange={(e, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={[25]}
+              labelRowsPerPage="Filas por página:"
+            />
+          )}
+          </Paper>
         </Grid>
 
         {/* Lado derecho: Configuración de Permisos */}

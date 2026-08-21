@@ -3,7 +3,7 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, CircularProgress,
   Chip, Grid, FormControl, InputLabel, Select, MenuItem,
-  Pagination, TextField
+  TablePagination, TextField, Autocomplete
 } from '@mui/material';
 import { inventarioService } from '../services/inventarioService';
 import Swal from 'sweetalert2';
@@ -41,13 +41,14 @@ function useKardex() {
   const [movimientos, setMovimientos] = useState([]);
   const [repuestos, setRepuestos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   // Filtros
   const [filtros, setFiltros] = useState({
     repuestoId: '',
     tipo: '',
-    page: 1,
+    page: 0,
   });
 
   // Debounce: no se disparan peticiones por cada cambio de filtro de inmediato
@@ -59,13 +60,10 @@ function useKardex() {
       const data = await inventarioService.getKardex({
         repuestoId: params.repuestoId || null,
         tipo: params.tipo || null,
-        page: params.page,
+        page: params.page + 1,
       });
       setMovimientos(data.results || data);
-      // Calcular total de páginas desde el count de la paginación DRF
-      if (data.count !== undefined) {
-        setTotalPages(Math.ceil(data.count / 25));
-      }
+      setTotalCount(data.count !== undefined ? data.count : (data.results ? data.results.length : data.length));
     } catch (error) {
       console.error('Error al cargar el kardex:', error);
       Swal.fire('Error', 'No se pudo cargar el Kardex.', 'error');
@@ -97,18 +95,18 @@ function useKardex() {
   }, [fetchRepuestos]);
 
   const handleFiltroChange = (key, value) => {
-    setFiltros((prev) => ({ ...prev, [key]: value, page: 1 }));
+    setFiltros((prev) => ({ ...prev, [key]: value, page: 0 }));
   };
 
   const handlePageChange = (_, newPage) => {
     setFiltros((prev) => ({ ...prev, page: newPage }));
   };
 
-  return { movimientos, repuestos, loading, filtros, totalPages, handleFiltroChange, handlePageChange };
+  return { movimientos, repuestos, loading, filtros, totalCount, rowsPerPage, handleFiltroChange, handlePageChange };
 }
 
 export default function KardexPage() {
-  const { movimientos, repuestos, loading, filtros, totalPages, handleFiltroChange, handlePageChange } = useKardex();
+  const { movimientos, repuestos, loading, filtros, totalCount, rowsPerPage, handleFiltroChange, handlePageChange } = useKardex();
 
   const formatFecha = (fecha) => {
     return new Date(fecha).toLocaleString('es-PE', {
@@ -127,40 +125,27 @@ export default function KardexPage() {
       </Box>
 
       {/* Panel de Filtros */}
-      <Paper sx={{ p: 2, mb: 3, boxShadow: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={5}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Filtrar por Repuesto</InputLabel>
-              <Select
-                label="Filtrar por Repuesto"
-                value={filtros.repuestoId}
-                onChange={(e) => handleFiltroChange('repuestoId', e.target.value)}
-              >
-                <MenuItem value="">Todos los repuestos</MenuItem>
-                {repuestos.map((r) => (
-                  <MenuItem key={r.id} value={r.id}>
-                    {r.codigo} — {r.nombre}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Tipo de Movimiento</InputLabel>
-              <Select
-                label="Tipo de Movimiento"
-                value={filtros.tipo}
-                onChange={(e) => handleFiltroChange('tipo', e.target.value)}
-              >
-                {TIPOS_MOVIMIENTO.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
+      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
+        <Autocomplete
+          size="small"
+          options={repuestos}
+          getOptionLabel={(option) => `${option.codigo} — ${option.nombre}`}
+          value={repuestos.find(r => r.id === filtros.repuestoId) || null}
+          onChange={(event, newValue) => handleFiltroChange('repuestoId', newValue ? newValue.id : '')}
+          sx={{ minWidth: 300, flexGrow: { xs: 1, md: 0 } }}
+          renderInput={(params) => <TextField {...params} label="Filtrar por Repuesto" variant="outlined" />}
+          noOptionsText="No se encontraron repuestos"
+        />
+        <Autocomplete
+          size="small"
+          options={TIPOS_MOVIMIENTO.filter(t => t.value !== '')}
+          getOptionLabel={(option) => option.label}
+          value={TIPOS_MOVIMIENTO.find(t => t.value === filtros.tipo) || null}
+          onChange={(event, newValue) => handleFiltroChange('tipo', newValue ? newValue.value : '')}
+          sx={{ minWidth: 250, flexGrow: { xs: 1, md: 0 } }}
+          renderInput={(params) => <TextField {...params} label="Tipo de Movimiento" variant="outlined" />}
+          noOptionsText="No se encontraron tipos"
+        />
       </Paper>
 
       {/* Tabla de Movimientos */}
@@ -237,15 +222,16 @@ export default function KardexPage() {
             </TableContainer>
 
             {/* Paginación */}
-            {totalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <Pagination
-                  count={totalPages}
-                  page={filtros.page}
-                  onChange={handlePageChange}
-                  color="primary"
-                />
-              </Box>
+            {!loading && totalCount > 0 && (
+              <TablePagination
+                component="div"
+                count={totalCount}
+                page={filtros.page}
+                onPageChange={handlePageChange}
+                rowsPerPage={rowsPerPage}
+                rowsPerPageOptions={[25]}
+                labelRowsPerPage="Filas por página:"
+              />
             )}
           </>
         )}

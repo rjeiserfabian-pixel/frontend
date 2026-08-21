@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  CircularProgress, Chip
+  CircularProgress, Chip, TablePagination
 } from '@mui/material';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -15,11 +15,17 @@ function useSucursales() {
   const [sucursales, setSucursales] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+
   const fetchSucursales = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await inventarioService.getSucursales();
+      const data = await inventarioService.getSucursales({ page: page + 1 });
       setSucursales(data.results || data);
+      setTotalCount(data.count !== undefined ? data.count : (data.results ? data.results.length : data.length));
     } catch (error) {
       console.error('Error al cargar sucursales:', error);
       Swal.fire('Error', 'No se pudo cargar la lista de sucursales.', 'error');
@@ -32,11 +38,11 @@ function useSucursales() {
     fetchSucursales();
   }, [fetchSucursales]);
 
-  return { sucursales, loading, fetchSucursales };
+  return { sucursales, loading, fetchSucursales, page, setPage, rowsPerPage, setRowsPerPage, totalCount };
 }
 
 export default function SucursalesPage() {
-  const { sucursales, loading, fetchSucursales } = useSucursales();
+  const { sucursales, loading, fetchSucursales, page, setPage, rowsPerPage, totalCount } = useSucursales();
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -160,6 +166,17 @@ export default function SucursalesPage() {
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+        {!loading && totalCount > 0 && (
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[25]}
+            labelRowsPerPage="Filas por página:"
+          />
         )}
       </Paper>
 

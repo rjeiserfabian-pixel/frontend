@@ -4,7 +4,7 @@ import {
   TableContainer, TableHead, TableRow, IconButton, Chip, 
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, FormControl, InputLabel, Select, MenuItem,
-  OutlinedInput, Checkbox, ListItemText
+  OutlinedInput, Checkbox, ListItemText, TablePagination
 } from '@mui/material';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -22,18 +22,24 @@ export default function UsuariosPage() {
   // Estado para los roles seleccionados
   const [selectedRoles, setSelectedRoles] = useState([]);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [resUsuarios, resRoles] = await Promise.all([
-        api.get('seguridad/usuarios/'),
+        api.get(`seguridad/usuarios/?page=${page + 1}`),
         api.get('seguridad/roles/')
       ]);
       
       const dataUsuarios = resUsuarios.data.data;
       setUsuarios(dataUsuarios.results ? dataUsuarios.results : (Array.isArray(dataUsuarios) ? dataUsuarios : []));
+      setTotalCount(dataUsuarios.count !== undefined ? dataUsuarios.count : (dataUsuarios.results ? dataUsuarios.results.length : dataUsuarios.length));
 
       const dataRoles = resRoles.data.data;
       setRolesDisponibles(dataRoles.results ? dataRoles.results : (Array.isArray(dataRoles) ? dataRoles : []));
@@ -46,7 +52,7 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page]);
 
   const handleOpen = (user = null) => {
     if (user) {
@@ -144,9 +150,10 @@ export default function UsuariosPage() {
         </Button>
       </Box>
 
-      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '12px' }}>
-        <Table>
-          <TableHead sx={{ bgcolor: 'slate.50' }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+        <TableContainer>
+          <Table>
+            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 600 }}>Usuario</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Nombre Completo</TableCell>
@@ -203,8 +210,21 @@ export default function UsuariosPage() {
               </TableRow>
             )}
           </TableBody>
-        </Table>
-      </TableContainer>
+          </Table>
+        </TableContainer>
+
+        {!loading && totalCount > 0 && (
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[25]}
+            labelRowsPerPage="Filas por página:"
+          />
+        )}
+      </Paper>
 
       {/* Modal Crear/Editar */}
       <Dialog open={openModal} onClose={handleClose} maxWidth="sm" fullWidth>

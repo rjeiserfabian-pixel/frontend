@@ -6,8 +6,11 @@ const URL_REPUESTOS = '/inventario/repuestos/';
 
 export const inventarioService = {
   // --- Categorias ---
-  getCategorias: async () => {
-    const response = await api.get(URL_CATEGORIAS);
+  getCategorias: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', params.page);
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const response = await api.get(`${URL_CATEGORIAS}${queryString}`);
     return response.data;
   },
   createCategoria: async (data) => {
@@ -24,8 +27,11 @@ export const inventarioService = {
   },
 
   // --- Marcas ---
-  getMarcas: async () => {
-    const response = await api.get(URL_MARCAS);
+  getMarcas: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', params.page);
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const response = await api.get(`${URL_MARCAS}${queryString}`);
     return response.data;
   },
   createMarca: async (data) => {
@@ -89,8 +95,11 @@ export const inventarioService = {
   // ──────────────────────────────────────────────
   // NUEVOS MÉTODOS: SUCURSALES
   // ──────────────────────────────────────────────
-  getSucursales: async () => {
-    const response = await api.get('/inventario/sucursales/');
+  getSucursales: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', params.page);
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const response = await api.get(`/inventario/sucursales/${queryString}`);
     return response.data;
   },
   createSucursal: async (data) => {
@@ -109,9 +118,12 @@ export const inventarioService = {
   // ──────────────────────────────────────────────
   // NUEVOS MÉTODOS: ALMACENES
   // ──────────────────────────────────────────────
-  getAlmacenes: async (sucursalId = null) => {
-    const params = sucursalId ? `?sucursal=${sucursalId}` : '';
-    const response = await api.get(`/inventario/almacenes/${params}`);
+  getAlmacenes: async (sucursalId = null, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (sucursalId) queryParams.append('sucursal', sucursalId);
+    if (params.page) queryParams.append('page', params.page);
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const response = await api.get(`/inventario/almacenes/${queryString}`);
     return response.data;
   },
   createAlmacen: async (data) => {
@@ -130,10 +142,11 @@ export const inventarioService = {
   // ──────────────────────────────────────────────
   // NUEVOS MÉTODOS: UBICACIONES FÍSICAS
   // ──────────────────────────────────────────────
-  getUbicaciones: async (almacenId = null, sucursalId = null) => {
+  getUbicaciones: async (almacenId = null, sucursalId = null, paramsObj = {}) => {
     const params = new URLSearchParams();
     if (almacenId) params.append('almacen', almacenId);
     if (sucursalId) params.append('sucursal', sucursalId);
+    if (paramsObj.page) params.append('page', paramsObj.page);
     const query = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(`/inventario/ubicaciones/${query}`);
     return response.data;

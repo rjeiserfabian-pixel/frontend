@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, 
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  CircularProgress, Grid
+  CircularProgress, Grid, TablePagination
 } from '@mui/material';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -16,6 +16,11 @@ export default function VehiculosPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [buscandoSunarp, setBuscandoSunarp] = useState(false);
+
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
   
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm();
   
@@ -24,8 +29,9 @@ export default function VehiculosPage() {
   const fetchVehiculos = async () => {
     try {
       setLoading(true);
-      const res = await vehiculoService.getVehiculos();
+      const res = await vehiculoService.getVehiculos(page + 1);
       setVehiculos(res.results || res); // Manejar con o sin paginación backend
+      setTotalCount(res.count !== undefined ? res.count : (res.results ? res.results.length : res.length));
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'Error al cargar los vehículos', 'error');
@@ -36,7 +42,7 @@ export default function VehiculosPage() {
 
   useEffect(() => {
     fetchVehiculos();
-  }, []);
+  }, [page]);
 
   const handleOpenModal = (vehiculo = null) => {
     if (vehiculo) {
@@ -184,6 +190,17 @@ export default function VehiculosPage() {
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+        {!loading && totalCount > 0 && (
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[25]}
+            labelRowsPerPage="Filas por página:"
+          />
         )}
       </Paper>
 
