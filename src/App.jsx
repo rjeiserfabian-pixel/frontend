@@ -13,13 +13,17 @@ import AlmacenesPage from './modules/inventario/pages/AlmacenesPage';
 import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
 import KardexPage from './modules/inventario/pages/KardexPage';
 import ClientesPage from './modules/clientes/pages/ClientesPage';
+import KioskoPage from './modules/ventas/pages/KioskoPage';
+import CajaPage from './modules/ventas/pages/CajaPage';
+import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta Pública */}
+        {/* Rutas Públicas / Kiosko (Full Screen) */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/kiosko" element={<KioskoPage />} />
         
         {/* Rutas Protegidas (Requieren Login) */}
         <Route element={<DashboardLayout />}>
@@ -35,6 +39,8 @@ function App() {
           <Route path="/inventario/kardex" element={<KardexPage />} />
           <Route path="/vehiculos" element={<VehiculosPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
+          <Route path="/caja" element={<CajaPage />} />
+          <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
         </Route>
         
         {/* Redirección por defecto */}
