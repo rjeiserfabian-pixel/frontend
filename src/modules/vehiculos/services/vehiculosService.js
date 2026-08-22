@@ -1,10 +1,12 @@
 import api from '../../../core/api/axios';
 
-const URL_VEHICULOS = '/vehiculos/';
+const URL_VEHICULOS = 'vehiculos/';
 
 export const vehiculoService = {
-  getVehiculos: async (page = 1) => {
-    const response = await api.get(`${URL_VEHICULOS}?page=${page}`);
+  getVehiculos: async (page = 1, search = '') => {
+    const params = new URLSearchParams({ page });
+    if (search) params.append('search', search);
+    const response = await api.get(`${URL_VEHICULOS}?${params.toString()}`);
     return response.data;
   },
   createVehiculo: async (data) => {
@@ -19,11 +21,8 @@ export const vehiculoService = {
     const response = await api.delete(`${URL_VEHICULOS}${id}/`);
     return response.data;
   },
-  
-  // Búsqueda por placa desde el backend o API externa (esto puede requerir un endpoint especial si la integración es en backend)
-  buscarPorPlaca: async (placa) => {
-    // Asumiendo que el backend maneja la consulta a la API de Sunarp
-    const response = await api.get(`/vehiculos/buscar_placa/?placa=${placa}`);
+  buscarPorPlaca: async (placa, signal) => {
+    const response = await api.post(`${URL_VEHICULOS}consulta-placa/`, { placa }, { signal });
     return response.data;
   }
 };

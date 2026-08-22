@@ -12,6 +12,7 @@ import SucursalesPage from './modules/inventario/pages/SucursalesPage';
 import AlmacenesPage from './modules/inventario/pages/AlmacenesPage';
 import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
 import KardexPage from './modules/inventario/pages/KardexPage';
+import ClientesPage from './modules/clientes/pages/ClientesPage';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
           <Route path="/inventario/kardex" element={<KardexPage />} />
           <Route path="/vehiculos" element={<VehiculosPage />} />
+          <Route path="/clientes" element={<ClientesPage />} />
         </Route>
         
         {/* Redirección por defecto */}
