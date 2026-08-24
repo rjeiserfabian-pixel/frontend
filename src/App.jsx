@@ -15,7 +15,9 @@ import KardexPage from './modules/inventario/pages/KardexPage';
 import ClientesPage from './modules/clientes/pages/ClientesPage';
 import KioskoPage from './modules/ventas/pages/KioskoPage';
 import CajaPage from './modules/ventas/pages/CajaPage';
+import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
+import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
 
 function App() {
   return (
@@ -37,9 +39,11 @@ function App() {
           <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
           <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
           <Route path="/inventario/kardex" element={<KardexPage />} />
+          <Route path="/inventario/impuestos" element={<ConfiguracionIgvPage />} />
           <Route path="/vehiculos" element={<VehiculosPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/caja" element={<CajaPage />} />
+          <Route path="/ventas/pos" element={<POSPage />} />
           <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
         </Route>
         

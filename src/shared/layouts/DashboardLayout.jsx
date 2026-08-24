@@ -26,6 +26,8 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'tags': Icons.Tags,
     'list': Icons.List,
     'tool': Icons.PenTool,
+    'banknote': Icons.Banknote,
+    'store': Icons.Store,
   };
   const IconComponent = iconMapping[name.toLowerCase()] || Icons.Circle;
   return <IconComponent size={size} />;

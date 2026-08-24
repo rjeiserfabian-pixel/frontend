@@ -5,6 +5,12 @@ const URL_MARCAS = '/inventario/marcas/';
 const URL_REPUESTOS = '/inventario/repuestos/';
 
 export const inventarioService = {
+  // --- Impuestos / IGV ---
+  getTiposIgv: async () => {
+    const response = await api.get('/ventas/impuestos/');
+    return response.data;
+  },
+
   // --- Categorias ---
   getCategorias: async (params = {}) => {
     const query = new URLSearchParams();

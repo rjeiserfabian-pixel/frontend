@@ -16,6 +16,7 @@ export default function RepuestosPage() {
   const [repuestos, setRepuestos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [marcas, setMarcas] = useState([]);
+  const [tiposIgv, setTiposIgv] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -88,14 +89,16 @@ export default function RepuestosPage() {
       setRepuestos(resRepuestos.results || resRepuestos);
       setTotalCount(resRepuestos.count || (resRepuestos.results ? resRepuestos.results.length : resRepuestos.length) || 0);
 
-      // Cargar categorias y marcas solo si no se han cargado
-      if (categorias.length === 0 || marcas.length === 0) {
-        const [resCategorias, resMarcas] = await Promise.all([
+      // Cargar categorias, marcas e impuestos solo si no se han cargado
+      if (categorias.length === 0 || marcas.length === 0 || tiposIgv.length === 0) {
+        const [resCategorias, resMarcas, resTiposIgv] = await Promise.all([
           inventarioService.getCategorias(),
-          inventarioService.getMarcas()
+          inventarioService.getMarcas(),
+          inventarioService.getTiposIgv()
         ]);
         setCategorias(resCategorias.results || resCategorias);
         setMarcas(resMarcas.results || resMarcas);
+        setTiposIgv(resTiposIgv.results || resTiposIgv);
       }
     } catch (error) {
       console.error(error);
@@ -120,6 +123,7 @@ export default function RepuestosPage() {
         nombre: repuesto.nombre,
         categoria: repuesto.categoria,
         marca: repuesto.marca,
+        tipo_igv: repuesto.tipo_igv || '',
         stock: repuesto.stock,
         precio_compra: repuesto.precio_compra,
         precio_por_mayor: repuesto.precio_por_mayor,
@@ -130,7 +134,7 @@ export default function RepuestosPage() {
     } else {
       setEditingId(null);
       reset({ 
-        codigo: '', nombre: '', categoria: '', marca: '', stock: 0,
+        codigo: '', nombre: '', categoria: '', marca: '', tipo_igv: '', stock: 0,
         precio_compra: '', precio_por_mayor: '', precio_cash: '', precio_lista: '',
         aplicaciones: [] 
       });
@@ -636,6 +640,28 @@ export default function RepuestosPage() {
                         />
                       )}
                       noOptionsText="No se encontraron marcas"
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
+                <Controller
+                  name="tipo_igv"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      options={tiposIgv}
+                      getOptionLabel={(option) => option.nombre}
+                      value={tiposIgv.find(t => t.id === field.value) || null}
+                      onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Tipo de IGV" 
+                          error={!!errors.tipo_igv} 
+                        />
+                      )}
+                      noOptionsText="No se encontraron tipos de IGV"
                     />
                   )}
                 />

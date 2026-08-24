@@ -13,7 +13,7 @@ const apiClient = axios.create({
 
 // Interceptor para inyectar token de SimpleJWT si está en localStorage
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -56,6 +56,13 @@ export const ventasService = {
   obtenerPreVenta: async (ticketId) => {
     // Idealmente tendríamos un endpoint custom, pero podemos filtrar por ticket o id
     const response = await apiClient.get(`/transacciones/?ticket_kiosko=${ticketId}`);
+    return response.data;
+  },
+
+  getVentas: async (params = {}) => {
+    // Permite pasar query params como { estado: 'PRE_VENTA' }
+    const queryString = new URLSearchParams(params).toString();
+    const response = await apiClient.get(`/transacciones/?${queryString}`);
     return response.data;
   },
 

@@ -39,5 +39,14 @@ export const clienteService = {
       { signal } // Pasamos el signal del AbortController
     );
     return response.data;
+  },
+
+  consultarRuc: async (ruc, signal) => {
+    const response = await api.post(
+      `${BASE_URL}consulta-ruc/`,
+      { ruc },
+      { signal }
+    );
+    return response.data;
   }
 };
