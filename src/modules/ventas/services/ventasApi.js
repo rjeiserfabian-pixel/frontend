@@ -79,6 +79,11 @@ export const ventasService = {
     const response = await apiClient.get('/metodos-pago/');
     return response.data;
   },
+
+  getTiposComprobante: async () => {
+    const response = await apiClient.get('/tipos-comprobante/');
+    return response.data;
+  },
   
   getCajas: async () => {
     const response = await apiClient.get('/cajas/');

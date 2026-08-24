@@ -139,6 +139,38 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
   const [procesando, setProcesando] = useState(false);
   const total = parseFloat(order.total) || 0;
 
+  const [metodosPago, setMetodosPago] = useState([]);
+  const [pagos, setPagos] = useState([]);
+  
+  const [tiposComprobante, setTiposComprobante] = useState([]);
+  const [tipoComprobanteId, setTipoComprobanteId] = useState('');
+
+  useEffect(() => {
+    const fetchDatosInit = async () => {
+      try {
+        const [resMetodos, resTipos] = await Promise.all([
+          ventasService.getMetodosPago(),
+          ventasService.getTiposComprobante()
+        ]);
+        const dataMetodos = resMetodos.results || resMetodos;
+        setMetodosPago(dataMetodos);
+        if (dataMetodos && dataMetodos.length > 0) {
+          setPagos([{ id: Date.now(), metodo_id: dataMetodos[0].id, monto: total, referencia: '' }]);
+        }
+        
+        const dataTipos = resTipos.results || resTipos;
+        setTiposComprobante(dataTipos);
+        if (dataTipos && dataTipos.length > 0) {
+          setTipoComprobanteId(dataTipos[0].id);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchDatosInit();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleConfirm = async () => {
     try {
       setProcesando(true);
@@ -168,7 +200,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField label="Nombre completo" fullWidth value={order.cliente_nombre || ''} size="small" InputProps={{ readOnly: true }} />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -176,6 +208,9 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="Vehículo (Placa)" fullWidth value={order.vehiculo_placa || ''} size="small" InputProps={{ readOnly: true }} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Teléfono" fullWidth value={order.cliente_telefono || ''} size="small" InputProps={{ readOnly: true }} />
               </Grid>
             </Grid>
           </Paper>
@@ -190,10 +225,14 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Tipo de Comprobante</InputLabel>
-                  <Select value="boleta" label="Tipo de Comprobante">
-                    <MenuItem value="boleta">Boleta de Venta</MenuItem>
-                    <MenuItem value="factura">Factura</MenuItem>
-                    <MenuItem value="ticket">Ticket</MenuItem>
+                  <Select 
+                    value={tipoComprobanteId} 
+                    label="Tipo de Comprobante"
+                    onChange={e => setTipoComprobanteId(e.target.value)}
+                  >
+                    {tiposComprobante.map(tc => (
+                      <MenuItem key={tc.id} value={tc.id}>{tc.nombre}</MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
@@ -230,18 +269,77 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
               </Grid>
             ) : (
               <Box>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
-                  <FormControl sx={{ flexGrow: 1 }} size="small">
-                    <Select value="efectivo">
-                      <MenuItem value="efectivo">Efectivo</MenuItem>
-                      <MenuItem value="yape">Yape</MenuItem>
-                      <MenuItem value="tarjeta">Tarjeta</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField size="small" value={total.toFixed(2)} sx={{ width: 120 }} inputProps={{ style: { textAlign: 'right' } }} />
-                  <IconButton color="error"><X size={20} /></IconButton>
-                </Box>
-                <Button variant="outlined" size="small" fullWidth sx={{ borderStyle: 'dashed' }}>+ Agregar método</Button>
+                {pagos.map((pago, index) => {
+                  const requiereReferencia = metodosPago.find(m => m.id === pago.metodo_id)?.requiere_referencia;
+                  return (
+                    <Box key={pago.id} sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: requiereReferencia ? 1 : 0 }}>
+                        <FormControl sx={{ flexGrow: 1 }} size="small">
+                          <Select 
+                            value={pago.metodo_id || ''} 
+                            onChange={(e) => {
+                              const newPagos = [...pagos];
+                              newPagos[index].metodo_id = e.target.value;
+                              setPagos(newPagos);
+                            }}
+                          >
+                            {metodosPago.map((metodo) => (
+                              <MenuItem key={metodo.id} value={metodo.id}>{metodo.nombre}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <TextField 
+                          size="small" 
+                          value={pago.monto} 
+                          onChange={(e) => {
+                            const newPagos = [...pagos];
+                            newPagos[index].monto = e.target.value;
+                            setPagos(newPagos);
+                          }}
+                          sx={{ width: 120 }} 
+                          inputProps={{ style: { textAlign: 'right' }, type: 'number', step: '0.01' }} 
+                        />
+                        <IconButton 
+                          color="error"
+                          onClick={() => {
+                            if (pagos.length > 1) {
+                              setPagos(pagos.filter(p => p.id !== pago.id));
+                            }
+                          }}
+                          disabled={pagos.length === 1}
+                        >
+                          <X size={20} />
+                        </IconButton>
+                      </Box>
+                      {requiereReferencia && (
+                        <Box sx={{ mb: 1 }}>
+                          <TextField 
+                            size="small" 
+                            fullWidth 
+                            label="Número de Referencia" 
+                            value={pago.referencia} 
+                            onChange={(e) => {
+                              const newPagos = [...pagos];
+                              newPagos[index].referencia = e.target.value;
+                              setPagos(newPagos);
+                            }} 
+                          />
+                        </Box>
+                      )}
+                    </Box>
+                  );
+                })}
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  fullWidth 
+                  sx={{ borderStyle: 'dashed' }}
+                  onClick={() => {
+                    setPagos([...pagos, { id: Date.now(), metodo_id: metodosPago[0]?.id || '', monto: 0, referencia: '' }]);
+                  }}
+                >
+                  + Agregar método
+                </Button>
               </Box>
             )}
           </Paper>
@@ -308,6 +406,47 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   const [procesando, setProcesando] = useState(false);
   const [carrito, setCarrito] = useState([]);
   
+  const [metodosPago, setMetodosPago] = useState([]);
+  const [pagos, setPagos] = useState([]);
+  
+  const [tiposComprobante, setTiposComprobante] = useState([]);
+  const [tipoComprobanteId, setTipoComprobanteId] = useState('');
+
+  const total = carrito.reduce((sum, item) => sum + (parseFloat(item.precio_lista || item.precio_cash) * item.cantidad), 0);
+
+  useEffect(() => {
+    const fetchDatosInit = async () => {
+      try {
+        const [resMetodos, resTipos] = await Promise.all([
+          ventasService.getMetodosPago(),
+          ventasService.getTiposComprobante()
+        ]);
+        const dataMetodos = resMetodos.results || resMetodos;
+        setMetodosPago(dataMetodos);
+        if (dataMetodos && dataMetodos.length > 0) {
+          setPagos([{ id: Date.now(), metodo_id: dataMetodos[0].id, monto: total, referencia: '' }]);
+        }
+        
+        const dataTipos = resTipos.results || resTipos;
+        setTiposComprobante(dataTipos);
+        if (dataTipos && dataTipos.length > 0) {
+          setTipoComprobanteId(dataTipos[0].id);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchDatosInit();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (pagos.length === 1 && total > 0) {
+      setPagos(prev => [{ ...prev[0], monto: total }]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
+
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [resultadosProductos, setResultadosProductos] = useState([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
@@ -315,6 +454,7 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   const [dni, setDni] = useState('');
   const [clienteNombre, setClienteNombre] = useState('');
   const [clienteDireccion, setClienteDireccion] = useState('');
+  const [clienteTelefono, setClienteTelefono] = useState('');
   const [buscandoCliente, setBuscandoCliente] = useState(false);
 
   const buscarRepuestos = async (query) => {
@@ -359,8 +499,6 @@ const PosDirectSale = ({ onBack, onComplete }) => {
     setCarrito(carrito.filter(item => item.id !== id));
   };
 
-  const total = carrito.reduce((sum, item) => sum + (parseFloat(item.precio_lista || item.precio_cash) * item.cantidad), 0);
-
   const handleBuscarCliente = async () => {
     if (!dni || dni.length < 8) return;
     setBuscandoCliente(true);
@@ -368,6 +506,7 @@ const PosDirectSale = ({ onBack, onComplete }) => {
       const res = await clienteService.consultarRuc(dni);
       setClienteNombre(res.nombre_razon_social || '');
       setClienteDireccion(res.direccion || '');
+      setClienteTelefono(res.telefono || '');
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cliente encontrado', showConfirmButton: false, timer: 1500 });
     } catch (error) {
       Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: 'No encontrado en SUNAT/RENIEC', showConfirmButton: false, timer: 1500 });
@@ -430,8 +569,11 @@ const PosDirectSale = ({ onBack, onComplete }) => {
               <Grid item xs={12} sm={6}>
                 <TextField label="Nombre completo" fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField label="Dirección" fullWidth value={clienteDireccion} onChange={(e) => setClienteDireccion(e.target.value)} size="small" />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="Teléfono" fullWidth value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} size="small" />
               </Grid>
             </Grid>
           </Paper>
@@ -446,10 +588,14 @@ const PosDirectSale = ({ onBack, onComplete }) => {
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Tipo de Comprobante</InputLabel>
-                  <Select value="boleta" label="Tipo de Comprobante">
-                    <MenuItem value="boleta">Boleta de Venta</MenuItem>
-                    <MenuItem value="factura">Factura</MenuItem>
-                    <MenuItem value="ticket">Ticket</MenuItem>
+                  <Select 
+                    value={tipoComprobanteId} 
+                    label="Tipo de Comprobante"
+                    onChange={e => setTipoComprobanteId(e.target.value)}
+                  >
+                    {tiposComprobante.map(tc => (
+                      <MenuItem key={tc.id} value={tc.id}>{tc.nombre}</MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
@@ -486,18 +632,77 @@ const PosDirectSale = ({ onBack, onComplete }) => {
               </Grid>
             ) : (
               <Box>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
-                  <FormControl sx={{ flexGrow: 1 }} size="small">
-                    <Select value="efectivo">
-                      <MenuItem value="efectivo">Efectivo</MenuItem>
-                      <MenuItem value="yape">Yape</MenuItem>
-                      <MenuItem value="tarjeta">Tarjeta</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField size="small" value={total.toFixed(2)} sx={{ width: 120 }} inputProps={{ style: { textAlign: 'right' } }} />
-                  <IconButton color="error"><X size={20} /></IconButton>
-                </Box>
-                <Button variant="outlined" size="small" fullWidth sx={{ borderStyle: 'dashed' }}>+ Agregar método</Button>
+                {pagos.map((pago, index) => {
+                  const requiereReferencia = metodosPago.find(m => m.id === pago.metodo_id)?.requiere_referencia;
+                  return (
+                    <Box key={pago.id} sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: requiereReferencia ? 1 : 0 }}>
+                        <FormControl sx={{ flexGrow: 1 }} size="small">
+                          <Select 
+                            value={pago.metodo_id || ''} 
+                            onChange={(e) => {
+                              const newPagos = [...pagos];
+                              newPagos[index].metodo_id = e.target.value;
+                              setPagos(newPagos);
+                            }}
+                          >
+                            {metodosPago.map((metodo) => (
+                              <MenuItem key={metodo.id} value={metodo.id}>{metodo.nombre}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <TextField 
+                          size="small" 
+                          value={pago.monto} 
+                          onChange={(e) => {
+                            const newPagos = [...pagos];
+                            newPagos[index].monto = e.target.value;
+                            setPagos(newPagos);
+                          }}
+                          sx={{ width: 120 }} 
+                          inputProps={{ style: { textAlign: 'right' }, type: 'number', step: '0.01' }} 
+                        />
+                        <IconButton 
+                          color="error"
+                          onClick={() => {
+                            if (pagos.length > 1) {
+                              setPagos(pagos.filter(p => p.id !== pago.id));
+                            }
+                          }}
+                          disabled={pagos.length === 1}
+                        >
+                          <X size={20} />
+                        </IconButton>
+                      </Box>
+                      {requiereReferencia && (
+                        <Box sx={{ mb: 1 }}>
+                          <TextField 
+                            size="small" 
+                            fullWidth 
+                            label="Número de Referencia" 
+                            value={pago.referencia} 
+                            onChange={(e) => {
+                              const newPagos = [...pagos];
+                              newPagos[index].referencia = e.target.value;
+                              setPagos(newPagos);
+                            }} 
+                          />
+                        </Box>
+                      )}
+                    </Box>
+                  );
+                })}
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  fullWidth 
+                  sx={{ borderStyle: 'dashed' }}
+                  onClick={() => {
+                    setPagos([...pagos, { id: Date.now(), metodo_id: metodosPago[0]?.id || '', monto: 0, referencia: '' }]);
+                  }}
+                >
+                  + Agregar método
+                </Button>
               </Box>
             )}
           </Paper>

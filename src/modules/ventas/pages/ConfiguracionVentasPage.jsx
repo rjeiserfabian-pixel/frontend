@@ -3,22 +3,35 @@ import { Settings, Plus, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
-  TextField, Button, FormControlLabel, Checkbox, Box 
+  TextField, Button, FormControlLabel, Checkbox, Box,
+  FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import api from '../../../core/api/axios'; 
 
 const ConfiguracionVentasPage = () => {
-  const [activeTab, setActiveTab] = useState('metodos'); // metodos, series
+  const [activeTab, setActiveTab] = useState('metodos'); // metodos, tipos, series
   
   // States para Métodos de Pago
   const [metodos, setMetodos] = useState([]);
   
   // States para Series
   const [series, setSeries] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
+  
+  // States para Tipos de Comprobante
+  const [tiposComprobante, setTiposComprobante] = useState([]);
 
   // States para Modal MUI
   const [openModal, setOpenModal] = useState(false);
-  const [modalForm, setModalForm] = useState({ nombre: '', requiere_referencia: false });
+  const [modalForm, setModalForm] = useState({ 
+    nombre: '', 
+    requiere_referencia: false,
+    tipo_comprobante: '',
+    serie: '',
+    correlativo_actual: 1,
+    sucursal_id: '',
+    codigo_sunat: ''
+  });
 
   useEffect(() => {
     cargarDatos();
@@ -31,9 +44,16 @@ const ConfiguracionVentasPage = () => {
       if (activeTab === 'metodos') {
         const res = await api.get('/ventas/metodos-pago/');
         setMetodos(getArray(res.data));
+      } else if (activeTab === 'tipos') {
+        const res = await api.get('/ventas/tipos-comprobante/');
+        setTiposComprobante(getArray(res.data));
       } else {
-        const res = await api.get('/ventas/series-comprobante/');
-        setSeries(getArray(res.data));
+        const resSeries = await api.get('/ventas/series-comprobante/');
+        setSeries(getArray(resSeries.data));
+        const resSuc = await api.get('/inventario/sucursales/');
+        setSucursales(getArray(resSuc.data));
+        const resTipos = await api.get('/ventas/tipos-comprobante/');
+        setTiposComprobante(getArray(resTipos.data));
       }
     } catch (error) {
       console.error(error);
@@ -43,7 +63,15 @@ const ConfiguracionVentasPage = () => {
   };
 
   const handleOpenModal = () => {
-    setModalForm({ nombre: '', requiere_referencia: false });
+    setModalForm({ 
+      nombre: '', 
+      requiere_referencia: false,
+      tipo_comprobante: '',
+      serie: '',
+      correlativo_actual: 1,
+      sucursal_id: '',
+      codigo_sunat: ''
+    });
     setOpenModal(true);
   };
 
@@ -58,6 +86,20 @@ const ConfiguracionVentasPage = () => {
           nombre: modalForm.nombre, 
           requiere_referencia: modalForm.requiere_referencia 
         });
+      } else if (activeTab === 'tipos') {
+        await api.post('/ventas/tipos-comprobante/', { 
+          nombre: modalForm.nombre, 
+          codigo_sunat: modalForm.codigo_sunat,
+          estado: true
+        });
+      } else {
+        await api.post('/ventas/series-comprobante/', {
+          tipo_comprobante_id: modalForm.tipo_comprobante,
+          serie: modalForm.serie,
+          correlativo_actual: parseInt(modalForm.correlativo_actual, 10) || 1,
+          sucursal_id: modalForm.sucursal_id,
+          estado: true
+        });
       }
       Swal.fire({icon: 'success', title: 'Creado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
       setOpenModal(false);
@@ -68,7 +110,10 @@ const ConfiguracionVentasPage = () => {
   };
 
   const handleEliminar = async (id, tipo) => {
-    const endpoint = tipo === 'metodos' ? '/ventas/metodos-pago/' : '/ventas/series-comprobante/';
+    let endpoint = '';
+    if (tipo === 'metodos') endpoint = '/ventas/metodos-pago/';
+    else if (tipo === 'tipos') endpoint = '/ventas/tipos-comprobante/';
+    else endpoint = '/ventas/series-comprobante/';
     const result = await Swal.fire({
       title: '¿Eliminar registro?',
       text: "Esta acción no se puede deshacer",
@@ -112,6 +157,12 @@ const ConfiguracionVentasPage = () => {
             Métodos de Pago
           </button>
           <button 
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'tipos' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            onClick={() => setActiveTab('tipos')}
+          >
+            Tipos de Comprobante
+          </button>
+          <button 
             className={`px-6 py-3 font-medium transition-colors ${activeTab === 'series' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             onClick={() => setActiveTab('series')}
           >
@@ -123,7 +174,9 @@ const ConfiguracionVentasPage = () => {
         <div className="flex-1">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-slate-800">
-              {activeTab === 'metodos' ? 'Listado de Métodos de Pago' : 'Series de Comprobante'}
+              {activeTab === 'metodos' && 'Listado de Métodos de Pago'}
+              {activeTab === 'tipos' && 'Tipos de Comprobante'}
+              {activeTab === 'series' && 'Series de Comprobante'}
             </h2>
             <button 
               onClick={handleOpenModal}
@@ -138,8 +191,9 @@ const ConfiguracionVentasPage = () => {
               <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                 <tr>
                   <th className="p-4 font-medium">ID</th>
-                  <th className="p-4 font-medium">Nombre</th>
+                  <th className="p-4 font-medium">{activeTab === 'series' ? 'Serie' : 'Nombre'}</th>
                   {activeTab === 'metodos' && <th className="p-4 font-medium">Requiere Ref.</th>}
+                  {activeTab === 'tipos' && <th className="p-4 font-medium">Código SUNAT</th>}
                   {activeTab === 'series' && <th className="p-4 font-medium">Tipo / Correlativo</th>}
                   <th className="p-4 font-medium text-right">Acciones</th>
                 </tr>
@@ -156,18 +210,31 @@ const ConfiguracionVentasPage = () => {
                   </tr>
                 ))}
                 
+                {activeTab === 'tipos' && tiposComprobante.map(t => (
+                  <tr key={t.id} className="hover:bg-slate-50">
+                    <td className="p-4">{t.id}</td>
+                    <td className="p-4 font-medium text-slate-800">{t.nombre}</td>
+                    <td className="p-4">{t.codigo_sunat || '-'}</td>
+                    <td className="p-4 text-right">
+                      <button onClick={() => handleEliminar(t.id, 'tipos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                    </td>
+                  </tr>
+                ))}
+
                 {activeTab === 'series' && series.map(s => (
                   <tr key={s.id} className="hover:bg-slate-50">
                     <td className="p-4">{s.id}</td>
                     <td className="p-4 font-medium text-slate-800">{s.serie}</td>
-                    <td className="p-4">{s.tipo_comprobante} (Act: {s.correlativo_actual})</td>
+                    <td className="p-4">{s.tipo_comprobante_nombre} (Act: {s.correlativo_actual})</td>
                     <td className="p-4 text-right">
                       <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                     </td>
                   </tr>
                 ))}
 
-                {((activeTab === 'metodos' && metodos.length === 0) || (activeTab === 'series' && series.length === 0)) && (
+                {((activeTab === 'metodos' && metodos.length === 0) || 
+                  (activeTab === 'tipos' && tiposComprobante.length === 0) || 
+                  (activeTab === 'series' && series.length === 0)) && (
                   <tr>
                     <td colSpan="5" className="p-8 text-center text-slate-500">No hay registros configurados.</td>
                   </tr>
@@ -184,23 +251,86 @@ const ConfiguracionVentasPage = () => {
         <DialogTitle>Nuevo Registro</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField 
-              label="Nombre" 
-              fullWidth 
-              value={modalForm.nombre}
-              onChange={e => setModalForm({...modalForm, nombre: e.target.value})}
-              placeholder={activeTab === 'metodos' ? "Ej. Yape" : "Ej. Serie"}
-            />
-            {activeTab === 'metodos' && (
-              <FormControlLabel 
-                control={
-                  <Checkbox 
-                    checked={modalForm.requiere_referencia} 
-                    onChange={e => setModalForm({...modalForm, requiere_referencia: e.target.checked})} 
-                  />
-                } 
-                label="Requiere Referencia / Nro Operación" 
-              />
+            {activeTab === 'metodos' ? (
+              <>
+                <TextField 
+                  label="Nombre" 
+                  fullWidth 
+                  value={modalForm.nombre}
+                  onChange={e => setModalForm({...modalForm, nombre: e.target.value})}
+                  placeholder="Ej. Yape"
+                />
+                <FormControlLabel 
+                  control={
+                    <Checkbox 
+                      checked={modalForm.requiere_referencia} 
+                      onChange={e => setModalForm({...modalForm, requiere_referencia: e.target.checked})} 
+                    />
+                  } 
+                  label="Requiere Referencia / Nro Operación" 
+                />
+              </>
+            ) : activeTab === 'tipos' ? (
+              <>
+                <TextField 
+                  label="Nombre" 
+                  fullWidth 
+                  value={modalForm.nombre}
+                  onChange={e => setModalForm({...modalForm, nombre: e.target.value})}
+                  placeholder="Ej. Factura, Nota de Crédito"
+                />
+                <TextField 
+                  label="Código SUNAT (Opcional)" 
+                  fullWidth 
+                  value={modalForm.codigo_sunat}
+                  onChange={e => setModalForm({...modalForm, codigo_sunat: e.target.value})}
+                  placeholder="Ej. 01, 03, 07"
+                />
+              </>
+            ) : (
+              <>
+                <FormControl fullWidth>
+                  <InputLabel>Tipo de Comprobante</InputLabel>
+                  <Select
+                    value={modalForm.tipo_comprobante}
+                    label="Tipo de Comprobante"
+                    onChange={e => setModalForm({...modalForm, tipo_comprobante: e.target.value})}
+                  >
+                    {tiposComprobante.map(tc => (
+                      <MenuItem key={tc.id} value={tc.id}>{tc.nombre}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <TextField 
+                  label="Serie" 
+                  fullWidth 
+                  value={modalForm.serie}
+                  onChange={e => setModalForm({...modalForm, serie: e.target.value})}
+                  placeholder="Ej. F001 o B001"
+                />
+
+                <TextField 
+                  label="Correlativo Inicial" 
+                  type="number"
+                  fullWidth 
+                  value={modalForm.correlativo_actual}
+                  onChange={e => setModalForm({...modalForm, correlativo_actual: e.target.value})}
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel>Sucursal</InputLabel>
+                  <Select
+                    value={modalForm.sucursal_id}
+                    label="Sucursal"
+                    onChange={e => setModalForm({...modalForm, sucursal_id: e.target.value})}
+                  >
+                    {sucursales.map(s => (
+                      <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </>
             )}
           </Box>
         </DialogContent>
