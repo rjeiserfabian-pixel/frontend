@@ -72,6 +72,11 @@ export const ventasService = {
     return response.data;
   },
 
+  procesarVentaDirecta: async (payload) => {
+    const response = await apiClient.post('/transacciones/directa/', payload);
+    return response.data;
+  },
+
   // ==========================================
   // MANTENIMIENTOS
   // ==========================================
@@ -82,6 +87,11 @@ export const ventasService = {
 
   getTiposComprobante: async () => {
     const response = await apiClient.get('/tipos-comprobante/');
+    return response.data;
+  },
+
+  getSeriesComprobante: async () => {
+    const response = await apiClient.get('/series-comprobante/');
     return response.data;
   },
   

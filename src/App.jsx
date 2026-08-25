@@ -18,6 +18,7 @@ import CajaPage from './modules/ventas/pages/CajaPage';
 import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
 import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
+import RegistroManualVentasPage from './modules/ventas/pages/RegistroManualVentasPage';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/caja" element={<CajaPage />} />
           <Route path="/ventas/pos" element={<POSPage />} />
+          <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
           <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
         </Route>
         
