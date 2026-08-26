@@ -6,10 +6,12 @@ import {
   Avatar, Menu, MenuItem, Box, Divider, useTheme, Collapse, CircularProgress
 } from '@mui/material';
 import { 
-  Menu as MenuIcon, ChevronLeft, LogOut, CarFront, ChevronDown, ChevronRight, Settings
+  Menu as MenuIcon, ChevronLeft, LogOut, CarFront, ChevronDown, ChevronRight, Settings, MapPin
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import api from '../../core/api/axios';
+import { useSucursal } from '../contexts/SucursalContext';
+import { Select, FormControl } from '@mui/material';
 
 const DRAWER_WIDTH = 280;
 
@@ -41,6 +43,8 @@ export default function DashboardLayout() {
   const [menuItems, setMenuItems] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [openModules, setOpenModules] = useState({});
+
+  const { sucursales, activeSucursalId, changeSucursal, loadingContext } = useSucursal();
 
   const theme = useTheme();
   const navigate = useNavigate();
@@ -152,6 +156,39 @@ export default function DashboardLayout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600, color: 'slate.800' }}>
             {getCurrentTitle()}
           </Typography>
+
+          {/* Selector de Sucursal */}
+          {!loadingContext && (
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 3, bgcolor: '#f1f5f9', px: 2, py: 0.5, borderRadius: '20px' }}>
+              <MapPin size={18} color="#3b82f6" style={{ marginRight: '8px' }} />
+              <FormControl variant="standard" sx={{ minWidth: 120 }}>
+                <Select
+                  value={activeSucursalId || ''}
+                  onChange={(e) => changeSucursal(e.target.value)}
+                  disableUnderline
+                  displayEmpty
+                  sx={{ 
+                    fontSize: '0.875rem', 
+                    fontWeight: 600, 
+                    color: '#1e293b',
+                    '& .MuiSelect-select': { py: 0.5 }
+                  }}
+                >
+                  {sucursales && sucursales.length > 0 ? (
+                    sucursales.map(sucursal => (
+                      <MenuItem key={sucursal.id} value={sucursal.id.toString()}>
+                        {sucursal.nombre}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem value="" disabled>
+                      Sin sucursales
+                    </MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
 
           {/* User Profile Menu */}
           <div>

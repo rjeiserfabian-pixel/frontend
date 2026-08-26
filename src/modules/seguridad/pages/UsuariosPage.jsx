@@ -15,12 +15,14 @@ import Swal from 'sweetalert2';
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState([]);
   const [rolesDisponibles, setRolesDisponibles] = useState([]);
+  const [sucursalesDisponibles, setSucursalesDisponibles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   
   // Estado para los roles seleccionados
   const [selectedRoles, setSelectedRoles] = useState([]);
+  const [selectedSucursales, setSelectedSucursales] = useState([]);
 
   // Pagination states
   const [page, setPage] = useState(0);
@@ -32,9 +34,10 @@ export default function UsuariosPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resUsuarios, resRoles] = await Promise.all([
+      const [resUsuarios, resRoles, resSucursales] = await Promise.all([
         api.get(`seguridad/usuarios/?page=${page + 1}`),
-        api.get('seguridad/roles/')
+        api.get('seguridad/roles/'),
+        api.get('inventario/sucursales/')
       ]);
       
       const dataUsuarios = resUsuarios.data.data;
@@ -43,6 +46,9 @@ export default function UsuariosPage() {
 
       const dataRoles = resRoles.data.data;
       setRolesDisponibles(dataRoles.results ? dataRoles.results : (Array.isArray(dataRoles) ? dataRoles : []));
+      
+      const dataSucursales = resSucursales.data.results || resSucursales.data;
+      setSucursalesDisponibles(Array.isArray(dataSucursales) ? dataSucursales : []);
     } catch (error) {
       console.error("Error al cargar datos:", error);
     } finally {
@@ -64,10 +70,12 @@ export default function UsuariosPage() {
         apellidos: user.apellidos 
       });
       setSelectedRoles(user.roles ? user.roles.map(r => r.id_rol) : []);
+      setSelectedSucursales(user.sucursales ? user.sucursales.map(s => s.id_sucursal) : []);
     } else {
       setEditingId(null);
       reset({ username: '', email: '', nombres: '', apellidos: '', password: '' });
       setSelectedRoles([]);
+      setSelectedSucursales([]);
     }
     setOpenModal(true);
   };
@@ -76,7 +84,7 @@ export default function UsuariosPage() {
 
   const onSubmit = async (data) => {
     try {
-      const payload = { ...data, roles_ids: selectedRoles };
+      const payload = { ...data, roles_ids: selectedRoles, sucursales_ids: selectedSucursales };
       
       if (editingId) {
         if (!payload.password) delete payload.password;
@@ -134,6 +142,11 @@ export default function UsuariosPage() {
     setSelectedRoles(typeof value === 'string' ? value.split(',') : value);
   };
 
+  const handleSucursalChange = (event) => {
+    const { target: { value } } = event;
+    setSelectedSucursales(typeof value === 'string' ? value.split(',') : value);
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -158,6 +171,7 @@ export default function UsuariosPage() {
               <TableCell sx={{ fontWeight: 600 }}>Usuario</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Nombre Completo</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Roles</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Sucursales</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Estado</TableCell>
               <TableCell align="right" sx={{ fontWeight: 600 }}>Acciones</TableCell>
@@ -181,6 +195,16 @@ export default function UsuariosPage() {
                     ))}
                     {(!user.roles || user.roles.length === 0) && (
                       <Typography variant="body2" color="text.secondary">Sin rol</Typography>
+                    )}
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    {user.sucursales && user.sucursales.map(suc => (
+                      <Chip key={suc.id_sucursal} label={suc.nombre} size="small" variant="outlined" color="secondary" />
+                    ))}
+                    {(!user.sucursales || user.sucursales.length === 0) && (
+                      <Typography variant="body2" color="text.secondary">Ninguna</Typography>
                     )}
                   </Box>
                 </TableCell>
@@ -288,6 +312,32 @@ export default function UsuariosPage() {
                   <MenuItem key={rol.id_rol} value={rol.id_rol}>
                     <Checkbox checked={selectedRoles.indexOf(rol.id_rol) > -1} />
                     <ListItemText primary={rol.nombre} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth size="small">
+              <InputLabel id="sucursales-label">Sucursales Asignadas</InputLabel>
+              <Select
+                labelId="sucursales-label"
+                multiple
+                value={selectedSucursales}
+                onChange={handleSucursalChange}
+                input={<OutlinedInput label="Sucursales Asignadas" />}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => {
+                      const sucObj = sucursalesDisponibles.find(s => s.id === value);
+                      return <Chip key={value} label={sucObj ? sucObj.nombre : value} size="small" />;
+                    })}
+                  </Box>
+                )}
+              >
+                {sucursalesDisponibles.map((sucursal) => (
+                  <MenuItem key={sucursal.id} value={sucursal.id}>
+                    <Checkbox checked={selectedSucursales.indexOf(sucursal.id) > -1} />
+                    <ListItemText primary={sucursal.nombre} />
                   </MenuItem>
                 ))}
               </Select>

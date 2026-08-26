@@ -48,5 +48,13 @@ export const clienteService = {
       { signal }
     );
     return response.data;
+  },
+
+  // Buscar cliente existente en nuestra BD por DNI/RUC
+  buscarPorDni: async (dni) => {
+    const response = await api.get(`${BASE_URL}?search=${dni}`);
+    const data = response.data;
+    const lista = Array.isArray(data) ? data : (data.results || []);
+    return lista.find(c => c.dni === dni) || null;
   }
 };

@@ -9,14 +9,16 @@ import {
 import api from '../../../core/api/axios'; 
 
 const ConfiguracionVentasPage = () => {
-  const [activeTab, setActiveTab] = useState('metodos'); // metodos, tipos, series
+  const [activeTab, setActiveTab] = useState('metodos'); // metodos, tipos, series, cajas
   
   // States para Métodos de Pago
   const [metodos, setMetodos] = useState([]);
   
-  // States para Series
+  // States para Series y Cajas
   const [series, setSeries] = useState([]);
   const [sucursales, setSucursales] = useState([]);
+  const [almacenes, setAlmacenes] = useState([]);
+  const [cajas, setCajas] = useState([]);
   
   // States para Tipos de Comprobante
   const [tiposComprobante, setTiposComprobante] = useState([]);
@@ -32,7 +34,8 @@ const ConfiguracionVentasPage = () => {
     serie: '',
     correlativo_actual: 1,
     sucursal_id: '',
-    codigo_sunat: ''
+    codigo_sunat: '',
+    almacen_defecto_id: ''
   });
 
   useEffect(() => {
@@ -49,6 +52,13 @@ const ConfiguracionVentasPage = () => {
       } else if (activeTab === 'tipos') {
         const res = await api.get('/ventas/tipos-comprobante/');
         setTiposComprobante(getArray(res.data));
+      } else if (activeTab === 'cajas') {
+        const resCajas = await api.get('/ventas/cajas/');
+        setCajas(getArray(resCajas.data));
+        const resSuc = await api.get('/inventario/sucursales/');
+        setSucursales(getArray(resSuc.data));
+        const resAlm = await api.get('/inventario/almacenes/');
+        setAlmacenes(getArray(resAlm.data));
       } else {
         const resSeries = await api.get('/ventas/series-comprobante/');
         setSeries(getArray(resSeries.data));
@@ -73,7 +83,8 @@ const ConfiguracionVentasPage = () => {
       serie: '',
       correlativo_actual: 0,
       sucursal_id: '',
-      codigo_sunat: ''
+      codigo_sunat: '',
+      almacen_defecto_id: ''
     });
     setOpenModal(true);
   };
@@ -88,6 +99,13 @@ const ConfiguracionVentasPage = () => {
       setModalForm({ ...modalForm, nombre: item.nombre, requiere_referencia: item.requiere_referencia });
     } else if (tipo === 'tipos') {
       setModalForm({ ...modalForm, nombre: item.nombre, codigo_sunat: item.codigo_sunat || '' });
+    } else if (tipo === 'cajas') {
+      setModalForm({ 
+        ...modalForm, 
+        nombre: item.nombre, 
+        sucursal_id: item.sucursal,
+        almacen_defecto_id: item.almacen_defecto || ''
+      });
     } else if (tipo === 'series') {
       setModalForm({ 
         ...modalForm, 
@@ -118,6 +136,15 @@ const ConfiguracionVentasPage = () => {
         };
         if (editId) await api.put(`/ventas/tipos-comprobante/${editId}/`, payload);
         else { const res = await api.post('/ventas/tipos-comprobante/', payload); savedId = res.data.id; }
+      } else if (activeTab === 'cajas') {
+        const payload = { 
+          nombre: modalForm.nombre, 
+          sucursal: modalForm.sucursal_id,
+          almacen_defecto: modalForm.almacen_defecto_id || null,
+          estado: true
+        };
+        if (editId) await api.put(`/ventas/cajas/${editId}/`, payload);
+        else { const res = await api.post('/ventas/cajas/', payload); savedId = res.data.id; }
       } else {
         const payload = {
           tipo_comprobante: modalForm.tipo_comprobante,
@@ -150,6 +177,7 @@ const ConfiguracionVentasPage = () => {
     let endpoint = '';
     if (tipo === 'metodos') endpoint = '/ventas/metodos-pago/';
     else if (tipo === 'tipos') endpoint = '/ventas/tipos-comprobante/';
+    else if (tipo === 'cajas') endpoint = '/ventas/cajas/';
     else endpoint = '/ventas/series-comprobante/';
     const result = await Swal.fire({
       title: '¿Eliminar registro?',
@@ -200,6 +228,12 @@ const ConfiguracionVentasPage = () => {
             Tipos de Comprobante
           </button>
           <button 
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'cajas' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            onClick={() => setActiveTab('cajas')}
+          >
+            Cajas
+          </button>
+          <button 
             className={`px-6 py-3 font-medium transition-colors ${activeTab === 'series' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             onClick={() => setActiveTab('series')}
           >
@@ -213,6 +247,7 @@ const ConfiguracionVentasPage = () => {
             <h2 className="text-xl font-semibold text-slate-800">
               {activeTab === 'metodos' && 'Listado de Métodos de Pago'}
               {activeTab === 'tipos' && 'Tipos de Comprobante'}
+              {activeTab === 'cajas' && 'Cajas Registradoras'}
               {activeTab === 'series' && 'Series de Comprobante'}
             </h2>
             <button 
@@ -231,6 +266,8 @@ const ConfiguracionVentasPage = () => {
                   <th className="p-4 font-medium">{activeTab === 'series' ? 'Serie' : 'Nombre'}</th>
                   {activeTab === 'metodos' && <th className="p-4 font-medium">Requiere Ref.</th>}
                   {activeTab === 'tipos' && <th className="p-4 font-medium">Código SUNAT</th>}
+                  {activeTab === 'cajas' && <th className="p-4 font-medium">Sucursal</th>}
+                  {activeTab === 'cajas' && <th className="p-4 font-medium">Almacén por Defecto</th>}
                   {activeTab === 'series' && <th className="p-4 font-medium">Tipo / Correlativo</th>}
                   <th className="p-4 font-medium text-right">Acciones</th>
                 </tr>
@@ -272,11 +309,25 @@ const ConfiguracionVentasPage = () => {
                   </tr>
                 ))}
 
+                {activeTab === 'cajas' && cajas.map((c, index) => (
+                  <tr key={c.id} id={`row-${c.id}`} className={`transition-colors duration-1000 ${highlightId === c.id ? 'bg-blue-100' : 'hover:bg-slate-50'}`}>
+                    <td className="p-4">{index + 1}</td>
+                    <td className="p-4 font-medium text-slate-800">{c.nombre}</td>
+                    <td className="p-4">{c.sucursal_nombre}</td>
+                    <td className="p-4">{c.almacen_nombre || '-'}</td>
+                    <td className="p-4 text-right">
+                      <button onClick={() => handleEditar(c, 'cajas')} className="text-blue-500 hover:text-blue-700 p-2"><Edit2 size={18} /></button>
+                      <button onClick={() => handleEliminar(c.id, 'cajas')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                    </td>
+                  </tr>
+                ))}
+
                 {((activeTab === 'metodos' && metodos.length === 0) || 
                   (activeTab === 'tipos' && tiposComprobante.length === 0) || 
+                  (activeTab === 'cajas' && cajas.length === 0) ||
                   (activeTab === 'series' && series.length === 0)) && (
                   <tr>
-                    <td colSpan="5" className="p-8 text-center text-slate-500">No hay registros configurados.</td>
+                    <td colSpan="6" className="p-8 text-center text-slate-500">No hay registros configurados.</td>
                   </tr>
                 )}
               </tbody>
@@ -326,6 +377,48 @@ const ConfiguracionVentasPage = () => {
                   onChange={e => setModalForm({...modalForm, codigo_sunat: e.target.value})}
                   placeholder="Ej. 01, 03, 07"
                 />
+              </>
+            ) : activeTab === 'cajas' ? (
+              <>
+                <TextField 
+                  label="Nombre de la Caja" 
+                  fullWidth 
+                  value={modalForm.nombre}
+                  onChange={e => setModalForm({...modalForm, nombre: e.target.value})}
+                  placeholder="Ej. Caja Principal, Caja Taller"
+                />
+                <FormControl fullWidth>
+                  <InputLabel>Sucursal</InputLabel>
+                  <Select
+                    value={modalForm.sucursal_id}
+                    label="Sucursal"
+                    onChange={e => {
+                      setModalForm({
+                        ...modalForm, 
+                        sucursal_id: e.target.value,
+                        almacen_defecto_id: ''
+                      });
+                    }}
+                  >
+                    {sucursales.map(s => (
+                      <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <FormControl fullWidth disabled={!modalForm.sucursal_id}>
+                  <InputLabel>Almacén por Defecto</InputLabel>
+                  <Select
+                    value={modalForm.almacen_defecto_id}
+                    label="Almacén por Defecto"
+                    onChange={e => setModalForm({...modalForm, almacen_defecto_id: e.target.value})}
+                  >
+                    <MenuItem value=""><em>Ninguno (Toma almacén principal al vender)</em></MenuItem>
+                    {almacenes.filter(a => a.sucursal === modalForm.sucursal_id).map(a => (
+                      <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </>
             ) : (
               <>

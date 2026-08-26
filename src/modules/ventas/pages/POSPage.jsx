@@ -13,9 +13,11 @@ import Swal from 'sweetalert2';
 import { ventasService } from './../../ventas/services/ventasApi';
 import { inventarioService } from './../../inventario/services/inventarioService';
 import { clienteService } from './../../clientes/services/clienteService';
+import api from '../../../core/api/axios';
 
-// -------------------------------------------------------------
-// VISTA 1: LISTA DE PEDIDOS (LIGHT THEME)
+import { useSucursal } from '../../../shared/contexts/SucursalContext';
+// ...
+
 // -------------------------------------------------------------
 const PosOrderList = ({ onSelectOrder, onNewDirectSale }) => {
   const [tabValue, setTabValue] = useState(0);
@@ -439,6 +441,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 // VISTA 3: VENTA DIRECTA (TOTALMENTE EDITABLE)
 // -------------------------------------------------------------
 const PosDirectSale = ({ onBack, onComplete }) => {
+  const { activeSucursalId } = useSucursal();
   const [condicionPago, setCondicionPago] = useState('CONTADO');
   const [fechaLimite, setFechaLimite] = useState(() => {
     const d = new Date();
@@ -457,6 +460,9 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   const [seriesComprobante, setSeriesComprobante] = useState([]);
   const [serieId, setSerieId] = useState('');
 
+  const [todosAlmacenes, setTodosAlmacenes] = useState([]);
+  const [almacenOrigenId, setAlmacenOrigenId] = useState('');
+
   const total = carrito.reduce((sum, item) => sum + ((parseFloat(item.precio_venta) || 0) * item.cantidad), 0);
   const totalSinDescuento = carrito.reduce((sum, item) => sum + ((parseFloat(item.precio_lista) || parseFloat(item.precio_venta) || 0) * item.cantidad), 0);
   const totalDescuentos = totalSinDescuento - total;
@@ -464,10 +470,11 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   useEffect(() => {
     const fetchDatosInit = async () => {
       try {
-        const [resMetodos, resTipos, resSeries] = await Promise.all([
+        const [resMetodos, resTipos, resSeries, resAlmacenes] = await Promise.all([
           ventasService.getMetodosPago(),
           ventasService.getTiposComprobante(),
-          ventasService.getSeriesComprobante()
+          ventasService.getSeriesComprobante(),
+          api.get('/inventario/almacenes/')
         ]);
         const dataMetodos = resMetodos.results || resMetodos;
         setMetodosPago(dataMetodos);
@@ -480,6 +487,9 @@ const PosDirectSale = ({ onBack, onComplete }) => {
 
         const dataSeries = resSeries.results || resSeries;
         setSeriesComprobante(dataSeries);
+
+        const dataAlmacenes = resAlmacenes.data.results || resAlmacenes.data;
+        setTodosAlmacenes(Array.isArray(dataAlmacenes) ? dataAlmacenes : []);
       } catch (error) {
         console.error(error);
       }
@@ -502,6 +512,18 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   }, [tipoComprobanteId, seriesComprobante]);
 
   useEffect(() => {
+    if (activeSucursalId && todosAlmacenes.length > 0) {
+      const sucursalAlmacenes = todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId));
+      if (sucursalAlmacenes.length > 0) {
+        // Seleccionamos el primero por defecto (Almacén Principal de esta sucursal)
+        setAlmacenOrigenId(sucursalAlmacenes[0].id);
+      } else {
+        setAlmacenOrigenId('');
+      }
+    }
+  }, [activeSucursalId, todosAlmacenes]);
+
+  useEffect(() => {
     if (pagos.length === 1 && total > 0) {
       setPagos(prev => [{ ...prev[0], monto: total }]);
     }
@@ -515,6 +537,7 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   const [clienteId, setClienteId] = useState(null);
   const [dni, setDni] = useState('');
   const [clienteNombre, setClienteNombre] = useState('');
+  const [clienteApellidos, setClienteApellidos] = useState('');
   const [clienteDireccion, setClienteDireccion] = useState('');
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [buscandoCliente, setBuscandoCliente] = useState(false);
@@ -600,13 +623,22 @@ const PosDirectSale = ({ onBack, onComplete }) => {
       
       if (res.origen === 'local') {
         setClienteId(res.data.id);
-        setClienteNombre(res.data.nombres || res.data.razon_social || '');
+        setClienteNombre(res.data.nombres || '');
+        setClienteApellidos(res.data.apellidos || '-');
         setClienteDireccion(res.data.direccion || '');
         setClienteTelefono(res.data.telefono || '');
         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cliente cargado de BD', showConfirmButton: false, timer: 1500 });
       } else {
         setClienteId(null); // Nuevo cliente
-        setClienteNombre(res.data.nombres || res.data.razon_social || '');
+        if (dni.length === 11) {
+          setClienteNombre(res.data.razon_social || res.data.nombre_o_razon_social || '');
+          setClienteApellidos('-');
+        } else {
+          setClienteNombre(res.data.nombres || '');
+          const paterno = res.data.apellido_paterno || '';
+          const materno = res.data.apellido_materno || '';
+          setClienteApellidos(`${paterno} ${materno}`.trim());
+        }
         setClienteDireccion(res.data.direccion || '');
         setClienteTelefono(''); // Para que lo llene el usuario
         Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Datos obtenidos de RENIEC/SUNAT. Complete los campos restantes.', showConfirmButton: false, timer: 3000 });
@@ -629,7 +661,20 @@ const PosDirectSale = ({ onBack, onComplete }) => {
       return;
     }
     if (!dni || !clienteNombre) {
-      Swal.fire('Atención', 'Debe ingresar al menos el DNI/RUC y el Nombre del cliente.', 'warning');
+      Swal.fire('Atención', 'Debe ingresar al menos el DNI/RUC y los Nombres del cliente.', 'warning');
+      return;
+    }
+
+    if (!activeSucursalId) {
+      Swal.fire('Atención', 'Seleccione una sucursal en la parte superior antes de continuar.', 'warning');
+      return;
+    }
+
+    // Verificar que haya una sesión de caja abierta
+    const sesionStr = localStorage.getItem('sesion_caja_activa');
+    const sesionActiva = sesionStr ? JSON.parse(sesionStr) : null;
+    if (!sesionActiva?.id) {
+      Swal.fire('Caja Cerrada', 'Debe aperturar su caja en "Gestión de Caja" antes de procesar una venta.', 'warning');
       return;
     }
 
@@ -638,26 +683,49 @@ const PosDirectSale = ({ onBack, onComplete }) => {
       
       let finalClienteId = clienteId;
       if (!finalClienteId) {
-        // Guardado transparente del nuevo cliente antes de confirmar la venta
-        const nuevoCliente = {
-          tipo_documento: dni.length === 11 ? 'RUC' : 'DNI',
-          dni: dni.length === 8 ? dni : '',
-          ruc: dni.length === 11 ? dni : '',
-          nombres: dni.length === 8 ? clienteNombre : '',
-          apellidos: '', // Queda en blanco, opcional
-          razon_social: dni.length === 11 ? clienteNombre : '',
-          direccion: clienteDireccion,
-          telefono: clienteTelefono,
-          email: '' // Opcional
-        };
-        const resCli = await clienteService.crear(nuevoCliente);
-        finalClienteId = resCli.id;
-        setClienteId(finalClienteId); // Actualizar estado por si acaso falla lo que sigue
+        // 1. Intentar encontrar cliente existente por DNI antes de crear uno nuevo
+        const existente = await clienteService.buscarPorDni(dni);
+        if (existente) {
+          finalClienteId = existente.id;
+          setClienteId(finalClienteId);
+        } else {
+          // 2. Solo crear si no existe
+          const nuevoCliente = {
+            dni: dni,
+            nombres: clienteNombre,
+            apellidos: dni.length === 11 ? '-' : (clienteApellidos || '-'),
+            direccion: clienteDireccion,
+            telefono: clienteTelefono,
+            email: ''
+          };
+          const resCli = await clienteService.crear(nuevoCliente);
+          finalClienteId = resCli.id;
+          setClienteId(finalClienteId);
+        }
       }
 
-      await new Promise(r => setTimeout(r, 800)); // Simulación temporal de crear Venta
+      const payloadVenta = {
+        sucursal_id: parseInt(activeSucursalId, 10),
+        cliente_id: finalClienteId,
+        tipo_comprobante_id: tipoComprobanteId,
+        serie_id: serieId,
+        condicion_pago: condicionPago,
+        almacen_origen_id: almacenOrigenId || null,
+        sesion_caja_id: sesionActiva.id,
+        detalles: carrito.map(item => ({
+          repuesto_id: item.id,
+          cantidad: item.cantidad,
+          precio_venta: parseFloat(item.precio_venta) || 0
+        })),
+        pagos: pagos,
+      };
+
+      console.log('Enviando venta con payload:', payloadVenta);
+
+      // Conexión real al backend
+      await api.post('/ventas/transacciones/directa/', payloadVenta);
       
-      Swal.fire('Venta Directa Procesada', 'La venta se ha registrado exitosamente.', 'success').then(() => onComplete());
+      Swal.fire('Venta Directa Procesada', 'La venta se ha registrado exitosamente en la base de datos.', 'success').then(() => onComplete());
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'Hubo un problema al procesar la venta o registrar el cliente.', 'error');
@@ -683,7 +751,7 @@ const PosDirectSale = ({ onBack, onComplete }) => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField 
                   label="DNI / RUC" 
                   fullWidth 
@@ -702,8 +770,11 @@ const PosDirectSale = ({ onBack, onComplete }) => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="Nombre completo" fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
+              <Grid item xs={12} sm={4}>
+                <TextField label={dni.length === 11 ? "Razón Social" : "Nombres"} fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField label="Apellidos" fullWidth value={clienteApellidos} onChange={(e) => setClienteApellidos(e.target.value)} size="small" disabled={dni.length === 11} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="Dirección" fullWidth value={clienteDireccion} onChange={(e) => setClienteDireccion(e.target.value)} size="small" />
@@ -759,6 +830,23 @@ const PosDirectSale = ({ onBack, onComplete }) => {
                   }
                 }}
               />
+              
+              <FormControl size="small" sx={{ flex: 1, minWidth: 200 }}>
+                <InputLabel>Almacén de Origen</InputLabel>
+                <Select
+                  value={almacenOrigenId}
+                  label="Almacén de Origen"
+                  onChange={e => setAlmacenOrigenId(e.target.value)}
+                  disabled={!activeSucursalId}
+                >
+                  {todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId)).map(a => (
+                    <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
+                  ))}
+                  {todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId)).length === 0 && (
+                    <MenuItem value="" disabled>No hay almacenes</MenuItem>
+                  )}
+                </Select>
+              </FormControl>
             </Box>
           </Paper>
         </Grid>

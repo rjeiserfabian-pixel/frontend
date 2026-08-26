@@ -19,10 +19,12 @@ import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
 import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
 import RegistroManualVentasPage from './modules/ventas/pages/RegistroManualVentasPage';
+import { SucursalProvider } from './shared/contexts/SucursalContext';
 
 function App() {
   return (
-    <BrowserRouter>
+    <SucursalProvider>
+      <BrowserRouter>
       <Routes>
         {/* Rutas Públicas / Kiosko (Full Screen) */}
         <Route path="/login" element={<LoginPage />} />
@@ -53,7 +55,8 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </SucursalProvider>
   );
 }
 
