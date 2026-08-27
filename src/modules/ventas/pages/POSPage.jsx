@@ -289,7 +289,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 
         {/* LADO DERECHO: PAGO */}
         <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 3, boxShadow: 1, height: '100%', width: '100%' }}>
+          <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
               CONDICIÓN DE PAGO
@@ -463,6 +463,10 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   const [todosAlmacenes, setTodosAlmacenes] = useState([]);
   const [almacenOrigenId, setAlmacenOrigenId] = useState('');
 
+  const [moneda, setMoneda] = useState('PEN');
+  const [tipoCambio, setTipoCambio] = useState(1.0000);
+  const [cargandoTC, setCargandoTC] = useState(false);
+
   const total = carrito.reduce((sum, item) => sum + ((parseFloat(item.precio_venta) || 0) * item.cantidad), 0);
   const totalSinDescuento = carrito.reduce((sum, item) => sum + ((parseFloat(item.precio_lista) || parseFloat(item.precio_venta) || 0) * item.cantidad), 0);
   const totalDescuentos = totalSinDescuento - total;
@@ -529,6 +533,28 @@ const PosDirectSale = ({ onBack, onComplete }) => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total]);
+
+  useEffect(() => {
+    const fetchTC = async () => {
+      if (moneda !== 'PEN') {
+        setCargandoTC(true);
+        try {
+          const api = (await import('../../../core/api/axios')).default;
+          const res = await api.get('/ventas/tipo-cambio/');
+          if (res.data && res.data.venta) {
+            setTipoCambio(parseFloat(res.data.venta));
+          }
+        } catch (error) {
+          console.error("Error al obtener TC", error);
+        } finally {
+          setCargandoTC(false);
+        }
+      } else {
+        setTipoCambio(1.0000);
+      }
+    };
+    fetchTC();
+  }, [moneda]);
 
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [resultadosProductos, setResultadosProductos] = useState([]);
@@ -718,6 +744,8 @@ const PosDirectSale = ({ onBack, onComplete }) => {
           precio_venta: parseFloat(item.precio_venta) || 0
         })),
         pagos: pagos,
+        moneda: moneda,
+        tipo_cambio: tipoCambio
       };
 
       console.log('Enviando venta con payload:', payloadVenta);
@@ -845,15 +873,16 @@ const PosDirectSale = ({ onBack, onComplete }) => {
                   {todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId)).length === 0 && (
                     <MenuItem value="" disabled>No hay almacenes</MenuItem>
                   )}
-                </Select>
-              </FormControl>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* LADO DERECHO: CONDICION DE PAGO */}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Paper>
+          </Grid>
+        {/* LADO DERECHO: CONDICION DE PAGO Y MONEDA */}
         <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 3, boxShadow: 1, height: '100%', width: '100%' }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6} md={12}>
+              <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
               CONDICIÓN DE PAGO
@@ -955,7 +984,50 @@ const PosDirectSale = ({ onBack, onComplete }) => {
                 </Button>
               </Box>
             )}
-          </Paper>
+              </Paper>
+            </Grid>
+
+            {/* SECCION 4: MONEDA Y TIPO DE CAMBIO */}
+            <Grid item xs={12} sm={6} md={12}>
+              <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
+                <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>4</span>
+                  MONEDA Y TIPO DE CAMBIO
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <FormControl size="small" sx={{ flex: 1, minWidth: 150 }}>
+                    <InputLabel>Moneda</InputLabel>
+                    <Select 
+                      value={moneda} 
+                      label="Moneda"
+                      onChange={e => setMoneda(e.target.value)}
+                    >
+                      <MenuItem value="PEN">Soles (S/)</MenuItem>
+                      <MenuItem value="USD">Dólares ($)</MenuItem>
+                      <MenuItem value="EUR">Euros (€)</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField 
+                    size="small" 
+                    label="Tipo de Cambio (TC)" 
+                    value={tipoCambio.toFixed(4)}
+                    disabled={moneda === 'PEN'}
+                    onChange={e => setTipoCambio(parseFloat(e.target.value) || 0)}
+                    sx={{ width: 150 }}
+                    InputProps={{
+                      endAdornment: cargandoTC ? (
+                        <InputAdornment position="end">
+                          <CircularProgress size={16} />
+                        </InputAdornment>
+                      ) : null
+                    }}
+                    helperText={moneda === 'PEN' ? "No aplica" : "Obtenido de SUNAT"}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
         </Grid>
 
       </Grid>

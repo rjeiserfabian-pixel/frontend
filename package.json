@@ -18,10 +18,13 @@
     "axios": "^1.19.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.33.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.85.0",
+    "react-qr-code": "^2.2.0",
     "react-router-dom": "^7.18.2",
+    "react-to-print": "^3.3.0",
     "sweetalert2": "^11.26.25",
     "tailwind-merge": "^3.6.0",
     "zod": "^3.25.76"

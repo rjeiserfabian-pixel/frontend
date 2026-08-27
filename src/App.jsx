@@ -4,6 +4,9 @@ import DashboardLayout from './shared/layouts/DashboardLayout';
 import DashboardPage from './modules/dashboard/pages/DashboardPage';
 import UsuariosPage from './modules/seguridad/pages/UsuariosPage';
 import RolesPage from './modules/seguridad/pages/RolesPage';
+import ConfiguracionEmpresaPage from './modules/seguridad/pages/ConfiguracionEmpresaPage';
+import UbigeoPage from './modules/seguridad/pages/UbigeoPage';
+import PerfilPage from './modules/seguridad/pages/PerfilPage';
 import CategoriasPage from './modules/inventario/pages/CategoriasPage';
 import MarcasPage from './modules/inventario/pages/MarcasPage';
 import RepuestosPage from './modules/inventario/pages/RepuestosPage';
@@ -35,6 +38,9 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/roles" element={<RolesPage />} />
+          <Route path="/seguridad/empresa" element={<ConfiguracionEmpresaPage />} />
+          <Route path="/seguridad/ubigeo" element={<UbigeoPage />} />
+          <Route path="/seguridad/perfil" element={<PerfilPage />} />
           <Route path="/inventario/categorias" element={<CategoriasPage />} />
           <Route path="/inventario/marcas" element={<MarcasPage />} />
           <Route path="/inventario/repuestos" element={<RepuestosPage />} />

@@ -31,6 +31,7 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'banknote': Icons.Banknote,
     'store': Icons.Store,
     'filetext': Icons.FileText,
+    'map-pin': Icons.MapPin,
   };
   const IconComponent = iconMapping[name.toLowerCase()] || Icons.Circle;
   return <IconComponent size={size} />;
@@ -228,7 +229,7 @@ export default function DashboardLayout() {
                 <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
               </Box>
               <Divider />
-              <MenuItem onClick={handleClose} sx={{ py: 1.5 }}>
+              <MenuItem onClick={() => { handleClose(); navigate('/seguridad/perfil'); }} sx={{ py: 1.5 }}>
                 <ListItemIcon><Settings size={20} /></ListItemIcon>
                 Configuración
               </MenuItem>
