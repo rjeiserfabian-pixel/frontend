@@ -54,10 +54,19 @@ body {
   }
 }
 
-/* Fix: inputs del login con fondo transparente no autocomplete azul */
+/* Fix: autofill del navegador - texto oscuro para formularios normales */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #1e293b !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Fix: autofill específico para inputs del login (fondo oscuro) */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset !important;
   -webkit-text-fill-color: #ffffff !important;
   transition: background-color 5000s ease-in-out 0s;

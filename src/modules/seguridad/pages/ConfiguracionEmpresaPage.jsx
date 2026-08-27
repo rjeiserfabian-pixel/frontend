@@ -163,154 +163,164 @@ export const ConfiguracionEmpresaPage = () => {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 'lg', margin: '0 auto' }}>
-      <Typography variant="h5" fontWeight="bold" mb={3}>Configuración de Empresa</Typography>
+    <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
-      <Paper sx={{ p: 4 }}>
-        <form onSubmit={handleSubmit}>
-          <Typography variant="h6" color="primary" gutterBottom>Datos Generales</Typography>
-          <Divider sx={{ mb: 3 }} />
+      {/* HEADER */}
+      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            Configuración de Empresa
+          </h1>
+          <p className="text-slate-500 mt-1">Gestione los datos generales y la ubicación de su negocio.</p>
+        </div>
+        <div>
+          <Button 
+            onClick={handleSubmit}
+            variant="contained" 
+            color="primary" 
+            size="large"
+            startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save size={20} />}
+            disabled={saving}
+            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 'bold' }}
+          >
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
+        </div>
+      </div>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={8}>
-              <TextField 
-                label="Razón Social" 
+      <div className="flex-1 overflow-y-auto flex flex-col gap-6">
+        
+        {/* DATOS GENERALES */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <p className="text-base font-bold text-blue-600 mb-1">Datos Generales</p>
+          <hr className="border-slate-200 mb-6" />
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-12 md:col-span-8">
+              <TextField
+                label="Razón Social"
                 name="razon_social"
-                fullWidth 
-                value={formData.razon_social} 
-                onChange={handleChange} 
-                required 
+                fullWidth
+                value={formData.razon_social}
+                onChange={handleChange}
+                required
+                variant="outlined"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField 
-                label="RUC" 
+            </div>
+            <div className="col-span-12 md:col-span-4">
+              <TextField
+                label="RUC"
                 name="ruc"
-                fullWidth 
-                value={formData.ruc} 
-                onChange={handleChange} 
-                required 
+                fullWidth
+                value={formData.ruc}
+                onChange={handleChange}
+                required
+                variant="outlined"
               />
-            </Grid>
+            </div>
+          </div>
+        </div>
 
-            <Grid item xs={12}>
-              <Typography variant="h6" color="primary" gutterBottom sx={{ mt: 2 }}>Ubicación y Contacto</Typography>
-              <Divider sx={{ mb: 3 }} />
-            </Grid>
+        {/* UBICACIÓN Y CONTACTO */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <p className="text-base font-bold text-blue-600 mb-1">Ubicación y Contacto</p>
+          <hr className="border-slate-200 mb-6" />
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <TextField
+              select
+              fullWidth
+              variant="outlined"
+              label="Departamento"
+              name="departamento"
+              value={formData.departamento}
+              onChange={handleChange}
+            >
+              <MenuItem value=""><em>Seleccione...</em></MenuItem>
+              {departamentos.map(dep => <MenuItem key={dep.id} value={dep.nombre}>{dep.nombre}</MenuItem>)}
+            </TextField>
 
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
-                <InputLabel>Departamento</InputLabel>
-                <Select
-                  name="departamento"
-                  value={formData.departamento}
-                  label="Departamento"
-                  onChange={handleChange}
-                >
-                  <MenuItem value=""><em>Seleccione...</em></MenuItem>
-                  {departamentos.map(dep => <MenuItem key={dep.id} value={dep.nombre}>{dep.nombre}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth disabled={!formData.departamento}>
-                <InputLabel>Provincia</InputLabel>
-                <Select
-                  name="provincia"
-                  value={formData.provincia}
-                  label="Provincia"
-                  onChange={handleChange}
-                >
-                  <MenuItem value=""><em>Seleccione...</em></MenuItem>
-                  {provincias.map(prov => <MenuItem key={prov.id} value={prov.nombre}>{prov.nombre}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth disabled={!formData.provincia}>
-                <InputLabel>Distrito</InputLabel>
-                <Select
-                  name="distrito"
-                  value={formData.distrito}
-                  label="Distrito"
-                  onChange={handleChange}
-                >
-                  <MenuItem value=""><em>Seleccione...</em></MenuItem>
-                  {distritos.map(dist => <MenuItem key={dist.id} value={dist.nombre}>{dist.nombre}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Grid>
+            <TextField
+              select
+              fullWidth
+              variant="outlined"
+              label="Provincia"
+              name="provincia"
+              value={formData.provincia}
+              onChange={handleChange}
+              disabled={!formData.departamento}
+            >
+              <MenuItem value=""><em>Seleccione...</em></MenuItem>
+              {provincias.map(prov => <MenuItem key={prov.id} value={prov.nombre}>{prov.nombre}</MenuItem>)}
+            </TextField>
 
-            <Grid item xs={12} sm={8}>
-              <TextField 
-                label="Dirección Específica (Ej: Jirón Alegría 123)" 
+            <TextField
+              select
+              fullWidth
+              variant="outlined"
+              label="Distrito"
+              name="distrito"
+              value={formData.distrito}
+              onChange={handleChange}
+              disabled={!formData.provincia}
+            >
+              <MenuItem value=""><em>Seleccione...</em></MenuItem>
+              {distritos.map(dist => <MenuItem key={dist.id} value={dist.nombre}>{dist.nombre}</MenuItem>)}
+            </TextField>
+          </div>
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-12 md:col-span-8">
+              <TextField
+                label="Dirección Específica (Ej: Jirón Alegría 123)"
                 name="direccion"
-                fullWidth 
-                value={formData.direccion} 
-                onChange={handleChange} 
+                fullWidth
+                value={formData.direccion}
+                onChange={handleChange}
+                variant="outlined"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField 
-                label="Teléfono" 
+            </div>
+            <div className="col-span-12 md:col-span-4">
+              <TextField
+                label="Teléfono"
                 name="telefono"
-                fullWidth 
-                value={formData.telefono} 
-                onChange={handleChange} 
+                fullWidth
+                value={formData.telefono}
+                onChange={handleChange}
+                variant="outlined"
               />
-            </Grid>
+            </div>
+          </div>
+        </div>
 
-            <Grid item xs={12}>
-              <Typography variant="h6" color="primary" gutterBottom sx={{ mt: 2 }}>Logo de la Empresa</Typography>
-              <Divider sx={{ mb: 3 }} />
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <Box 
-                  sx={{ 
-                    width: 150, 
-                    height: 150, 
-                    border: '1px dashed #ccc', 
-                    borderRadius: 2, 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
-                    backgroundColor: '#f9f9f9',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {previewUrl ? (
-                    <img src={previewUrl} alt="Logo Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <Typography variant="body2" color="textSecondary">Sin Logo</Typography>
-                  )}
-                </Box>
-                <Button 
-                  variant="outlined" 
-                  component="label" 
-                  startIcon={<Upload size={20} />}
-                >
-                  Subir Logo
-                  <input type="file" hidden accept="image/*" onChange={handleImageChange} />
-                </Button>
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button 
-                type="submit" 
-                variant="contained" 
-                color="primary" 
-                size="large"
-                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save size={20} />}
-                disabled={saving}
+        {/* LOGO */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <p className="text-base font-bold text-blue-600 mb-1">Logo de la Empresa</p>
+          <hr className="border-slate-200 mb-6" />
+          <div className="flex items-center gap-6">
+            <div className="w-40 h-40 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50 overflow-hidden flex-shrink-0">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Logo Preview" className="max-w-full max-h-full object-contain" />
+              ) : (
+                <span className="text-sm text-slate-400 font-medium">Sin Logo</span>
+              )}
+            </div>
+            <div>
+              <p className="text-sm text-slate-500 mb-3">
+                Se recomienda usar una imagen cuadrada (ej: 500x500px) en formato PNG o JPG con fondo transparente.
+              </p>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<Upload size={20} />}
+                sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 'bold' }}
               >
-                {saving ? 'Guardando...' : 'Guardar Configuración'}
+                Subir Logo
+                <input type="file" hidden accept="image/*" onChange={handleImageChange} />
               </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
-    </Box>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   );
 };
 

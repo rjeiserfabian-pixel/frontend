@@ -23,16 +23,26 @@ const RegistroManualVentasPage = () => {
   const printRef = React.useRef();
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     onAfterPrint: () => setVentaParaImprimir(null),
+    documentTitle: 'Comprobante',
   });
 
   const triggerPrint = (venta) => {
     setVentaParaImprimir(venta);
-    setTimeout(() => {
-      handlePrint();
-    }, 300);
   };
+  
+  React.useEffect(() => {
+    if (ventaParaImprimir) {
+      const timer = setTimeout(() => {
+        if (printRef.current) {
+          handlePrint();
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventaParaImprimir]);
 
   const [condicionPago, setCondicionPago] = useState('CONTADO');
   const [fechaVentaManual, setFechaVentaManual] = useState(() => {
@@ -381,6 +391,7 @@ const RegistroManualVentasPage = () => {
   };
 
   return (
+    <>
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">REGISTRO MANUAL DE VENTAS</Typography>
@@ -808,6 +819,11 @@ const RegistroManualVentasPage = () => {
           </Paper>
       </Box>
     </Box>
+    {/* TicketImpresion siempre renderizado para que printRef esté disponible */}
+    <div style={{ display: 'none' }}>
+      <TicketImpresion ref={printRef} venta={ventaParaImprimir} />
+    </div>
+    </>
   );
 };
 

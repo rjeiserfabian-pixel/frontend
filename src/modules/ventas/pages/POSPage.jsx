@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { 
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
-  CreditCard, Banknote, Calendar, User, FileText, ShoppingCart
+  CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ventasService } from './../../ventas/services/ventasApi';
@@ -120,9 +120,19 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                       <TableCell align="right"><strong>{(parseFloat(venta.total) || 0).toFixed(2)}</strong></TableCell>
                       <TableCell align="center">{getStatusChip(venta.estado)}</TableCell>
                       <TableCell align="center">
-                        <IconButton color="primary" disabled={venta.estado !== 'PRE_VENTA'} onClick={() => venta.estado === 'PRE_VENTA' && onSelectOrder(venta)}>
-                          <ArrowRight size={20} />
-                        </IconButton>
+                        {(venta.estado === 'PAGADA' || venta.estado === 'COMPLETADA') ? (
+                          <IconButton
+                            title="Reimprimir comprobante"
+                            sx={{ color: '#7c3aed' }}
+                            onClick={() => onPrint && onPrint(venta)}
+                          >
+                            <Printer size={20} />
+                          </IconButton>
+                        ) : (
+                          <IconButton color="primary" disabled={venta.estado !== 'PRE_VENTA'} onClick={() => venta.estado === 'PRE_VENTA' && onSelectOrder(venta)}>
+                            <ArrowRight size={20} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -1225,23 +1235,32 @@ export const POSPage = () => {
   const printRef = React.useRef();
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     onAfterPrint: () => setVentaParaImprimir(null),
+    documentTitle: 'Comprobante',
   });
 
   const triggerPrint = (venta) => {
     setVentaParaImprimir(venta);
-    setTimeout(() => {
-      handlePrint();
-    }, 300);
   };
-  
+
+  React.useEffect(() => {
+    if (ventaParaImprimir) {
+      // Wait for React to render TicketImpresion before triggering print
+      const timer = setTimeout(() => {
+        if (printRef.current) {
+          handlePrint();
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventaParaImprimir]);
+
   const handleCompleteWithPrint = (ventaRes) => {
     handleComplete();
     if (ventaRes && ventaRes.id) {
       triggerPrint(ventaRes);
-    } else {
-      // If no res returned, just refresh
     }
   };
 
@@ -1273,10 +1292,17 @@ export const POSPage = () => {
   }
 
   return (
-    <PosOrderList 
-      onSelectOrder={setSelectedOrder} 
-      onNewDirectSale={() => setIsDirectSale(true)} 
-    />
+    <>
+      <PosOrderList 
+        onSelectOrder={setSelectedOrder} 
+        onNewDirectSale={() => setIsDirectSale(true)}
+        onPrint={triggerPrint}
+      />
+      {/* TicketImpresion siempre renderizado para que printRef esté siempre disponible */}
+      <div style={{ display: 'none' }}>
+        <TicketImpresion ref={printRef} venta={ventaParaImprimir} />
+      </div>
+    </>
   );
 };
 

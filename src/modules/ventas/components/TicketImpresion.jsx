@@ -18,7 +18,7 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
     fetchEmpresa();
   }, []);
 
-  if (!venta) return null;
+  if (!venta) return <Box ref={ref} sx={{ display: 'none' }} />;
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -79,7 +79,7 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
             <img 
               src={empresaLogo.startsWith('http') ? empresaLogo : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresaLogo}`} 
               alt="Logo" 
-              style={{ maxWidth: '60%', maxHeight: '80px', marginBottom: '8px' }} 
+              style={{ display: 'block', margin: '0 auto 8px auto', maxWidth: '60%', maxHeight: '80px' }} 
             />
           )}
           <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>
@@ -166,7 +166,7 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
           )}
         </Box>
 
-        <Box sx={{ textAlign: 'center', mt: 3, mb: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, mb: 1 }}>
           <QRCodeSVG value={qrData} size={100} level={"L"} includeMargin={false} />
         </Box>
 
