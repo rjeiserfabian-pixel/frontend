@@ -201,8 +201,11 @@ export default function DashboardLayout() {
               onClick={handleMenu}
               color="inherit"
             >
-              <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 36, height: 36 }}>
-                {user?.nombre?.charAt(0) || 'A'}
+              <Avatar 
+                src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.avatar_url}`) : undefined}
+                sx={{ bgcolor: theme.palette.primary.main, width: 36, height: 36 }}
+              >
+                {!user?.avatar_url && (user?.nombre?.charAt(0) || 'A')}
               </Avatar>
             </IconButton>
             <Menu

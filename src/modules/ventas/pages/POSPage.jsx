@@ -3,11 +3,12 @@ import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, Chip, IconButton, 
   CircularProgress, Grid, TextField, MenuItem, Select, InputLabel, 
-  FormControl, Divider, Tabs, Tab, Autocomplete, InputAdornment
+  FormControl, Divider, Tabs, Tab, Autocomplete, InputAdornment,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { 
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
-  CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer
+  CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer, Eye
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ventasService } from './../../ventas/services/ventasApi';
@@ -26,6 +27,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   const [tabValue, setTabValue] = useState(0);
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSaleDetails, setSelectedSaleDetails] = useState(null);
 
   const fetchVentas = async () => {
     try {
@@ -120,6 +122,13 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                       <TableCell align="right"><strong>{(parseFloat(venta.total) || 0).toFixed(2)}</strong></TableCell>
                       <TableCell align="center">{getStatusChip(venta.estado)}</TableCell>
                       <TableCell align="center">
+                        <IconButton
+                          title="Ver Detalles"
+                          color="info"
+                          onClick={() => setSelectedSaleDetails(venta)}
+                        >
+                          <Eye size={20} />
+                        </IconButton>
                         {(venta.estado === 'PAGADA' || venta.estado === 'COMPLETADA') ? (
                           <IconButton
                             title="Reimprimir comprobante"
@@ -142,6 +151,91 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
           </TableContainer>
         )}
       </Paper>
+
+      {/* MODAL PARA VER DETALLES */}
+      <Dialog open={Boolean(selectedSaleDetails)} onClose={() => setSelectedSaleDetails(null)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FileText size={20} />
+          Detalles de la Venta #{selectedSaleDetails?.id}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" color="primary" gutterBottom>Datos del Cliente</Typography>
+              <Typography variant="body2"><strong>Nombres:</strong> {selectedSaleDetails?.cliente_nombre || 'General'} {selectedSaleDetails?.cliente_apellidos && selectedSaleDetails.cliente_apellidos !== '-' ? selectedSaleDetails.cliente_apellidos : ''}</Typography>
+              <Typography variant="body2"><strong>DNI/RUC:</strong> {selectedSaleDetails?.cliente_dni || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" color="primary" gutterBottom>Datos de la Venta</Typography>
+              <Typography variant="body2"><strong>Estado:</strong> {selectedSaleDetails?.estado}</Typography>
+              <Typography variant="body2"><strong>Fecha:</strong> {formatearFecha(selectedSaleDetails?.creado_en)}</Typography>
+              <Typography variant="body2"><strong>Comprobante:</strong> {selectedSaleDetails?.tipo_comprobante_nombre || '-'} {selectedSaleDetails?.serie_correlativo || ''}</Typography>
+            </Grid>
+          </Grid>
+          <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>Ítems Comprados</Typography>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Producto</strong></TableCell>
+                <TableCell align="center"><strong>Cant.</strong></TableCell>
+                <TableCell align="right"><strong>P. Unit.</strong></TableCell>
+                <TableCell align="right"><strong>Subtotal</strong></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {selectedSaleDetails?.detalles && selectedSaleDetails.detalles.length > 0 ? (
+                selectedSaleDetails.detalles.map((item, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>{item.repuesto_nombre || `Producto ${item.repuesto}`}</TableCell>
+                    <TableCell align="center">{item.cantidad}</TableCell>
+                    <TableCell align="right">S/ {parseFloat(item.precio_unitario || 0).toFixed(2)}</TableCell>
+                    <TableCell align="right">S/ {(parseFloat(item.precio_unitario || 0) * item.cantidad).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 2 }}>No hay detalles disponibles para esta venta.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" color="primary" gutterBottom>Pagos y Totales</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={7}>
+                {selectedSaleDetails?.estado === 'AL_CREDITO' ? (
+                   <Typography variant="body2"><strong>Condición de Pago:</strong> Crédito</Typography>
+                ) : (
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}><strong>Condición de Pago:</strong> Contado</Typography>
+                    {selectedSaleDetails?.pagos && selectedSaleDetails.pagos.length > 0 && (
+                      <Box sx={{ pl: 1 }}>
+                        {selectedSaleDetails.pagos.map((p, i) => (
+                          <Typography key={i} variant="caption" display="block" color="textSecondary">
+                            • {p.metodo_pago}: S/ {parseFloat(p.monto).toFixed(2)} {p.referencia ? `(Ref: ${p.referencia})` : ''}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Grid>
+              <Grid item xs={12} sm={5} sx={{ textAlign: 'right' }}>
+                <Typography variant="body2"><strong>Monto Recibido:</strong> S/ {parseFloat(selectedSaleDetails?.monto_recibido || 0).toFixed(2)}</Typography>
+                <Typography variant="body2"><strong>Vuelto:</strong> S/ {parseFloat(selectedSaleDetails?.vuelto || 0).toFixed(2)}</Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ mt: 1, color: 'primary.main' }}>
+                  Total: S/ {parseFloat(selectedSaleDetails?.total || 0).toFixed(2)}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedSaleDetails(null)} color="primary">
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
