@@ -193,12 +193,13 @@ export const inventarioService = {
   // ──────────────────────────────────────────────
   // NUEVOS MÉTODOS: KARDEX (solo lectura)
   // ──────────────────────────────────────────────
-  getKardex: async ({ repuestoId = null, ubicacionId = null, tipo = null, page = 1 } = {}) => {
+  getKardex: async ({ repuestoId = null, ubicacionId = null, tipo = null, page = 1, page_size = 10 } = {}) => {
     const params = new URLSearchParams();
     if (repuestoId) params.append('repuesto', repuestoId);
     if (ubicacionId) params.append('ubicacion', ubicacionId);
     if (tipo) params.append('tipo', tipo);
     params.append('page', page);
+    params.append('page_size', page_size);
     const response = await api.get(`/inventario/kardex/?${params.toString()}`);
     return response.data;
   },

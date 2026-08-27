@@ -4,7 +4,7 @@ import {
   TableContainer, TableHead, TableRow, Chip, IconButton, 
   CircularProgress, Grid, TextField, MenuItem, Select, InputLabel, 
   FormControl, Divider, Tabs, Tab, Autocomplete, InputAdornment,
-  Dialog, DialogTitle, DialogContent, DialogActions
+  Dialog, DialogTitle, DialogContent, DialogActions, TablePagination
 } from '@mui/material';
 import { 
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
@@ -28,13 +28,25 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSaleDetails, setSelectedSaleDetails] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchVentas = async () => {
     try {
       setLoading(true);
-      const response = await ventasService.getVentas();
+      let estadoFiltro = '';
+      if (tabValue === 1) estadoFiltro = 'PENDIENTE';
+      if (tabValue === 2) estadoFiltro = 'COMPLETADO';
+      
+      const response = await ventasService.getVentas({
+        page: page + 1,
+        page_size: rowsPerPage,
+        estado: estadoFiltro
+      });
       const data = response.results ? response.results : response;
       setVentas(data);
+      setTotalCount(response.count || (response.results ? response.results.length : response.length) || 0);
     } catch (error) {
       console.error('Error fetching ventas:', error);
       Swal.fire('Error', 'No se pudieron cargar los pedidos del Kiosko.', 'error');
@@ -45,13 +57,8 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
 
   useEffect(() => {
     fetchVentas();
-  }, []);
-
-  const filteredVentas = ventas.filter(v => {
-    if (tabValue === 1) return v.estado === 'PRE_VENTA';
-    if (tabValue === 2) return v.estado === 'PAGADA' || v.estado === 'COMPLETADA';
-    return true;
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, tabValue]);
 
   const getStatusChip = (estado) => {
     switch(estado) {
@@ -83,7 +90,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
       </Box>
 
       <Paper sx={{ width: '100%', mb: 3, boxShadow: 1 }}>
-        <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} indicatorColor="primary" textColor="primary" sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
+        <Tabs value={tabValue} onChange={(e, v) => { setTabValue(v); setPage(0); }} indicatorColor="primary" textColor="primary" sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
           <Tab label="Todos" />
           <Tab label="Pendientes" />
           <Tab label="Completados" />
@@ -92,63 +99,77 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
         ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableRow>
-                  <TableCell><strong>ID / Ticket</strong></TableCell>
-                  <TableCell><strong>Fecha</strong></TableCell>
-                  <TableCell><strong>Cliente</strong></TableCell>
-                  <TableCell><strong>Vehículo</strong></TableCell>
-                  <TableCell align="center"><strong>Ítems</strong></TableCell>
-                  <TableCell align="right"><strong>Total (S/)</strong></TableCell>
-                  <TableCell align="center"><strong>Estado</strong></TableCell>
-                  <TableCell align="center"><strong>Acción</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredVentas.length === 0 ? (
+          <>
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 3 }}>No hay pedidos encontrados para esta categoría.</TableCell>
+                    <TableCell><strong>ID / Ticket</strong></TableCell>
+                    <TableCell><strong>Fecha</strong></TableCell>
+                    <TableCell><strong>Cliente</strong></TableCell>
+                    <TableCell><strong>Vehículo</strong></TableCell>
+                    <TableCell align="center"><strong>Ítems</strong></TableCell>
+                    <TableCell align="right"><strong>Total (S/)</strong></TableCell>
+                    <TableCell align="center"><strong>Estado</strong></TableCell>
+                    <TableCell align="center"><strong>Acción</strong></TableCell>
                   </TableRow>
-                ) : (
-                  filteredVentas.map((venta) => (
-                    <TableRow key={venta.id} hover sx={{ cursor: venta.estado === 'PRE_VENTA' ? 'pointer' : 'default', backgroundColor: venta.estado === 'PRE_VENTA' ? 'inherit' : '#fafafa' }}>
-                      <TableCell>{venta.id} {venta.ticket_kiosko ? `(Ticket #${venta.ticket_kiosko})` : ''}</TableCell>
-                      <TableCell>{formatearFecha(venta.creado_en)}</TableCell>
-                      <TableCell>{venta.cliente_nombre || 'Cliente General'}</TableCell>
-                      <TableCell>{venta.vehiculo_placa || '-'}</TableCell>
-                      <TableCell align="center">{venta.detalles ? venta.detalles.length : 0}</TableCell>
-                      <TableCell align="right"><strong>{(parseFloat(venta.total) || 0).toFixed(2)}</strong></TableCell>
-                      <TableCell align="center">{getStatusChip(venta.estado)}</TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          title="Ver Detalles"
-                          color="info"
-                          onClick={() => setSelectedSaleDetails(venta)}
-                        >
-                          <Eye size={20} />
-                        </IconButton>
-                        {(venta.estado === 'PAGADA' || venta.estado === 'COMPLETADA') ? (
-                          <IconButton
-                            title="Reimprimir comprobante"
-                            sx={{ color: '#7c3aed' }}
-                            onClick={() => onPrint && onPrint(venta)}
-                          >
-                            <Printer size={20} />
-                          </IconButton>
-                        ) : (
-                          <IconButton color="primary" disabled={venta.estado !== 'PRE_VENTA'} onClick={() => venta.estado === 'PRE_VENTA' && onSelectOrder(venta)}>
-                            <ArrowRight size={20} />
-                          </IconButton>
-                        )}
-                      </TableCell>
+                </TableHead>
+                <TableBody>
+                  {ventas.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 3 }}>No hay pedidos encontrados para esta categoría.</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    ventas.map((venta) => (
+                      <TableRow key={venta.id} hover sx={{ cursor: venta.estado === 'PRE_VENTA' ? 'pointer' : 'default', backgroundColor: venta.estado === 'PRE_VENTA' ? 'inherit' : '#fafafa' }}>
+                        <TableCell>{venta.id} {venta.ticket_kiosko ? `(Ticket #${venta.ticket_kiosko})` : ''}</TableCell>
+                        <TableCell>{formatearFecha(venta.creado_en)}</TableCell>
+                        <TableCell>{venta.cliente_nombre || 'Cliente General'}</TableCell>
+                        <TableCell>{venta.vehiculo_placa || '-'}</TableCell>
+                        <TableCell align="center">{venta.detalles ? venta.detalles.length : 0}</TableCell>
+                        <TableCell align="right"><strong>{(parseFloat(venta.total) || 0).toFixed(2)}</strong></TableCell>
+                        <TableCell align="center">{getStatusChip(venta.estado)}</TableCell>
+                        <TableCell align="center">
+                          <IconButton
+                            title="Ver Detalles"
+                            color="info"
+                            onClick={() => setSelectedSaleDetails(venta)}
+                          >
+                            <Eye size={20} />
+                          </IconButton>
+                          {(venta.estado === 'PAGADA' || venta.estado === 'COMPLETADA') ? (
+                            <IconButton
+                              title="Reimprimir comprobante"
+                              sx={{ color: '#7c3aed' }}
+                              onClick={() => onPrint && onPrint(venta)}
+                            >
+                              <Printer size={20} />
+                            </IconButton>
+                          ) : (
+                            <IconButton color="primary" disabled={venta.estado !== 'PRE_VENTA'} onClick={() => venta.estado === 'PRE_VENTA' && onSelectOrder(venta)}>
+                              <ArrowRight size={20} />
+                            </IconButton>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              component="div"
+              count={totalCount}
+              page={page}
+              onPageChange={(e, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelRowsPerPage="Filas por página:"
+            />
+          </>
         )}
       </Paper>
 

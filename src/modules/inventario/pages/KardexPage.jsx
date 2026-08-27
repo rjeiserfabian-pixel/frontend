@@ -42,7 +42,7 @@ function useKardex() {
   const [repuestos, setRepuestos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Filtros
   const [filtros, setFiltros] = useState({
@@ -54,13 +54,14 @@ function useKardex() {
   // Debounce: no se disparan peticiones por cada cambio de filtro de inmediato
   const debounceTimer = useRef(null);
 
-  const fetchMovimientos = useCallback(async (params) => {
+  const fetchMovimientos = useCallback(async (params, rpp) => {
     try {
       setLoading(true);
       const data = await inventarioService.getKardex({
         repuestoId: params.repuestoId || null,
         tipo: params.tipo || null,
         page: params.page + 1,
+        page_size: rpp,
       });
       setMovimientos(data.results || data);
       setTotalCount(data.count !== undefined ? data.count : (data.results ? data.results.length : data.length));
@@ -85,10 +86,10 @@ function useKardex() {
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
-      fetchMovimientos(filtros);
+      fetchMovimientos(filtros, rowsPerPage);
     }, 300);
     return () => clearTimeout(debounceTimer.current);
-  }, [filtros, fetchMovimientos]);
+  }, [filtros, rowsPerPage, fetchMovimientos]);
 
   useEffect(() => {
     fetchRepuestos();
@@ -102,11 +103,16 @@ function useKardex() {
     setFiltros((prev) => ({ ...prev, page: newPage }));
   };
 
-  return { movimientos, repuestos, loading, filtros, totalCount, rowsPerPage, handleFiltroChange, handlePageChange };
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setFiltros((prev) => ({ ...prev, page: 0 }));
+  };
+
+  return { movimientos, repuestos, loading, filtros, totalCount, rowsPerPage, handleFiltroChange, handlePageChange, handleRowsPerPageChange };
 }
 
 export default function KardexPage() {
-  const { movimientos, repuestos, loading, filtros, totalCount, rowsPerPage, handleFiltroChange, handlePageChange } = useKardex();
+  const { movimientos, repuestos, loading, filtros, totalCount, rowsPerPage, handleFiltroChange, handlePageChange, handleRowsPerPageChange } = useKardex();
 
   const formatFecha = (fecha) => {
     return new Date(fecha).toLocaleString('es-PE', {
@@ -229,7 +235,8 @@ export default function KardexPage() {
                 page={filtros.page}
                 onPageChange={handlePageChange}
                 rowsPerPage={rowsPerPage}
-                rowsPerPageOptions={[25]}
+                onRowsPerPageChange={handleRowsPerPageChange}
+                rowsPerPageOptions={[10, 25, 50]}
                 labelRowsPerPage="Filas por página:"
               />
             )}
