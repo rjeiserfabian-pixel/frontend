@@ -14,12 +14,15 @@ import { ventasService } from './../../ventas/services/ventasApi';
 import { inventarioService } from './../../inventario/services/inventarioService';
 import { clienteService } from './../../clientes/services/clienteService';
 import api from '../../../core/api/axios';
+import { useReactToPrint } from 'react-to-print';
+import TicketImpresion from '../components/TicketImpresion';
+
 
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 // ...
 
 // -------------------------------------------------------------
-const PosOrderList = ({ onSelectOrder, onNewDirectSale }) => {
+const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   const [tabValue, setTabValue] = useState(0);
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -379,6 +382,18 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
                 >
                   + Agregar método
                 </Button>
+                {(() => {
+                  const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
+                  if (sumP > total) {
+                    return (
+                      <Box sx={{ mt: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1, display: 'flex', justifyContent: 'space-between', border: '1px solid #c8e6c9' }}>
+                        <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
+                        <Typography variant="subtitle1" color="success.main" fontWeight="bold">S/ {(sumP - total).toFixed(2)}</Typography>
+                      </Box>
+                    );
+                  }
+                  return null;
+                })()}
               </Box>
             )}
           </Paper>
@@ -704,6 +719,34 @@ const PosDirectSale = ({ onBack, onComplete }) => {
       return;
     }
 
+      let pagosFinales = pagos;
+      let montoRecibido = 0;
+      let vuelto = 0;
+
+      if (condicionPago === 'CONTADO') {
+        const sumPagos = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
+        if (sumPagos < total - 0.01) {
+          Swal.fire('Atención', `El monto pagado (S/ ${sumPagos.toFixed(2)}) es menor al total de la venta (S/ ${total.toFixed(2)}).`, 'warning');
+          return;
+        }
+
+        montoRecibido = sumPagos;
+        vuelto = Math.max(0, sumPagos - total);
+
+        if (vuelto > 0) {
+          let vueltoRestante = vuelto;
+          pagosFinales = pagos.map(p => {
+            const montoOriginal = parseFloat(p.monto) || 0;
+            if (vueltoRestante > 0 && montoOriginal > 0) {
+              const restar = Math.min(montoOriginal, vueltoRestante);
+              vueltoRestante -= restar;
+              return { ...p, monto: (montoOriginal - restar).toFixed(2) };
+            }
+            return { ...p };
+          });
+        }
+      }
+
     try {
       setProcesando(true);
       
@@ -743,7 +786,9 @@ const PosDirectSale = ({ onBack, onComplete }) => {
           cantidad: item.cantidad,
           precio_venta: parseFloat(item.precio_venta) || 0
         })),
-        pagos: pagos,
+        pagos: pagosFinales,
+          monto_recibido: montoRecibido,
+          vuelto: vuelto,
         moneda: moneda,
         tipo_cambio: tipoCambio
       };
@@ -982,6 +1027,18 @@ const PosDirectSale = ({ onBack, onComplete }) => {
                 >
                   + Agregar método
                 </Button>
+                {(() => {
+                  const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
+                  if (sumP > total) {
+                    return (
+                      <Box sx={{ mt: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1, display: 'flex', justifyContent: 'space-between', border: '1px solid #c8e6c9' }}>
+                        <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
+                        <Typography variant="subtitle1" color="success.main" fontWeight="bold">S/ {(sumP - total).toFixed(2)}</Typography>
+                      </Box>
+                    );
+                  }
+                  return null;
+                })()}
               </Box>
             )}
               </Paper>
@@ -1164,6 +1221,30 @@ const PosDirectSale = ({ onBack, onComplete }) => {
 // MAIN COMPONENT
 // -------------------------------------------------------------
 export const POSPage = () => {
+  const [ventaParaImprimir, setVentaParaImprimir] = useState(null);
+  const printRef = React.useRef();
+
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    onAfterPrint: () => setVentaParaImprimir(null),
+  });
+
+  const triggerPrint = (venta) => {
+    setVentaParaImprimir(venta);
+    setTimeout(() => {
+      handlePrint();
+    }, 300);
+  };
+  
+  const handleCompleteWithPrint = (ventaRes) => {
+    handleComplete();
+    if (ventaRes && ventaRes.id) {
+      triggerPrint(ventaRes);
+    } else {
+      // If no res returned, just refresh
+    }
+  };
+
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDirectSale, setIsDirectSale] = useState(false);
   

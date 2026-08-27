@@ -148,6 +148,22 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
               {(parseFloat(venta.total) || 0).toFixed(2)}
             </Typography>
           </Box>
+          {parseFloat(venta.vuelto) > 0 && (
+            <>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                <Typography variant="body2" sx={{ fontSize: '12px' }}>PAGÓ CON S/</Typography>
+                <Typography variant="body2" sx={{ fontSize: '12px' }}>
+                  {(parseFloat(venta.monto_recibido) || 0).toFixed(2)}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                <Typography variant="body2" sx={{ fontSize: '12px' }}>VUELTO S/</Typography>
+                <Typography variant="body2" sx={{ fontSize: '12px' }}>
+                  {(parseFloat(venta.vuelto) || 0).toFixed(2)}
+                </Typography>
+              </Box>
+            </>
+          )}
         </Box>
 
         <Box sx={{ textAlign: 'center', mt: 3, mb: 1 }}>
