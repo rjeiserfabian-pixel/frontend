@@ -90,6 +90,7 @@ export const KioskoPage = () => {
   const [carrito, setCarrito] = useState([]);
   const [repuestosCompatibles, setRepuestosCompatibles] = useState([]);
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
+  const [kilometraje, setKilometraje] = useState("");
 
   React.useEffect(() => {
     const fetchEmpresa = async () => {
@@ -188,7 +189,7 @@ export const KioskoPage = () => {
     );
   };
 
-  const resetAll = () => { setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]); setRepuestosCompatibles([]); };
+  const resetAll = () => { setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]); setRepuestosCompatibles([]); setKilometraje(""); };
 
   const generarTicket = async () => {
     try {
@@ -209,6 +210,7 @@ export const KioskoPage = () => {
         cliente_id: finalClienteId,
         vehiculo_id: vehiculo ? (vehiculo.id || null) : null,
         sucursal_id: 1,
+        kilometraje: kilometraje ? parseInt(kilometraje, 10) : null,
         detalles: carrito.map(c => ({ repuesto_id: c.id, cantidad: c.cantidad || 1, precio_unitario: parseFloat(c.precio_lista || c.precio || 0) }))
       };
       await ventasService.generarTicket(payload);
@@ -320,7 +322,7 @@ export const KioskoPage = () => {
                   {vehiculo ? (
                     <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center">
                       <div className="w-24 h-24 bg-[#e50914] rounded-full flex items-center justify-center mb-6"><Car size={48} className="text-white" /></div>
-                      <div className="w-full grid grid-cols-2 gap-4 text-left border border-slate-800 p-6 rounded-2xl bg-[#0b0f19] text-sm overflow-y-auto max-h-[300px]">
+                      <div className="w-full grid grid-cols-2 gap-4 text-left border border-slate-800 p-6 rounded-2xl bg-[#0b0f19] text-sm overflow-y-auto max-h-[260px]">
                         <div className="flex flex-col"><span className="text-slate-500">Marca:</span><span className="font-bold text-white uppercase">{vehiculo.marca || "-"}</span></div>
                         <div className="flex flex-col"><span className="text-slate-500">Modelo:</span><span className="font-bold text-white uppercase">{vehiculo.modelo || "-"}</span></div>
                         <div className="flex flex-col"><span className="text-slate-500">Anio:</span><span className="font-bold text-white">{vehiculo.anio_fabricacion || vehiculo.anio || "-"}</span></div>
@@ -332,7 +334,35 @@ export const KioskoPage = () => {
                         <div className="flex flex-col col-span-2"><span className="text-slate-500">N Motor:</span><span className="font-bold text-white uppercase">{vehiculo.numero_motor || "-"}</span></div>
                         <div className="flex flex-col col-span-2"><span className="text-slate-500">N Serie:</span><span className="font-bold text-white uppercase">{vehiculo.numero_serie || "-"}</span></div>
                       </div>
-                      <button onClick={handleNext} className="mt-8 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all">Buscar Repuestos <ArrowRight size={24} /></button>
+
+                      {/* INPUT DE KILOMETRAJE */}
+                      <div className="w-full mt-5">
+                        <label className="block text-slate-400 text-sm font-medium mb-2">
+                          <span className="text-[#e50914] font-bold">*</span> Kilometraje actual del vehiculo (obligatorio)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={kilometraje}
+                            onChange={e => setKilometraje(e.target.value.replace(/[^0-9]/g, ""))}
+                            placeholder="Ej: 35000"
+                            className="flex-1 bg-[#0b0f19] border-2 border-slate-700 text-white text-2xl font-mono py-3 px-5 rounded-xl focus:outline-none focus:border-[#e50914] placeholder-slate-600"
+                          />
+                          <span className="flex items-center text-slate-400 font-medium px-3">km</span>
+                        </div>
+                        {!kilometraje && (
+                          <p className="text-[#e50914] text-xs mt-1">Debes ingresar el kilometraje para continuar.</p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={handleNext}
+                        disabled={!kilometraje}
+                        className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
+                      >
+                        Buscar Repuestos <ArrowRight size={24} />
+                      </button>
                     </div>
                   ) : (
                     <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-8 rounded-3xl flex flex-col items-center justify-center text-center h-[350px]">
@@ -441,6 +471,7 @@ export const KioskoPage = () => {
               <p style={{ margin: "2px 0" }}><strong>DNI:</strong> {dni || "N/A"}</p>
               <p style={{ margin: "2px 0" }}><strong>Vehiculo:</strong> {vehiculo ? ((vehiculo.marca || "") + " " + (vehiculo.modelo || "")) : "N/A"}</p>
               <p style={{ margin: "2px 0" }}><strong>Placa:</strong> {placa || "N/A"}</p>
+              <p style={{ margin: "2px 0" }}><strong>Kilometraje:</strong> {kilometraje ? (kilometraje + " km") : "N/A"}</p>
             </div>
             <div style={{ borderBottom: "1px dashed #000", marginBottom: "10px" }}></div>
             <div style={{ marginBottom: "10px" }}>
