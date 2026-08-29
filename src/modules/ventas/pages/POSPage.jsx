@@ -578,9 +578,10 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 };
 
 // -------------------------------------------------------------
+// -------------------------------------------------------------
 // VISTA 3: VENTA DIRECTA (TOTALMENTE EDITABLE)
 // -------------------------------------------------------------
-const PosDirectSale = ({ onBack, onComplete }) => {
+const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const { activeSucursalId } = useSucursal();
   const [condicionPago, setCondicionPago] = useState('CONTADO');
   const [fechaLimite, setFechaLimite] = useState(() => {
@@ -589,7 +590,19 @@ const PosDirectSale = ({ onBack, onComplete }) => {
     return d.toISOString().split('T')[0];
   });
   const [procesando, setProcesando] = useState(false);
-  const [carrito, setCarrito] = useState([]);
+  const [carrito, setCarrito] = useState(() => {
+    if (initialOrder && initialOrder.detalles) {
+      return initialOrder.detalles.map(d => ({
+        id: d.repuesto,
+        nombre: d.repuesto_nombre || `Producto ${d.repuesto}`,
+        codigo: d.repuesto_codigo || '',
+        precio_venta: parseFloat(d.precio_unitario || 0),
+        precio_lista: parseFloat(d.precio_unitario || 0),
+        cantidad: d.cantidad || 1
+      }));
+    }
+    return [];
+  });
   
   const [metodosPago, setMetodosPago] = useState([]);
   const [pagos, setPagos] = useState([]);
@@ -700,10 +713,10 @@ const PosDirectSale = ({ onBack, onComplete }) => {
   const [resultadosProductos, setResultadosProductos] = useState([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
 
-  const [clienteId, setClienteId] = useState(null);
-  const [dni, setDni] = useState('');
-  const [clienteNombre, setClienteNombre] = useState('');
-  const [clienteApellidos, setClienteApellidos] = useState('');
+  const [clienteId, setClienteId] = useState(initialOrder?.cliente || null);
+  const [dni, setDni] = useState(initialOrder?.cliente_dni || '');
+  const [clienteNombre, setClienteNombre] = useState(initialOrder?.cliente_nombre || '');
+  const [clienteApellidos, setClienteApellidos] = useState(initialOrder?.cliente_apellidos || '');
   const [clienteDireccion, setClienteDireccion] = useState('');
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [buscandoCliente, setBuscandoCliente] = useState(false);
@@ -899,6 +912,7 @@ const PosDirectSale = ({ onBack, onComplete }) => {
       }
 
       const payloadVenta = {
+        venta_id: initialOrder?.id || undefined,
         sucursal_id: parseInt(activeSucursalId, 10),
         cliente_id: finalClienteId,
         tipo_comprobante_id: tipoComprobanteId,
@@ -1398,8 +1412,8 @@ export const POSPage = () => {
 
   if (selectedOrder) {
     return (
-      <PosCheckout 
-        order={selectedOrder} 
+      <PosDirectSale 
+        initialOrder={selectedOrder}
         onBack={() => setSelectedOrder(null)} 
         onComplete={handleComplete} 
       />
