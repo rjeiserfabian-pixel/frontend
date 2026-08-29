@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { clienteService } from '../../clientes/services/clienteService';
+import { vehiculoService } from '../../vehiculos/services/vehiculosService';
+import { inventarioService } from '../../inventario/services/inventarioService';
 
 /* ──────────────────────────────────────────────
    TECLADOS VIRTUALES
@@ -50,27 +52,27 @@ const TecladoNumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
 
 const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
   const rows = [
-    ['A','B','C','D','E'],
-    ['F','G','H','I','J'],
-    ['K','L','M','N','O'],
-    ['P','Q','R','S','T'],
-    ['U','V','W','X','Y'],
-    ['Z','1','2','3','4'],
-    ['5','6','7','8','9']
+    ['A','B','C','D','E','F','G'],
+    ['H','I','J','K','L','M','N'],
+    ['O','P','Q','R','S','T','U'],
+    ['V','W','X','Y','Z','1','2'],
+    ['3','4','5','6','7','8','9']
   ];
   return (
-    <div className="flex flex-col gap-2 w-full max-w-sm mx-auto">
+    <div className="flex flex-col gap-2 w-full max-w-xl mx-auto">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-5 gap-2 h-14">
+        <div key={i} className="grid grid-cols-7 gap-2 h-14">
           {row.map(k => (
             <KeyButton key={k} onClick={() => onKeyPress(k)}>{k}</KeyButton>
           ))}
         </div>
       ))}
-      <div className="grid grid-cols-5 gap-2 h-14">
-        <KeyButton onClick={onBackspace} variant="red" className="col-span-2"><Delete size={20} /></KeyButton>
+      <div className="grid grid-cols-7 gap-2 h-14">
         <KeyButton onClick={() => onKeyPress('0')}>0</KeyButton>
-        <KeyButton onClick={onConfirm} variant="red" className="col-span-2"><CheckCircle size={20} /></KeyButton>
+        <KeyButton onClick={() => onKeyPress('-')}>-</KeyButton>
+        <KeyButton onClick={() => onKeyPress('"')}>"</KeyButton>
+        <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-2"><Delete size={20} /> Borrar</KeyButton>
+        <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-2"><CheckCircle size={20} /> Buscar</KeyButton>
       </div>
     </div>
   );
@@ -85,17 +87,36 @@ export const KioskoPage = () => {
   const [step, setStep] = useState(1);
   const [dni, setDni] = useState('');
   const [placa, setPlaca] = useState('');
+  const [vehiculo, setVehiculo] = useState(null);
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(false);
   const [carrito, setCarrito] = useState([]);
+  const [repuestosCompatibles, setRepuestosCompatibles] = useState([]);
+  const [loadingRepuestos, setLoadingRepuestos] = useState(false);
 
-  // Simulaciones de datos
-  const repuestosMock = [
-    { id: 1, nombre: "Filtro de Aire Premium", precio: 45.00, stock: 10, img: "🌬️" },
-    { id: 2, nombre: "Pastillas de Freno Bosh", precio: 120.00, stock: 5, img: "🛑" },
-    { id: 3, nombre: "Aceite Sintético 5W30", precio: 150.00, stock: 20, img: "🛢️" },
-    { id: 4, nombre: "Batería 12V 60AH", precio: 280.00, stock: 3, img: "🔋" },
-  ];
+  // Al entrar al Paso 3, cargar repuestos compatibles con el vehículo encontrado
+  React.useEffect(() => {
+    if (step === 3 && vehiculo) {
+      const marca = vehiculo.marca || '';
+      const modelo = vehiculo.modelo || '';
+      const anio = vehiculo.anio_fabricacion || vehiculo.anio || vehiculo.año || null;
+
+      if (!marca) return;
+
+      setLoadingRepuestos(true);
+      setRepuestosCompatibles([]);
+      inventarioService.getRepuestosCompatibles(marca, modelo, anio)
+        .then(data => {
+          const lista = Array.isArray(data) ? data : (data.results || []);
+          setRepuestosCompatibles(lista);
+        })
+        .catch(err => {
+          console.error('Error al cargar repuestos compatibles:', err);
+          setRepuestosCompatibles([]);
+        })
+        .finally(() => setLoadingRepuestos(false));
+    }
+  }, [step, vehiculo]);
 
   const handleNext = () => setStep((prev) => prev + 1);
   const handleBack = () => setStep((prev) => prev - 1);
@@ -118,12 +139,14 @@ export const KioskoPage = () => {
       if (data) {
         setCliente(data);
       } else {
-        const ext = await clienteService.consultarDni(dni);
+        const res = await clienteService.consultarDni(dni);
+        const ext = res?.data || res; // Manejar si res.data existe o si es el objeto directo
+        
         if (ext && ext.nombres) {
           setCliente({
             nombres: ext.nombres,
-            apellidos: `${ext.apellidoPaterno} ${ext.apellidoMaterno}`,
-            dni: ext.numeroDocumento
+            apellidos: `${ext.apellido_paterno || ''} ${ext.apellido_materno || ''}`.trim(),
+            dni: ext.numeroDocumento || ext.numero_documento || dni
           });
         } else {
           Swal.fire({ icon: 'error', title: 'No encontrado', text: 'Cliente no encontrado', background: '#1e293b', color: '#fff' });
@@ -142,7 +165,43 @@ export const KioskoPage = () => {
   const onKeyPressPlaca = (k) => { if (placa.length < 7) setPlaca(prev => prev + k); };
   const onBackspacePlaca = () => setPlaca(prev => prev.slice(0, -1));
   const onConfirmPlaca = () => {
-    if (placa.length >= 6) handleNext();
+    if (placa.length >= 6) consultarVehiculo();
+  };
+
+  const consultarVehiculo = async () => {
+    if (placa.length < 6) {
+      Swal.fire({ icon: 'warning', title: 'Placa Inválida', text: 'La placa debe tener al menos 6 caracteres.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, background: '#1e293b', color: '#fff' });
+      return;
+    }
+    try {
+      setLoading(true);
+      
+      // 1. Buscar en BD Local
+      const resLocal = await vehiculoService.getVehiculos(1, placa);
+      const lista = Array.isArray(resLocal) ? resLocal : (resLocal.results || []);
+      const vehiculoLocal = lista.find(v => (v.placa || '').toUpperCase() === placa.toUpperCase());
+      
+      if (vehiculoLocal) {
+        setVehiculo(vehiculoLocal);
+        return;
+      }
+
+      // 2. Si no existe, buscar en API Externa
+      const data = await vehiculoService.buscarPorPlaca(placa);
+      if (data) {
+        setVehiculo(data.data || data); // Extrae la data si el backend lo devuelve anidado
+      } else {
+        Swal.fire({ icon: 'error', title: 'No encontrado', text: 'Vehículo no encontrado', background: '#1e293b', color: '#fff' });
+        setVehiculo(null);
+      }
+    } catch (error) {
+      console.error(error);
+      const msg = error.response?.data?.error || 'No se pudo encontrar información de esta placa.';
+      Swal.fire({ icon: 'warning', title: 'No encontrado', text: msg, background: '#1e293b', color: '#fff' });
+      setVehiculo(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -325,38 +384,80 @@ export const KioskoPage = () => {
 
           {/* PASO 2: PLACA */}
           {step === 2 && (
-            <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-right-8 duration-500">
-               <div className="w-16 h-16 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-4 text-[#e50914] bg-[#e50914]/5">
-                <Car size={32} />
-              </div>
-              <h2 className="text-3xl font-bold mb-2 text-white">Ingresa la placa del vehículo</h2>
-              <p className="text-slate-400 mb-8">Te mostraremos los repuestos ideales para tu auto</p>
+            <div className="w-full max-w-5xl flex flex-col xl:flex-row gap-12 items-center justify-center animate-in fade-in slide-in-from-right-8 duration-500">
               
-              <div className="w-full max-w-md relative mb-8">
-                <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  readOnly
-                  value={placa}
-                  placeholder="ABC-123"
-                  className="w-full bg-[#121826] border-2 border-slate-700 text-white text-4xl font-mono tracking-widest py-4 pl-14 pr-4 rounded-xl text-center focus:outline-none uppercase"
-                />
-              </div>
-              
-              <TecladoAlfanumerico onKeyPress={onKeyPressPlaca} onBackspace={onBackspacePlaca} onConfirm={onConfirmPlaca} />
+              {/* Tarjeta de Ingreso */}
+              <div className="w-full xl:w-1/2 bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5">
+                  <Car size={32} />
+                </div>
+                <h2 className="text-3xl font-bold mb-2 text-white">Ingresa la placa</h2>
+                <p className="text-slate-400 mb-8 text-center">Te mostraremos los repuestos para tu auto</p>
+                
+                <div className="w-full relative mb-8">
+                  <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    readOnly
+                    value={placa}
+                    placeholder="ABC-123"
+                    className="w-full bg-[#0b0f19] border-2 border-slate-700 text-white text-3xl font-mono tracking-widest py-4 pl-14 pr-4 rounded-xl text-center focus:outline-none uppercase"
+                  />
+                </div>
+                
+                <TecladoAlfanumerico onKeyPress={onKeyPressPlaca} onBackspace={onBackspacePlaca} onConfirm={onConfirmPlaca} />
 
-              <div className="flex gap-4 mt-8">
-                <button onClick={handleBack} className="flex items-center gap-2 bg-[#121826] border border-slate-700 hover:bg-slate-800 text-white px-8 py-4 rounded-xl font-bold">
-                  <ArrowLeft size={24}/> Volver
-                </button>
-                <button 
-                  onClick={handleNext}
-                  disabled={placa.length < 6}
-                  className="flex items-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-10 py-4 rounded-xl font-bold shadow-lg"
-                >
-                  Buscar Repuestos <ArrowRight size={24}/>
-                </button>
+                <div className="flex gap-4 mt-6 w-full max-w-xl">
+                  <button onClick={handleBack} className="flex items-center justify-center gap-2 bg-[#1c2230] hover:bg-[#2a3447] text-white px-6 py-4 rounded-xl font-bold transition-all flex-1 shadow-md">
+                    <ArrowLeft size={24}/> Volver
+                  </button>
+                  <button 
+                    onClick={consultarVehiculo}
+                    disabled={placa.length < 6 || loading}
+                    className="flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold shadow-lg transition-all flex-1"
+                  >
+                    {loading ? 'Buscando...' : <><Search size={24}/> Buscar</>}
+                  </button>
+                </div>
               </div>
+
+              {/* Resultado Vehículo */}
+              <div className="w-full xl:w-1/2 flex flex-col">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white"><Car className="text-[#e50914]" size={20}/> Datos del vehículo</h3>
+                
+                {vehiculo ? (
+                  <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center animate-in zoom-in-95">
+                    <div className="w-24 h-24 bg-[#e50914] rounded-full flex items-center justify-center mb-6 shadow-lg shadow-red-500/20">
+                      <Car size={48} className="text-white" />
+                    </div>
+                    <div className="w-full grid grid-cols-2 gap-x-4 gap-y-4 text-left border border-slate-800 p-6 rounded-2xl bg-[#0b0f19] text-sm overflow-y-auto max-h-[300px]">
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Marca:</span><span className="font-bold text-white uppercase truncate">{vehiculo.marca || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Modelo:</span><span className="font-bold text-white uppercase truncate">{vehiculo.modelo || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Año:</span><span className="font-bold text-white">{vehiculo.anio_fabricacion || vehiculo.anio || vehiculo.año || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Color:</span><span className="font-bold text-white uppercase truncate">{vehiculo.color || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Clase:</span><span className="font-bold text-white uppercase truncate">{vehiculo.clase || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Tipo:</span><span className="font-bold text-white uppercase truncate">{vehiculo.tipo || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Uso:</span><span className="font-bold text-white uppercase truncate">{vehiculo.uso || '-'}</span></div>
+                      <div className="flex flex-col"><span className="text-slate-500 font-medium">Asientos:</span><span className="font-bold text-white uppercase">{vehiculo.numero_asientos || '-'}</span></div>
+                      <div className="flex flex-col col-span-2"><span className="text-slate-500 font-medium">N° Motor:</span><span className="font-bold text-white uppercase truncate">{vehiculo.numero_motor || '-'}</span></div>
+                      <div className="flex flex-col col-span-2"><span className="text-slate-500 font-medium">N° Serie:</span><span className="font-bold text-white uppercase truncate">{vehiculo.numero_serie || '-'}</span></div>
+                    </div>
+                    
+                    <button 
+                      onClick={handleNext}
+                      className="mt-8 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
+                    >
+                      Buscar Repuestos <ArrowRight size={24} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-8 rounded-3xl flex flex-col items-center justify-center text-center h-[350px]">
+                    <Search size={48} className="text-slate-600 mb-4" />
+                    <p className="text-slate-500">Ingresa la placa del vehículo<br/>para consultar sus datos.</p>
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
 
@@ -366,34 +467,64 @@ export const KioskoPage = () => {
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h2 className="text-3xl font-bold text-white">Catálogo de Repuestos</h2>
-                  <p className="text-slate-400 mt-2">Mostrando repuestos para <span className="text-[#e50914] font-mono font-bold bg-[#e50914]/10 px-2 py-1 rounded">{placa}</span></p>
+                  <p className="text-slate-400 mt-2">
+                    Mostrando repuestos para{' '}
+                    <span className="text-[#e50914] font-bold bg-[#e50914]/10 px-2 py-1 rounded">
+                      {vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anio_fabricacion || ''}`.trim() : placa}
+                    </span>
+                  </p>
                 </div>
                 <button onClick={handleNext} className="flex items-center gap-2 bg-[#e50914] hover:bg-[#b80710] text-white font-bold px-6 py-3 rounded-xl">
                   Ver Carrito ({carrito.length}) <ArrowRight size={20} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2" style={{ maxHeight: '50vh' }}>
-                {repuestosMock.map((producto) => (
-                  <div key={producto.id} className="bg-[#121826] border border-slate-800 hover:border-[#e50914]/50 p-6 rounded-2xl flex items-center gap-6 transition-all">
-                    <div className="w-20 h-20 bg-[#0b0f19] rounded-xl flex items-center justify-center text-3xl">
-                      {producto.img}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white mb-1">{producto.nombre}</h3>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-2xl font-bold text-[#e50914]">S/ {producto.precio.toFixed(2)}</span>
-                        <button 
-                          onClick={() => setCarrito([...carrito, { ...producto, cantidad: 1 }])}
-                          className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
-                        >
-                          AGREGAR
-                        </button>
+              {loadingRepuestos ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                  <div className="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-slate-400">Buscando repuestos compatibles...</p>
+                </div>
+              ) : repuestosCompatibles.length === 0 ? (
+                <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-12 rounded-3xl flex flex-col items-center justify-center text-center">
+                  <Wrench size={56} className="text-slate-600 mb-4" />
+                  <p className="text-slate-400 text-lg font-medium">No encontramos repuestos registrados</p>
+                  <p className="text-slate-500 text-sm mt-2">
+                    para{' '}
+                    <span className="text-white font-bold">{vehiculo ? `${vehiculo.marca} ${vehiculo.modelo}` : placa}</span>
+                    {(vehiculo?.anio_fabricacion) && <span className="text-white font-bold"> ({vehiculo.anio_fabricacion})</span>}
+                    .<br/>Consulta con nuestro personal.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2" style={{ maxHeight: '50vh' }}>
+                  {repuestosCompatibles.map((producto) => (
+                    <div key={producto.id} className="bg-[#121826] border border-slate-800 hover:border-[#e50914]/50 p-6 rounded-2xl flex items-center gap-6 transition-all">
+                      <div className="w-20 h-20 bg-[#0b0f19] rounded-xl flex items-center justify-center text-3xl">
+                        <Wrench size={32} className="text-[#e50914]" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white mb-1">{producto.nombre}</h3>
+                        <p className="text-slate-500 text-sm mb-2">{producto.codigo}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-2xl font-bold text-[#e50914]">S/ {parseFloat(producto.precio_lista || 0).toFixed(2)}</span>
+                          <button
+                            onClick={() => {
+                              const yaEnCarrito = carrito.find(c => c.id === producto.id);
+                              if (yaEnCarrito) return;
+                              setCarrito([...carrito, { ...producto, cantidad: 1 }]);
+                            }}
+                            disabled={carrito.find(c => c.id === producto.id)}
+                            className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
+                          >
+                            {carrito.find(c => c.id === producto.id) ? 'AGREGADO ✓' : 'AGREGAR'}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-6 flex">
                 <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white">
                   <ArrowLeft size={20}/> Volver al vehículo
@@ -416,16 +547,16 @@ export const KioskoPage = () => {
                      {carrito.map((item, idx) => (
                        <div key={idx} className="flex justify-between items-center border-b border-slate-800 pb-4">
                          <div className="flex items-center gap-4">
-                           <span className="text-2xl">{item.img}</span>
+                           <Wrench size={24} className="text-[#e50914]" />
                            <span className="text-lg font-medium text-white">{item.nombre}</span>
                          </div>
-                         <span className="font-bold text-white">S/ {item.precio.toFixed(2)}</span>
+                         <span className="font-bold text-white">S/ {parseFloat(item.precio_lista || 0).toFixed(2)}</span>
                        </div>
                      ))}
                      <div className="flex justify-between items-center pt-4 mt-4">
                        <span className="text-xl text-slate-400">Total a Pagar</span>
                        <span className="text-4xl font-bold text-[#e50914]">
-                         S/ {carrito.reduce((acc, item) => acc + item.precio, 0).toFixed(2)}
+                         S/ {carrito.reduce((acc, item) => acc + parseFloat(item.precio_lista || 0), 0).toFixed(2)}
                        </span>
                      </div>
                    </div>
@@ -439,7 +570,7 @@ export const KioskoPage = () => {
                  <button 
                   onClick={() => {
                     Swal.fire({ title: 'Generando Ticket...', icon: 'success', background: '#121826', color: '#fff', confirmButtonColor: '#e50914' })
-                    .then(() => { setStep(1); setDni(''); setPlaca(''); setCliente(null); setCarrito([]); });
+                    .then(() => { setStep(1); setDni(''); setPlaca(''); setCliente(null); setVehiculo(null); setCarrito([]); setRepuestosCompatibles([]); });
                   }}
                   disabled={carrito.length === 0}
                   className="flex-1 flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-500/20"

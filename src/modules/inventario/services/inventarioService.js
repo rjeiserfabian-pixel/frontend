@@ -88,11 +88,12 @@ export const inventarioService = {
     return response.data;
   },
 
-  // --- Busqueda Dinamica ---
-  getRepuestosCompatibles: async (marca, modelo, motor) => {
+  // --- Busqueda Dinamica por Compatibilidad de Vehículo ---
+  getRepuestosCompatibles: async (marca, modelo, anio, motor) => {
     let query = `?marca=${encodeURIComponent(marca)}`;
     if (modelo) query += `&modelo=${encodeURIComponent(modelo)}`;
-    if (motor) query += `&motor=${encodeURIComponent(motor)}`;
+    if (anio)   query += `&anio=${encodeURIComponent(anio)}`;
+    if (motor)  query += `&motor=${encodeURIComponent(motor)}`;
     
     const response = await api.get(`${URL_REPUESTOS}compatibles/${query}`);
     return response.data;

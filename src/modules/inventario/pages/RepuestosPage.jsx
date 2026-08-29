@@ -691,19 +691,23 @@ export default function RepuestosPage() {
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="subtitle1" fontWeight="bold">Aplicaciones Compatibles (Vehículos)</Typography>
-              <Button variant="outlined" size="small" onClick={() => append({ marca_vehiculo: '', modelo_vehiculo: '', motor: '' })}>
+              <Button variant="outlined" size="small" onClick={() => append({ marca_vehiculo: '', modelo_vehiculo: '', motor: '', anio_desde: '', anio_hasta: '' })}>
                 + Agregar Regla
               </Button>
             </Box>
             
             {fields.map((item, index) => (
-              <Box key={item.id} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', p: 2, border: '1px dashed #ccc', borderRadius: 2 }}>
-                <TextField label="Marca (Ej. Toyota)" size="small" fullWidth {...register(`aplicaciones.${index}.marca_vehiculo`, { required: true })} error={!!errors?.aplicaciones?.[index]?.marca_vehiculo} />
-                <TextField label="Modelo (Opcional)" size="small" fullWidth {...register(`aplicaciones.${index}.modelo_vehiculo`)} />
-                <TextField label="Motor (Opcional)" size="small" fullWidth {...register(`aplicaciones.${index}.motor`)} />
-                <IconButton color="error" onClick={() => remove(index)}>
-                  <X size={20} />
-                </IconButton>
+              <Box key={item.id} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start', p: 2, border: '1px dashed #ccc', borderRadius: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2, width: '100%', flexWrap: 'wrap' }}>
+                  <TextField label="Marca Vehículo (Ej. FIAT)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.marca_vehiculo`, { required: true })} error={!!errors?.aplicaciones?.[index]?.marca_vehiculo} helperText="Obligatorio" />
+                  <TextField label="Modelo (Opcional)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.modelo_vehiculo`)} helperText="Vacío = toda la marca" />
+                  <TextField label="Motor (Opcional)" size="small" sx={{ flex: '1 1 120px' }} {...register(`aplicaciones.${index}.motor`)} />
+                  <TextField label="Año Desde" size="small" type="number" sx={{ flex: '0 1 100px' }} inputProps={{ min: 1900, max: 2099 }} {...register(`aplicaciones.${index}.anio_desde`, { min: 1900, max: 2099 })} helperText="Vacío = sin límite" />
+                  <TextField label="Año Hasta" size="small" type="number" sx={{ flex: '0 1 100px' }} inputProps={{ min: 1900, max: 2099 }} {...register(`aplicaciones.${index}.anio_hasta`, { min: 1900, max: 2099 })} helperText="Vacío = sin límite" />
+                  <IconButton color="error" onClick={() => remove(index)} sx={{ mt: 1 }}>
+                    <X size={20} />
+                  </IconButton>
+                </Box>
               </Box>
             ))}
             {fields.length === 0 && <Typography variant="body2" color="text.secondary">No hay reglas de compatibilidad. Clic en "+ Agregar Regla" para añadir los vehículos compatibles con este repuesto.</Typography>}
