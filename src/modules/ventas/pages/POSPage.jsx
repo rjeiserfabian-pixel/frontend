@@ -721,6 +721,24 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [buscandoCliente, setBuscandoCliente] = useState(false);
 
+  useEffect(() => {
+    if (initialOrder && initialOrder.cliente) {
+      const fetchDatosCliente = async () => {
+        try {
+          const cli = await clienteService.obtener(initialOrder.cliente);
+          if (cli) {
+            setClienteDireccion(cli.direccion || '');
+            setClienteTelefono(cli.telefono || '');
+          }
+        } catch (err) {
+          console.error("Error al cargar detalles del cliente", err);
+        }
+      };
+      fetchDatosCliente();
+    }
+  }, [initialOrder]);
+
+
   const buscarRepuestos = async (query) => {
     if (!query) {
       setResultadosProductos([]);
@@ -895,6 +913,10 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
         if (existente) {
           finalClienteId = existente.id;
           setClienteId(finalClienteId);
+          // Actualizar datos si el usuario los llenó o editó
+          try {
+            await clienteService.actualizar(finalClienteId, { dni, nombres: clienteNombre, apellidos: clienteApellidos || '-', direccion: clienteDireccion, telefono: clienteTelefono, email: existente.email || '' });
+          } catch(e) {}
         } else {
           // 2. Solo crear si no existe
           const nuevoCliente = {
@@ -909,6 +931,11 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
           finalClienteId = resCli.id;
           setClienteId(finalClienteId);
         }
+      } else {
+        // Cliente ya existe (ej. viene del Kiosko o se buscó). Actualizar si editó la info.
+        try {
+          await clienteService.actualizar(finalClienteId, { dni, nombres: clienteNombre, apellidos: clienteApellidos || '-', direccion: clienteDireccion, telefono: clienteTelefono, email: '' });
+        } catch (e) { console.error("Error al actualizar cliente", e); }
       }
 
       const payloadVenta = {

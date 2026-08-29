@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { 
   Search, Car, Wrench, CheckCircle, ArrowLeft, ArrowRight, 
   User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete
@@ -8,6 +8,7 @@ import { clienteService } from "../../clientes/services/clienteService";
 import { vehiculoService } from "../../vehiculos/services/vehiculosService";
 import { inventarioService } from "../../inventario/services/inventarioService";
 import { ventasService } from "../services/ventasApi";
+import { useReactToPrint } from 'react-to-print';
 
 const KeyButton = ({ children, onClick, className, variant }) => {
   const v = variant || "default";
@@ -69,9 +70,17 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
   );
 };
 
-const PRINT_STYLES = "@media print { body * { visibility: hidden; } #ticket-impresion, #ticket-impresion * { visibility: visible; } #ticket-impresion { position: absolute; left: 0; top: 0; width: 80mm; padding: 10px; color: #000; background: #fff; font-family: monospace; font-size: 12px; } .no-print { display: none !important; } }";
-
 export const KioskoPage = () => {
+  const printRef = React.useRef();
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    onAfterPrint: () => {
+      setTimeout(resetAll, 200); 
+    },
+    documentTitle: 'Ticket Kiosko',
+  });
+
+  const [empresaNombre, setEmpresaNombre] = useState("MOTOR 360");
   const [step, setStep] = useState(1);
   const [dni, setDni] = useState("");
   const [placa, setPlaca] = useState("");
@@ -81,6 +90,21 @@ export const KioskoPage = () => {
   const [carrito, setCarrito] = useState([]);
   const [repuestosCompatibles, setRepuestosCompatibles] = useState([]);
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
+
+  React.useEffect(() => {
+    const fetchEmpresa = async () => {
+      try {
+        const api = (await import('../../../core/api/axios')).default;
+        const res = await api.get('/seguridad/empresa/');
+        if (res.data && res.data.data && res.data.data.razon_social) {
+          setEmpresaNombre(res.data.data.razon_social);
+        }
+      } catch (err) {
+        console.error("Error fetching empresa", err);
+      }
+    };
+    fetchEmpresa();
+  }, []);
 
   React.useEffect(() => {
     if (step === 3 && vehiculo) {
@@ -169,15 +193,28 @@ export const KioskoPage = () => {
   const generarTicket = async () => {
     try {
       Swal.fire({ title: "Generando Ticket...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      
+      let finalClienteId = cliente ? cliente.id : null;
+      if (!finalClienteId && cliente && cliente.dni) {
+        try {
+          const nuevo = { dni: cliente.dni, nombres: cliente.nombres, apellidos: cliente.apellidos || "-", direccion: "", telefono: "", email: "" };
+          const resCli = await clienteService.crear(nuevo);
+          finalClienteId = resCli.id;
+        } catch (errCli) {
+          console.error("Error al guardar cliente nuevo", errCli);
+        }
+      }
+
       const payload = {
-        cliente_id: cliente ? cliente.id : null,
+        cliente_id: finalClienteId,
         vehiculo_id: vehiculo ? (vehiculo.id || null) : null,
         sucursal_id: 1,
         detalles: carrito.map(c => ({ repuesto_id: c.id, cantidad: c.cantidad || 1, precio_unitario: parseFloat(c.precio_lista || c.precio || 0) }))
       };
       await ventasService.generarTicket(payload);
       Swal.close();
-      setTimeout(() => { window.print(); setTimeout(resetAll, 500); }, 100);
+      
+      setTimeout(() => { handlePrint(); }, 100);
     } catch (e) {
       console.error(e);
       Swal.fire({ icon: "error", title: "Error", text: "Hubo un error al generar el ticket.", background: "#1e293b", color: "#fff" });
@@ -188,8 +225,7 @@ export const KioskoPage = () => {
 
   return (
     <React.Fragment>
-      <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
-      <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden no-print">
+      <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden">
 
         {/* PANEL IZQUIERDO */}
         <div className="hidden lg:flex w-2/5 flex-col relative bg-black border-r border-slate-800">
@@ -197,11 +233,10 @@ export const KioskoPage = () => {
           <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#0b0f19]/80 via-transparent to-[#0b0f19]" />
           <div className="relative z-10 flex flex-col h-full p-12">
             <div className="flex items-center gap-3 mb-12">
-              <span className="text-4xl font-black italic tracking-tighter text-white">MOTOR</span>
-              <span className="text-4xl font-black italic tracking-tighter text-[#e50914]">360 grados</span>
+              <span className="text-3xl font-black italic tracking-tighter text-white uppercase">{empresaNombre}</span>
             </div>
             <div className="mt-12">
-              <h1 className="text-5xl font-black italic mb-4 leading-tight">BIENVENIDO A <br/><span className="text-[#e50914]">MOTOR</span> 360</h1>
+              <h1 className="text-4xl font-black italic mb-4 leading-tight">BIENVENIDO A <br/><span className="text-[#e50914] uppercase">{empresaNombre}</span></h1>
               <p className="text-xl text-slate-300 font-light max-w-sm">Encuentra los mejores repuestos para tu vehiculo en nuestro catalogo interactivo.</p>
             </div>
           </div>
@@ -393,41 +428,43 @@ export const KioskoPage = () => {
           </div>
         </div>
 
-        {/* TICKET PARA IMPRESION */}
-        <div id="ticket-impresion" className="hidden print:block">
-          <div style={{ textAlign: "center", marginBottom: "10px" }}>
-            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "bold" }}>MOTOR 360</h2>
-            <p style={{ margin: 0 }}>Ticket de Kiosko</p>
-          </div>
-          <div style={{ borderBottom: "1px dashed #000", marginBottom: "10px" }}></div>
-          <div style={{ marginBottom: "10px" }}>
-            <p style={{ margin: "2px 0" }}><strong>Cliente:</strong> {cliente ? (cliente.nombres + " " + cliente.apellidos) : "No especificado"}</p>
-            <p style={{ margin: "2px 0" }}><strong>DNI:</strong> {dni || "N/A"}</p>
-            <p style={{ margin: "2px 0" }}><strong>Vehiculo:</strong> {vehiculo ? ((vehiculo.marca || "") + " " + (vehiculo.modelo || "")) : "N/A"}</p>
-            <p style={{ margin: "2px 0" }}><strong>Placa:</strong> {placa || "N/A"}</p>
-          </div>
-          <div style={{ borderBottom: "1px dashed #000", marginBottom: "10px" }}></div>
-          <div style={{ marginBottom: "10px" }}>
-            <table style={{ width: "100%", fontSize: "12px" }}>
-              <thead><tr><th style={{ textAlign: "left" }}>Cant</th><th style={{ textAlign: "left" }}>Descripcion</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
-              <tbody>
-                {carrito.map((item, idx) => (
-                  <tr key={idx}>
-                    <td style={{ verticalAlign: "top" }}>{item.cantidad || 1}</td>
-                    <td style={{ paddingRight: "5px" }}>{item.nombre}</td>
-                    <td style={{ textAlign: "right" }}>S/ {((item.cantidad || 1) * parseFloat(item.precio_lista || item.precio || 0)).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ borderTop: "1px dashed #000", paddingTop: "10px", textAlign: "right", fontWeight: "bold" }}>
-            Total a Pagar: S/ {carrito.reduce((acc, item) => acc + ((item.cantidad || 1) * parseFloat(item.precio_lista || item.precio || 0)), 0).toFixed(2)}
-          </div>
-          <div style={{ borderTop: "1px dashed #000", marginTop: "10px", paddingTop: "10px", textAlign: "center" }}>
-            <p style={{ margin: 0 }}>Por favor, presente este ticket</p>
-            <p style={{ margin: 0 }}>en caja para procesar su compra.</p>
-            <p style={{ margin: "10px 0 0 0", fontSize: "10px" }}>Gracias por su preferencia!</p>
+        {/* TICKET PARA IMPRESION (Usando react-to-print) */}
+        <div style={{ display: 'none' }}>
+          <div id="ticket-impresion" ref={printRef} style={{ width: '80mm', padding: '10px', color: '#000', background: '#fff', fontFamily: 'monospace', fontSize: '12px' }}>
+            <div style={{ textAlign: "center", marginBottom: "10px" }}>
+              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "bold", textTransform: "uppercase" }}>{empresaNombre}</h2>
+              <p style={{ margin: 0 }}>Ticket de Kiosko</p>
+            </div>
+            <div style={{ borderBottom: "1px dashed #000", marginBottom: "10px" }}></div>
+            <div style={{ marginBottom: "10px" }}>
+              <p style={{ margin: "2px 0" }}><strong>Cliente:</strong> {cliente ? (cliente.nombres + " " + cliente.apellidos) : "No especificado"}</p>
+              <p style={{ margin: "2px 0" }}><strong>DNI:</strong> {dni || "N/A"}</p>
+              <p style={{ margin: "2px 0" }}><strong>Vehiculo:</strong> {vehiculo ? ((vehiculo.marca || "") + " " + (vehiculo.modelo || "")) : "N/A"}</p>
+              <p style={{ margin: "2px 0" }}><strong>Placa:</strong> {placa || "N/A"}</p>
+            </div>
+            <div style={{ borderBottom: "1px dashed #000", marginBottom: "10px" }}></div>
+            <div style={{ marginBottom: "10px" }}>
+              <table style={{ width: "100%", fontSize: "12px" }}>
+                <thead><tr><th style={{ textAlign: "left" }}>Cant</th><th style={{ textAlign: "left" }}>Descripcion</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
+                <tbody>
+                  {carrito.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={{ verticalAlign: "top" }}>{item.cantidad || 1}</td>
+                      <td style={{ paddingRight: "5px" }}>{item.nombre}</td>
+                      <td style={{ textAlign: "right" }}>S/ {((item.cantidad || 1) * parseFloat(item.precio_lista || item.precio || 0)).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ borderTop: "1px dashed #000", paddingTop: "10px", textAlign: "right", fontWeight: "bold" }}>
+              Total a Pagar: S/ {carrito.reduce((acc, item) => acc + ((item.cantidad || 1) * parseFloat(item.precio_lista || item.precio || 0)), 0).toFixed(2)}
+            </div>
+            <div style={{ borderTop: "1px dashed #000", marginTop: "10px", paddingTop: "10px", textAlign: "center" }}>
+              <p style={{ margin: 0 }}>Por favor, presente este ticket</p>
+              <p style={{ margin: 0 }}>en caja para procesar su compra.</p>
+              <p style={{ margin: "10px 0 0 0", fontSize: "10px" }}>Gracias por su preferencia!</p>
+            </div>
           </div>
         </div>
       </div>
