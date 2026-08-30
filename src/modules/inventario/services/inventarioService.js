@@ -11,6 +11,12 @@ export const inventarioService = {
     return response.data;
   },
 
+  // --- Unidades de Medida ---
+  getUnidadesMedida: async () => {
+    const response = await api.get('/inventario/unidades-medida/');
+    return response.data;
+  },
+
   // --- Categorias ---
   getCategorias: async (params = {}) => {
     const query = new URLSearchParams();

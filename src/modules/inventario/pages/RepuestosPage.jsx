@@ -17,6 +17,7 @@ export default function RepuestosPage() {
   const [categorias, setCategorias] = useState([]);
   const [marcas, setMarcas] = useState([]);
   const [tiposIgv, setTiposIgv] = useState([]);
+  const [unidadesMedida, setUnidadesMedida] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -89,16 +90,18 @@ export default function RepuestosPage() {
       setRepuestos(resRepuestos.results || resRepuestos);
       setTotalCount(resRepuestos.count || (resRepuestos.results ? resRepuestos.results.length : resRepuestos.length) || 0);
 
-      // Cargar categorias, marcas e impuestos solo si no se han cargado
-      if (categorias.length === 0 || marcas.length === 0 || tiposIgv.length === 0) {
-        const [resCategorias, resMarcas, resTiposIgv] = await Promise.all([
+      // Cargar categorias, marcas, impuestos y unidades de medida solo si no se han cargado
+      if (categorias.length === 0 || marcas.length === 0 || tiposIgv.length === 0 || unidadesMedida.length === 0) {
+        const [resCategorias, resMarcas, resTiposIgv, resUnidades] = await Promise.all([
           inventarioService.getCategorias(),
           inventarioService.getMarcas(),
-          inventarioService.getTiposIgv()
+          inventarioService.getTiposIgv(),
+          inventarioService.getUnidadesMedida()
         ]);
         setCategorias(resCategorias.results || resCategorias);
         setMarcas(resMarcas.results || resMarcas);
         setTiposIgv(resTiposIgv.results || resTiposIgv);
+        setUnidadesMedida(resUnidades.results || resUnidades);
       }
     } catch (error) {
       console.error(error);
@@ -123,6 +126,8 @@ export default function RepuestosPage() {
         nombre: repuesto.nombre,
         categoria: repuesto.categoria,
         marca: repuesto.marca,
+        unidad_medida: repuesto.unidad_medida || '',
+        viscosidad: repuesto.viscosidad || '',
         tipo_igv: repuesto.tipo_igv || '',
         stock: repuesto.stock,
         precio_compra: repuesto.precio_compra,
@@ -134,7 +139,7 @@ export default function RepuestosPage() {
     } else {
       setEditingId(null);
       reset({ 
-        codigo: '', nombre: '', categoria: '', marca: '', tipo_igv: '', stock: 0,
+        codigo: '', nombre: '', categoria: '', marca: '', unidad_medida: '', viscosidad: '', tipo_igv: '', stock: 0,
         precio_compra: '', precio_por_mayor: '', precio_cash: '', precio_lista: '',
         aplicaciones: [] 
       });
@@ -149,11 +154,21 @@ export default function RepuestosPage() {
 
   const onSubmit = async (data) => {
     try {
+      // Limpiar campos vacíos de aplicaciones para evitar error 400 en enteros
+      const payload = { ...data };
+      if (payload.aplicaciones && payload.aplicaciones.length > 0) {
+        payload.aplicaciones = payload.aplicaciones.map(app => ({
+          ...app,
+          anio_desde: app.anio_desde === '' ? null : app.anio_desde,
+          anio_hasta: app.anio_hasta === '' ? null : app.anio_hasta,
+        }));
+      }
+
       if (editingId) {
-        await inventarioService.updateRepuesto(editingId, data);
+        await inventarioService.updateRepuesto(editingId, payload);
         Swal.fire('Éxito', 'Repuesto actualizado correctamente', 'success');
       } else {
-        await inventarioService.createRepuesto(data);
+        await inventarioService.createRepuesto(payload);
         Swal.fire('Éxito', 'Repuesto creado correctamente', 'success');
       }
       handleCloseModal();
@@ -490,7 +505,7 @@ export default function RepuestosPage() {
                   </TableRow>
                 ) : (
                   repuestos.map((row) => {
-                    const stockNum = row.stock_total_disponible !== undefined ? row.stock_total_disponible : row.stock;
+                    const stockNum = row.stock_total_disponible || 0;
                     const stockColor = (row.stock_minimo_global !== undefined && stockNum <= row.stock_minimo_global) ? "error" : "success";
                     return (
                     <TableRow key={row.id} hover>
@@ -646,6 +661,30 @@ export default function RepuestosPage() {
               </Grid>
               <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
                 <Controller
+                  name="unidad_medida"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Autocomplete
+                      options={unidadesMedida}
+                      getOptionLabel={(option) => `${option.nombre} (${option.abreviatura})`}
+                      value={unidadesMedida.find(u => u.id === field.value) || null}
+                      onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Unidad de Medida" 
+                          error={!!errors.unidad_medida} 
+                          helperText={errors.unidad_medida ? "Requerido" : ""}
+                        />
+                      )}
+                      noOptionsText="No se encontraron unidades"
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
+                <Controller
                   name="tipo_igv"
                   control={control}
                   render={({ field }) => (
@@ -666,8 +705,17 @@ export default function RepuestosPage() {
                   )}
                 />
               </Grid>
+            </Grid>
+
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Especificaciones (Opcional)</Typography>
+            <Grid container spacing={2} mb={3}>
               <Grid item xs={12} md={4}>
-                <TextField label="Stock" type="number" fullWidth {...register('stock')} />
+                <TextField 
+                  label="Viscosidad (Ej. 5W-30)" 
+                  fullWidth 
+                  {...register('viscosidad')} 
+                  helperText="Para lubricantes y aceites"
+                />
               </Grid>
             </Grid>
 
@@ -810,7 +858,7 @@ export default function RepuestosPage() {
               label="Nueva cantidad disponible *"
               type="number"
               fullWidth
-              inputProps={{ min: 0 }}
+              inputProps={{ min: 0, step: 'any' }}
               value={ajusteValor.cantidad}
               onChange={(e) => setAjusteValor((prev) => ({ ...prev, cantidad: e.target.value }))}
             />
@@ -818,7 +866,7 @@ export default function RepuestosPage() {
               label="Stock Mínimo (Alerta)"
               type="number"
               fullWidth
-              inputProps={{ min: 0 }}
+              inputProps={{ min: 0, step: 'any' }}
               value={ajusteValor.stock_minimo}
               onChange={(e) => setAjusteValor((prev) => ({ ...prev, stock_minimo: e.target.value }))}
             />
@@ -868,7 +916,7 @@ export default function RepuestosPage() {
                   label="Stock inicial disponible *"
                   type="number"
                   fullWidth
-                  inputProps={{ min: 0 }}
+                  inputProps={{ min: 0, step: 'any' }}
                   value={asignarForm.cantidad}
                   onChange={(e) => setAsignarForm((prev) => ({ ...prev, cantidad: e.target.value }))}
                 />

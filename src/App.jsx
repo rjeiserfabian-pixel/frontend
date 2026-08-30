@@ -9,6 +9,7 @@ import UbigeoPage from './modules/seguridad/pages/UbigeoPage';
 import PerfilPage from './modules/seguridad/pages/PerfilPage';
 import CategoriasPage from './modules/inventario/pages/CategoriasPage';
 import MarcasPage from './modules/inventario/pages/MarcasPage';
+import UnidadesPage from './modules/inventario/pages/UnidadesPage';
 import RepuestosPage from './modules/inventario/pages/RepuestosPage';
 import VehiculosPage from './modules/vehiculos/pages/VehiculosPage';
 import SucursalesPage from './modules/inventario/pages/SucursalesPage';
@@ -43,6 +44,7 @@ function App() {
           <Route path="/seguridad/perfil" element={<PerfilPage />} />
           <Route path="/inventario/categorias" element={<CategoriasPage />} />
           <Route path="/inventario/marcas" element={<MarcasPage />} />
+          <Route path="/inventario/unidades" element={<UnidadesPage />} />
           <Route path="/inventario/repuestos" element={<RepuestosPage />} />
           <Route path="/inventario/sucursales" element={<SucursalesPage />} />
           <Route path="/inventario/almacenes" element={<AlmacenesPage />} />

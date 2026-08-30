@@ -796,8 +796,21 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const actualizarCantidad = (id, delta) => {
     setCarrito(carrito.map(item => {
       if (item.id === id) {
-        const nuevaCant = Math.max(1, item.cantidad + delta);
-        return { ...item, cantidad: nuevaCant };
+        const step = item.unidad_medida_permite_decimales ? 0.1 : 1;
+        const nuevaCant = Math.max(step, item.cantidad + (delta > 0 ? step : -step));
+        return { ...item, cantidad: Number(nuevaCant.toFixed(2)) };
+      }
+      return item;
+    }));
+  };
+
+  const actualizarCantidadDirecta = (id, val) => {
+    setCarrito(carrito.map(item => {
+      if (item.id === id) {
+        let cant = parseFloat(val);
+        if (isNaN(cant) || cant <= 0) cant = item.unidad_medida_permite_decimales ? 0.1 : 1;
+        if (!item.unidad_medida_permite_decimales) cant = Math.floor(cant);
+        return { ...item, cantidad: cant };
       }
       return item;
     }));
@@ -1334,7 +1347,22 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <IconButton size="small" onClick={() => actualizarCantidad(item.id, -1)} sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }}><Minus size={14} /></IconButton>
-                          <Typography variant="body2" sx={{ width: 24, textAlign: 'center' }}>{item.cantidad}</Typography>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={item.cantidad}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCarrito(carrito.map(x => x.id === item.id ? { ...x, cantidad: val } : x));
+                            }}
+                            onBlur={(e) => actualizarCantidadDirecta(item.id, e.target.value)}
+                            inputProps={{
+                              step: item.unidad_medida_permite_decimales ? "0.1" : "1",
+                              min: item.unidad_medida_permite_decimales ? "0.1" : "1",
+                              style: { textAlign: 'center', padding: '4px', width: '40px' }
+                            }}
+                            sx={{ '& .MuiOutlinedInput-root': { pr: 0, pl: 0 } }}
+                          />
                           <IconButton size="small" onClick={() => actualizarCantidad(item.id, 1)} sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }}><Plus size={14} /></IconButton>
                           <IconButton size="small" color="error" onClick={() => eliminarDelCarrito(item.id)} sx={{ ml: 1 }}><Trash2 size={16} /></IconButton>
                         </Box>
