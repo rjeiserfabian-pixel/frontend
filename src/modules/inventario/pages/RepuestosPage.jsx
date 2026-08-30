@@ -531,7 +531,7 @@ export default function RepuestosPage() {
                                   </Typography>
                                   <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
                                     <span>{i.ubicacion_detalle || i.ubicacion_codigo}</span>
-                                    <strong>{i.stock_disponible} und</strong>
+                                    <strong>{i.stock_disponible} {row.unidad_medida_abreviatura || 'und'}</strong>
                                   </Typography>
                                 </Box>
                               ))}

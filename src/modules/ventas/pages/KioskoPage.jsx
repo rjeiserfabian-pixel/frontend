@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   Search, Car, Wrench, CheckCircle, ArrowLeft, ArrowRight, 
-  User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete
+  User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete, Trash2
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { clienteService } from "../../clientes/services/clienteService";
@@ -91,6 +91,14 @@ export const KioskoPage = () => {
   const [repuestosCompatibles, setRepuestosCompatibles] = useState([]);
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
   const [kilometraje, setKilometraje] = useState("");
+
+  const actualizarCantidad = (productoId, cantidad) => {
+    setCarrito(prev => prev.map(c => c.id === productoId ? { ...c, cantidad: cantidad } : c));
+  };
+
+  const removerDelCarrito = (productoId) => {
+    setCarrito(prev => prev.filter(c => c.id !== productoId));
+  };
 
   React.useEffect(() => {
     const fetchEmpresa = async () => {
@@ -211,7 +219,7 @@ export const KioskoPage = () => {
         vehiculo_id: vehiculo ? (vehiculo.id || null) : null,
         sucursal_id: 1,
         kilometraje: kilometraje ? parseInt(kilometraje, 10) : null,
-        detalles: carrito.map(c => ({ repuesto_id: c.id, cantidad: c.cantidad || 1, precio_unitario: parseFloat(c.precio_lista || c.precio || 0) }))
+        detalles: carrito.map(c => ({ repuesto_id: c.id, cantidad: parseFloat(c.cantidad || 1), precio_unitario: parseFloat(c.precio_lista || c.precio || 0) }))
       };
       await ventasService.generarTicket(payload);
       Swal.close();
@@ -403,16 +411,41 @@ export const KioskoPage = () => {
                         <div className="w-20 h-20 bg-[#0b0f19] rounded-xl flex items-center justify-center"><Wrench size={32} className="text-[#e50914]" /></div>
                         <div className="flex-1">
                           <h3 className="text-xl font-bold text-white mb-1">{producto.nombre}</h3>
-                          <p className="text-slate-500 text-sm mb-2">{producto.codigo}</p>
-                          <div className="flex justify-between items-center mt-2">
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded font-medium">Cod: {producto.codigo}</span>
+                            <span className="bg-[#e50914]/10 text-[#e50914] text-xs px-2 py-1 rounded border border-[#e50914]/20 font-medium">
+                              Venta por: {producto.unidad_medida_nombre || 'Unidad'}
+                            </span>
+                            {producto.viscosidad && (
+                              <span className="bg-blue-900/20 text-blue-400 text-xs px-2 py-1 rounded border border-blue-800/30 font-medium">
+                                {producto.viscosidad}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex justify-between items-center mt-3">
                             <span className="text-2xl font-bold text-[#e50914]">S/ {parseFloat(producto.precio_lista || 0).toFixed(2)}</span>
-                            <button
-                              onClick={() => { if (!carrito.find(c => c.id === producto.id)) setCarrito([...carrito, { ...producto, cantidad: 1 }]); }}
-                              disabled={!!carrito.find(c => c.id === producto.id)}
-                              className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
-                            >
-                              {carrito.find(c => c.id === producto.id) ? "AGREGADO" : "AGREGAR"}
-                            </button>
+                            {carrito.find(c => c.id === producto.id) ? (
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="number" 
+                                  step={producto.unidad_medida_permite_decimales ? "any" : "1"}
+                                  min="0"
+                                  className="w-20 bg-[#0b0f19] border border-[#e50914] text-white text-center py-1 rounded-lg font-bold outline-none"
+                                  value={carrito.find(c => c.id === producto.id).cantidad}
+                                  onChange={(e) => actualizarCantidad(producto.id, e.target.value)}
+                                />
+                                <button onClick={() => removerDelCarrito(producto.id)} className="bg-[#121826] text-[#e50914] p-1.5 rounded hover:bg-[#e50914] hover:text-white transition-all border border-[#e50914]">
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => { setCarrito([...carrito, { ...producto, cantidad: 1 }]); }}
+                                className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
+                              >
+                                AGREGAR
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -435,13 +468,32 @@ export const KioskoPage = () => {
                     <div className="flex flex-col gap-4">
                       {carrito.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center border-b border-slate-800 pb-4">
-                          <div className="flex items-center gap-4"><Wrench size={24} className="text-[#e50914]" /><span className="text-lg font-medium text-white">{item.nombre}</span></div>
-                          <span className="font-bold text-white">S/ {parseFloat(item.precio_lista || 0).toFixed(2)}</span>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-4"><Wrench size={24} className="text-[#e50914]" /><span className="text-lg font-medium text-white">{item.nombre}</span></div>
+                            <div className="flex items-center gap-2 pl-10">
+                                <span className="text-slate-400 text-sm">Cant:</span>
+                                <input 
+                                  type="number" 
+                                  step={item.unidad_medida_permite_decimales ? "any" : "1"}
+                                  min="0"
+                                  className="w-16 bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white text-center py-1 rounded-lg font-bold outline-none text-sm"
+                                  value={item.cantidad}
+                                  onChange={(e) => actualizarCantidad(item.id, e.target.value)}
+                                />
+                                <button onClick={() => removerDelCarrito(item.id)} className="text-slate-500 hover:text-[#e50914]">
+                                  <Trash2 size={18} />
+                                </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm text-slate-500">S/ {parseFloat(item.precio_lista || 0).toFixed(2)} c/u</span>
+                            <span className="font-bold text-white text-xl">S/ {(parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)).toFixed(2)}</span>
+                          </div>
                         </div>
                       ))}
                       <div className="flex justify-between items-center pt-4 mt-4">
                         <span className="text-xl text-slate-400">Total a Pagar</span>
-                        <span className="text-4xl font-bold text-[#e50914]">S/ {carrito.reduce((acc, item) => acc + parseFloat(item.precio_lista || 0), 0).toFixed(2)}</span>
+                        <span className="text-4xl font-bold text-[#e50914]">S/ {carrito.reduce((acc, item) => acc + (parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)), 0).toFixed(2)}</span>
                       </div>
                     </div>
                   )}
@@ -480,7 +532,7 @@ export const KioskoPage = () => {
                 <tbody>
                   {carrito.map((item, idx) => (
                     <tr key={idx}>
-                      <td style={{ verticalAlign: "top" }}>{item.cantidad || 1}</td>
+                      <td style={{ verticalAlign: "top" }}>{item.cantidad || 1} {item.unidad_medida_abreviatura || 'Und'}</td>
                       <td style={{ paddingRight: "5px" }}>{item.nombre}</td>
                       <td style={{ textAlign: "right" }}>S/ {((item.cantidad || 1) * parseFloat(item.precio_lista || item.precio || 0)).toFixed(2)}</td>
                     </tr>

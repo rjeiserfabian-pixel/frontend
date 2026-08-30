@@ -126,7 +126,7 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
             {venta.detalles && venta.detalles.length > 0 ? (
               venta.detalles.map((item, idx) => (
                 <tr key={idx}>
-                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.cantidad}</td>
+                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.cantidad} {item.repuesto_unidad_medida || 'Und'}</td>
                   <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.repuesto_nombre || 'Producto'}</td>
                   <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '4px' }}>
                     {(parseFloat(item.precio_unitario || item.precio_venta) * item.cantidad).toFixed(2)}
