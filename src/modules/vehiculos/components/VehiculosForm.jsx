@@ -23,6 +23,7 @@ const schema = z.object({
   uso: z.string().optional(),
   anio_fabricacion: z.union([z.string(), z.number()]).optional(),
   numero_asientos: z.union([z.string(), z.number()]).optional(),
+  kilometraje_actual: z.union([z.string(), z.number()]).optional(),
 });
 
 const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
@@ -32,7 +33,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
     resolver: zodResolver(schema),
     defaultValues: {
       placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '', 
-      color: '', clase: '', tipo: '', uso: '', anio_fabricacion: '', numero_asientos: ''
+      color: '', clase: '', tipo: '', uso: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
     }
   });
 
@@ -50,11 +51,12 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
         uso: vehiculoEdit.uso || '',
         anio_fabricacion: vehiculoEdit.anio_fabricacion || '',
         numero_asientos: vehiculoEdit.numero_asientos || '',
+        kilometraje_actual: vehiculoEdit.kilometraje_actual || '',
       });
     } else {
       reset({
         placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '', 
-        color: '', clase: '', tipo: '', uso: '', anio_fabricacion: '', numero_asientos: ''
+        color: '', clase: '', tipo: '', uso: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
       });
     }
   }, [vehiculoEdit, open, reset]);
@@ -127,7 +129,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
           }
         });
       } else {
-        await vehiculoService.createVehiculo(data);
+        const res = await vehiculoService.createVehiculo(data);
         Swal.fire({
           icon: 'success',
           title: 'Éxito',
@@ -137,6 +139,9 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
             if (container) container.style.zIndex = '9999';
           }
         });
+        onSuccess(res.data || res);
+        onClose();
+        return; // Early return to avoid double onSuccess call below
       }
       onSuccess();
       onClose();
@@ -249,14 +254,19 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
                 <TextField {...field} label="Uso" fullWidth />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <Controller name="anio_fabricacion" control={control} render={({ field }) => (
                 <TextField {...field} label="Año Fabricación" fullWidth type="number" />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <Controller name="numero_asientos" control={control} render={({ field }) => (
                 <TextField {...field} label="N° Asientos" fullWidth type="number" />
+              )}/>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Controller name="kilometraje_actual" control={control} render={({ field }) => (
+                <TextField {...field} label="Kilometraje Actual" fullWidth type="number" />
               )}/>
             </Grid>
           </Grid>

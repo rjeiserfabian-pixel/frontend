@@ -23,6 +23,10 @@ import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
 import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
 import RegistroManualVentasPage from './modules/ventas/pages/RegistroManualVentasPage';
+import OrdenesTrabajoPage from './modules/taller/pages/OrdenesTrabajoPage';
+import NuevaOrdenPage from './modules/taller/pages/NuevaOrdenPage';
+import DetalleOrdenPage from './modules/taller/pages/DetalleOrdenPage';
+import PlantillasPage from './modules/taller/pages/PlantillasPage';
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
 function App() {
@@ -51,6 +55,10 @@ function App() {
           <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
           <Route path="/inventario/kardex" element={<KardexPage />} />
           <Route path="/inventario/impuestos" element={<ConfiguracionIgvPage />} />
+          <Route path="/taller/ordenes" element={<OrdenesTrabajoPage />} />
+          <Route path="/taller/ordenes/nueva" element={<NuevaOrdenPage />} />
+          <Route path="/taller/ordenes/:id" element={<DetalleOrdenPage />} />
+          <Route path="/taller/plantillas" element={<PlantillasPage />} />
           <Route path="/vehiculos" element={<VehiculosPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/caja" element={<CajaPage />} />

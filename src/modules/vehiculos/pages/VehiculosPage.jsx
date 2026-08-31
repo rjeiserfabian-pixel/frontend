@@ -120,6 +120,7 @@ export default function VehiculosPage() {
                   <TableCell><strong>Modelo</strong></TableCell>
                   <TableCell><strong>Clase</strong></TableCell>
                   <TableCell><strong>Color</strong></TableCell>
+                  <TableCell align="right"><strong>Kilometraje</strong></TableCell>
                   <TableCell align="center"><strong>Acciones</strong></TableCell>
                 </TableRow>
               </TableHead>
@@ -140,6 +141,7 @@ export default function VehiculosPage() {
                       <TableCell>{row.modelo}</TableCell>
                       <TableCell>{row.clase || '-'}</TableCell>
                       <TableCell>{row.color || '-'}</TableCell>
+                      <TableCell align="right">{row.kilometraje_actual ? `${row.kilometraje_actual} km` : '-'}</TableCell>
                       <TableCell align="center">
                         <IconButton color="primary" onClick={() => handleOpenModal(row)}>
                           <Edit2 size={18} />
