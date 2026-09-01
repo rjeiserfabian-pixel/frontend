@@ -24,9 +24,10 @@ export const useClientes = () => {
 
   const guardarCliente = async (datos, id = null) => {
     setLoading(true);
+    let resultData = null;
     try {
       if (id) {
-        await clienteService.actualizar(id, datos);
+        resultData = await clienteService.actualizar(id, datos);
         Swal.fire({
           icon: 'success',
           title: 'Actualizado',
@@ -37,7 +38,7 @@ export const useClientes = () => {
           }
         });
       } else {
-        await clienteService.crear(datos);
+        resultData = await clienteService.crear(datos);
         Swal.fire({
           icon: 'success',
           title: 'Creado',
@@ -48,7 +49,7 @@ export const useClientes = () => {
           }
         });
       }
-      return true;
+      return resultData || true;
     } catch (error) {
       console.error(error);
       let errorMessage = 'Ocurrió un error al guardar el cliente';

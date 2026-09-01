@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Dialog, DialogTitle, DialogContent, DialogActions, Button, 
-  TextField, CircularProgress, IconButton, Grid, InputAdornment, Box
+  Button, TextField, CircularProgress, IconButton, Grid, Box
 } from '@mui/material';
-import { Search as SearchIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Search as SearchIcon } from '@mui/icons-material';
+import PremiumModal from '../../../shared/components/PremiumModal';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -176,115 +176,120 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {vehiculoEdit ? 'Editar Vehículo' : 'Nuevo Vehículo'}
-        <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Controller
-                  name="placa"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Placa"
-                      fullWidth
-                      error={!!errors.placa}
-                      helperText={errors.placa?.message}
-                    />
-                  )}
-                />
-                <Button 
-                  variant="contained"
-                  onClick={handleBuscarPlaca} 
-                  disabled={isSearching || isSubmitting || vehiculoEdit != null}
-                  sx={{ minWidth: '120px' }}
-                >
-                  {isSearching ? <CircularProgress size={24} color="inherit" /> : 'Consultar'}
-                </Button>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller name="marca" control={control} render={({ field }) => (
-                <TextField {...field} label="Marca" fullWidth error={!!errors.marca} helperText={errors.marca?.message} />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller name="modelo" control={control} render={({ field }) => (
-                <TextField {...field} label="Modelo" fullWidth error={!!errors.modelo} helperText={errors.modelo?.message} />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller name="color" control={control} render={({ field }) => (
-                <TextField {...field} label="Color" fullWidth />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller name="numero_motor" control={control} render={({ field }) => (
-                <TextField {...field} label="N° Motor" fullWidth />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller name="numero_serie" control={control} render={({ field }) => (
-                <TextField {...field} label="N° Serie" fullWidth />
-              )}/>
-            </Grid>
-            
-            {/* Campos de Yupay */}
-            <Grid item xs={12} sm={4}>
-              <Controller name="clase" control={control} render={({ field }) => (
-                <TextField {...field} label="Clase" fullWidth />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Controller name="tipo" control={control} render={({ field }) => (
-                <TextField {...field} label="Tipo" fullWidth />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Controller name="uso" control={control} render={({ field }) => (
-                <TextField {...field} label="Uso" fullWidth />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Controller name="anio_fabricacion" control={control} render={({ field }) => (
-                <TextField {...field} label="Año Fabricación" fullWidth type="number" />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Controller name="numero_asientos" control={control} render={({ field }) => (
-                <TextField {...field} label="N° Asientos" fullWidth type="number" />
-              )}/>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Controller name="kilometraje_actual" control={control} render={({ field }) => (
-                <TextField {...field} label="Kilometraje Actual" fullWidth type="number" />
-              )}/>
-            </Grid>
+    <PremiumModal
+      isOpen={open}
+      onClose={onClose}
+      title={vehiculoEdit ? 'Editar Vehículo' : 'Nuevo Vehículo'}
+      maxWidth="max-w-4xl"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Controller
+                name="placa"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Placa"
+                    fullWidth
+                    error={!!errors.placa}
+                    helperText={errors.placa?.message}
+                    InputProps={{
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                )}
+              />
+              <Button 
+                variant="contained"
+                onClick={handleBuscarPlaca} 
+                disabled={isSearching || isSubmitting || vehiculoEdit != null}
+                sx={{ minWidth: '120px', borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' } }}
+              >
+                {isSearching ? <CircularProgress size={24} color="inherit" /> : 'Consultar'}
+              </Button>
+            </Box>
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+          <Grid item xs={12} sm={6}>
+            <Controller name="marca" control={control} render={({ field }) => (
+              <TextField {...field} label="Marca" fullWidth error={!!errors.marca} helperText={errors.marca?.message} InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller name="modelo" control={control} render={({ field }) => (
+              <TextField {...field} label="Modelo" fullWidth error={!!errors.modelo} helperText={errors.modelo?.message} InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller name="color" control={control} render={({ field }) => (
+              <TextField {...field} label="Color" fullWidth InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller name="numero_motor" control={control} render={({ field }) => (
+              <TextField {...field} label="N° Motor" fullWidth InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller name="numero_serie" control={control} render={({ field }) => (
+              <TextField {...field} label="N° Serie" fullWidth InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          
+          {/* Campos de Yupay */}
+          <Grid item xs={12} sm={4}>
+            <Controller name="clase" control={control} render={({ field }) => (
+              <TextField {...field} label="Clase" fullWidth InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Controller name="tipo" control={control} render={({ field }) => (
+              <TextField {...field} label="Tipo" fullWidth InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Controller name="uso" control={control} render={({ field }) => (
+              <TextField {...field} label="Uso" fullWidth InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Controller name="anio_fabricacion" control={control} render={({ field }) => (
+              <TextField {...field} label="Año Fabricación" fullWidth type="number" InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Controller name="numero_asientos" control={control} render={({ field }) => (
+              <TextField {...field} label="N° Asientos" fullWidth type="number" InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Controller name="kilometraje_actual" control={control} render={({ field }) => (
+              <TextField {...field} label="Kilometraje Actual" fullWidth type="number" InputProps={{ sx: { borderRadius: '12px' } }}/>
+            )}/>
+          </Grid>
+        </Grid>
+        
+        <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0">
+          <Button 
+            onClick={onClose} 
+            disabled={isSubmitting}
+            className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors"
+          >
+            Cancelar
+          </Button>
           <Button 
             type="submit" 
-            variant="contained" 
-            color="primary" 
             disabled={isSubmitting}
             startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+            className="inline-flex w-full sm:w-auto justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
           >
             Guardar
           </Button>
-        </DialogActions>
+        </div>
       </form>
-    </Dialog>
+    </PremiumModal>
   );
 };
 

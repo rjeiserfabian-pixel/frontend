@@ -1,71 +1,89 @@
-import { Typography, Grid, Card, CardContent, Box } from '@mui/material';
 import { Users, ShieldAlert, Activity, TrendingUp } from 'lucide-react';
 
 export default function DashboardPage() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const stats = [
-    { title: 'Usuarios Activos', value: '12', icon: <Users size={32} className="text-blue-500" />, bg: 'bg-blue-50' },
-    { title: 'Roles Definidos', value: '4', icon: <ShieldAlert size={32} className="text-amber-500" />, bg: 'bg-amber-50' },
-    { title: 'Operaciones Hoy', value: '45', icon: <Activity size={32} className="text-emerald-500" />, bg: 'bg-emerald-50' },
-    { title: 'Eficiencia', value: '98%', icon: <TrendingUp size={32} className="text-indigo-500" />, bg: 'bg-indigo-50' },
+    { title: 'Usuarios Activos', value: '12', icon: <Users size={24} />, isPrimary: true },
+    { title: 'Roles Definidos', value: '4', icon: <ShieldAlert size={24} />, isPrimary: false },
+    { title: 'Operaciones Hoy', value: '45', icon: <Activity size={24} />, isPrimary: false },
+    { title: 'Eficiencia', value: '98%', icon: <TrendingUp size={24} />, isPrimary: false },
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold" color="slate.800">
-          Bienvenido, {user?.nombre} 👋
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+    <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Bienvenido, {user?.nombre || 'Usuario'} <span className="animate-pulse inline-block">👋</span>
+        </h1>
+        <p className="text-slate-500 text-sm font-medium">
           Aquí tienes un resumen de la actividad del sistema.
-        </Typography>
-      </Box>
+        </p>
+      </header>
 
-      <Grid container spacing={3}>
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card 
-              elevation={0} 
-              sx={{ 
-                borderRadius: '16px',
-                border: '1px solid',
-                borderColor: 'divider',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" fontWeight="500">
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: 'slate.800' }}>
-                      {stat.value}
-                    </Typography>
-                  </Box>
-                  <Box className={`p-3 rounded-xl ${stat.bg}`}>
-                    {stat.icon}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div 
+            key={index}
+            className={`
+              relative overflow-hidden p-6 rounded-2xl border transition-all duration-300
+              hover:-translate-y-1 hover:shadow-lg
+              ${stat.isPrimary 
+                ? 'bg-slate-900 border-slate-900 text-white shadow-md' 
+                : 'bg-white border-slate-200/60 text-slate-900 shadow-sm'
+              }
+            `}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <span className={`text-sm font-medium ${stat.isPrimary ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {stat.title}
+                </span>
+                <span className={`text-3xl font-bold tracking-tight ${stat.isPrimary ? 'text-white' : 'text-slate-900'}`}>
+                  {stat.value}
+                </span>
+              </div>
+              <div className={`
+                p-3 rounded-xl 
+                ${stat.isPrimary ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-400'}
+              `}>
+                {stat.icon}
+              </div>
+            </div>
+            {stat.isPrimary && (
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+            )}
+          </div>
         ))}
-      </Grid>
+      </section>
 
-      {/* Widget Placeholder */}
-      <Box sx={{ mt: 4 }}>
-        <Card elevation={0} sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', minHeight: 300 }}>
-          <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
-            <Activity size={48} className="text-slate-300 mb-4" />
-            <Typography variant="h6" color="text.secondary">
-              Gráficos de actividad próximamente
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
-    </Box>
+      <section className="mt-2">
+        <div className="relative w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center min-h-[320px] transition-colors hover:bg-slate-50">
+          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+            {/* Subtle grid pattern background */}
+            <svg className="absolute inset-0 h-full w-full stroke-slate-200/50" fill="none">
+              <defs>
+                <pattern id="pattern-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M.5 20V.5H20" fill="none" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" strokeWidth="0" fill="url(#pattern-grid)" />
+            </svg>
+          </div>
+          
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="p-4 rounded-full bg-white shadow-sm border border-slate-100">
+              <Activity size={32} className="text-slate-400 animate-pulse" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-base font-semibold text-slate-900">Gráficos de actividad</h3>
+              <p className="text-sm text-slate-500 mt-1 max-w-sm">
+                Esta sección está en desarrollo. Pronto podrás visualizar las métricas y tendencias de operaciones.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

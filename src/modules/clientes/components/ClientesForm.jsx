@@ -60,7 +60,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
     // Regla 3.3: Botón deshabilitado al enviar (controlado por isSubmitting)
     const exito = await guardarCliente(data, clienteEdit?.id);
     if (exito) {
-      onSuccess();
+      if (onSuccess) onSuccess(exito);
       onClose();
     }
   };

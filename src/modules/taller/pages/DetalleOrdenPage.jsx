@@ -2,11 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Button, Paper, Grid, Divider, CircularProgress,
   Table, TableBody, TableCell, TableHead, TableRow, IconButton,
-  TextField, Dialog, DialogTitle, DialogContent, DialogActions, Chip
+  TextField, Dialog, DialogTitle, DialogContent, DialogActions, Chip,
+  Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup
 } from '@mui/material';
-import { ArrowLeft, Check, Plus, Trash2, Printer, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tallerService } from '../services/tallerService';
+import api from '../../../core/api/axios';
+
+const PASOS_ORDEN = [
+  'RECEPCIONADO',
+  'INSPECCION',
+  'ESPERANDO_APROBACION',
+  'APROBADO',
+  'FINALIZADO'
+];
 
 export default function DetalleOrdenPage() {
   const { id } = useParams();
@@ -17,8 +27,22 @@ export default function DetalleOrdenPage() {
   // Dialogs state
   const [hallazgoModal, setHallazgoModal] = useState(false);
   const [servicioModal, setServicioModal] = useState(false);
+  const [repuestoModal, setRepuestoModal] = useState(false);
+  const [mecanicoModal, setMecanicoModal] = useState(false);
+  const [aprobacionModal, setAprobacionModal] = useState(false);
+  
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
+  const [repuestosSeleccionados, setRepuestosSeleccionados] = useState([]);
+  
   const [nuevoHallazgo, setNuevoHallazgo] = useState('');
   const [nuevoServicio, setNuevoServicio] = useState({ descripcion: '', precio: 0 });
+  const [nuevoRepuesto, setNuevoRepuesto] = useState({ repuesto: null, cantidad: 1, precio_unitario: 0 });
+  
+  const [mecanicos, setMecanicos] = useState([]);
+  const [selectedMecanico, setSelectedMecanico] = useState(null);
+  const [savingMecanico, setSavingMecanico] = useState(false);
+  
+  const [repuestosInventario, setRepuestosInventario] = useState([]);
 
   useEffect(() => {
     fetchOrden();
@@ -33,6 +57,59 @@ export default function DetalleOrdenPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMecanicos = async () => {
+    try {
+      const res = await api.get('seguridad/usuarios/?rol=MECANICO');
+      let dataList = [];
+      if (res.data && res.data.data) {
+        dataList = res.data.data.results || res.data.data;
+      } else {
+        dataList = res.data.results || res.data;
+      }
+      setMecanicos(Array.isArray(dataList) ? dataList : []);
+    } catch (err) {
+      console.error("Error al cargar mecánicos:", err);
+    }
+  };
+  
+  const fetchRepuestos = async () => {
+    try {
+      const res = await api.get('inventario/repuestos/');
+      setRepuestosInventario(res.data.results || res.data || []);
+    } catch (err) {
+      console.error("Error al cargar repuestos:", err);
+    }
+  };
+
+  const handleOpenMecanicoModal = () => {
+    fetchMecanicos();
+    setMecanicoModal(true);
+  };
+  
+  const handleOpenRepuestoModal = () => {
+    fetchRepuestos();
+    setRepuestoModal(true);
+  };
+
+  const handleAsignarMecanico = async () => {
+    if (!selectedMecanico) return;
+    try {
+      setSavingMecanico(true);
+      const payload = { mecanico_asignado: selectedMecanico.id_usuario };
+      if (orden.estado === 'RECEPCIONADO') {
+        payload.estado = 'INSPECCION';
+      }
+      await tallerService.actualizarOrden(id, payload);
+      setMecanicoModal(false);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      alert("Error al asignar mecánico");
+    } finally {
+      setSavingMecanico(false);
     }
   };
 
@@ -61,164 +138,654 @@ export default function DetalleOrdenPage() {
       console.error(err);
     }
   };
-
-  const handleAprobarTodo = async () => {
+  
+  const handleAddRepuesto = async () => {
+    if (!nuevoRepuesto.repuesto) return;
     try {
-      // Simula aprobar todos los servicios (En la vida real se seleccionarían 1x1)
-      const srvIds = orden.servicios.map(s => s.id);
-      const repIds = orden.repuestos.map(r => r.id);
-      
-      await tallerService.aprobarServicios(id, {
-        servicios_aprobados: srvIds,
-        repuestos_aprobados: repIds
+      await tallerService.crearRepuesto({
+        orden: id,
+        repuesto: nuevoRepuesto.repuesto.id,
+        cantidad: nuevoRepuesto.cantidad,
+        precio_unitario: nuevoRepuesto.precio_unitario
       });
-      alert('Cotización aprobada. El mecánico ya puede iniciar.');
+      setRepuestoModal(false);
+      setNuevoRepuesto({ repuesto: null, cantidad: 1, precio_unitario: 0 });
       fetchOrden();
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (loading || !orden) return <Box p={4} display="flex" justifyContent="center"><CircularProgress /></Box>;
+  const handleGenerarCotizacion = async () => {
+    try {
+      await tallerService.actualizarOrden(id, { estado: 'ESPERANDO_APROBACION' });
+      fetchOrden();
+      handleImprimirPDF();
+    } catch (err) {
+      console.error("Error al generar cotización", err);
+    }
+  };
+
+  const handleImprimirPDF = async () => {
+    try {
+      const res = await api.get(`taller/ordenes/${id}/generar_pdf/`, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error("Error al generar PDF", err);
+      alert("Error al generar el PDF de la cotización.");
+    }
+  };
+
+  const handleOpenAprobacionModal = () => {
+    setServiciosSeleccionados(orden.servicios.map(s => s.id));
+    setRepuestosSeleccionados(orden.repuestos.map(r => r.id));
+    setAprobacionModal(true);
+  };
+
+  const handleAprobarCotizacion = async () => {
+    try {
+      await api.post(`taller/ordenes/${id}/aprobar_servicios/`, {
+        servicios_aprobados: serviciosSeleccionados,
+        repuestos_aprobados: repuestosSeleccionados
+      });
+      setAprobacionModal(false);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      alert("Error al aprobar cotización");
+    }
+  };
+
+  const handleToggleCompletado = async (servicioId) => {
+    try {
+      await api.patch(`taller/servicios/${servicioId}/marcar_completado/`);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleInstalado = async (repuestoId) => {
+    try {
+      await api.patch(`taller/repuestos/${repuestoId}/marcar_instalado/`);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Helper para mostrar motivos de ingreso estructurados
+  const renderMotivos = (texto) => {
+    if (!texto) return <Typography variant="body2" color="text.secondary">Sin motivo especificado</Typography>;
+    const lineas = texto.split('\n').filter(l => l.trim() !== '');
+    return (
+      <Box component="ul" sx={{ m: 0, pl: 2, '& li': { mb: 0.5, color: 'text.secondary', fontSize: '0.9rem' } }}>
+        {lineas.map((linea, idx) => (
+          <li key={idx}>{linea.replace(/^-/, '').trim()}</li>
+        ))}
+      </Box>
+    );
+  };
+
+  if (loading || !orden) return (
+    <Box p={4} display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+      <CircularProgress />
+    </Box>
+  );
+
+  const activeStep = PASOS_ORDEN.indexOf(orden.estado);
+  const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={() => navigate('/taller/ordenes')} sx={{ mr: 2 }}>
-            <ArrowLeft />
-          </IconButton>
-          <Typography variant="h5" fontWeight="600">
-            Orden OT-{orden.numero}
-          </Typography>
-          <Chip label={orden.estado.replace('_', ' ')} color="primary" sx={{ ml: 2 }} />
+    <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
+      
+      {/* Header & Stepper */}
+      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '20px', border: '1px solid', borderColor: 'divider', background: 'linear-gradient(to right bottom, #ffffff, #f8fafc)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton onClick={() => navigate('/taller/ordenes')} sx={{ bgcolor: 'white', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: 'grey.50' } }}>
+              <ArrowLeft size={20} />
+            </IconButton>
+            <Box>
+              <Typography variant="h4" fontWeight="800" color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Settings size={28} className="text-slate-700" />
+                OT-{orden.numero}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight="500">
+                Creado el {new Date(orden.fecha_ingreso).toLocaleDateString()}
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button variant="outlined" color="inherit" onClick={handleImprimirPDF} startIcon={<Printer size={18} />} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
+              Imprimir
+            </Button>
+            <Button variant="contained" color="success" startIcon={<MessageSquare size={18} />} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}>
+              WhatsApp
+            </Button>
+          </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" startIcon={<Printer size={18} />}>PDF Cotización</Button>
-          <Button variant="contained" color="success" startIcon={<MessageSquare size={18} />}>WhatsApp</Button>
+
+        <Box sx={{ width: '100%', px: 2 }}>
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {PASOS_ORDEN.map((label) => (
+              <Step key={label}>
+                <StepLabel sx={{ '& .MuiStepLabel-label': { fontWeight: 600, mt: 1 } }}>
+                  {label.replace(/_/g, ' ')}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+      </Paper>
+
+      {/* Main Content */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        
+        {/* Top Row: Info Cards */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          
+          {/* Vehiculo Card */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <Typography variant="subtitle1" fontWeight="700" mb={3} display="flex" alignItems="center" gap={1}>
+                <Box sx={{ p: 1, bgcolor: 'slate.100', borderRadius: 2 }}><Wrench size={18} className="text-slate-700" /></Box>
+                Datos del Vehículo
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Placa</Typography>
+                  <Typography variant="h6" fontWeight="700">{orden.vehiculo_detalle?.placa}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Vehículo</Typography>
+                  <Typography variant="body1" fontWeight="600">{orden.vehiculo_detalle?.marca} {orden.vehiculo_detalle?.modelo}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Kilometraje</Typography>
+                  <Typography variant="body1" fontWeight="600">{orden.kilometraje_ingreso ? `${orden.kilometraje_ingreso} km` : 'No registrado'}</Typography>
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase" mb={1} display="block">
+                Motivos de Ingreso
+              </Typography>
+              {renderMotivos(orden.motivo_ingreso)}
+            </Paper>
+
+          {/* Cliente Card */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <Typography variant="subtitle1" fontWeight="700" mb={3} display="flex" alignItems="center" gap={1}>
+                <Box sx={{ p: 1, bgcolor: 'slate.100', borderRadius: 2 }}><User size={18} className="text-slate-700" /></Box>
+                Datos del Cliente
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Nombre Completo</Typography>
+                  <Typography variant="body1" fontWeight="700" color="primary.main">
+                    {orden.cliente_detalle ? `${orden.cliente_detalle.nombres} ${orden.cliente_detalle.apellidos || ''}`.trim() : 'Sin Cliente'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">DNI / RUC</Typography>
+                  <Typography variant="body1" fontWeight="600">{orden.cliente_detalle?.dni || 'No registrado'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Teléfono</Typography>
+                  <Typography variant="body1" fontWeight="600">{orden.cliente_detalle?.telefono || 'No registrado'}</Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+          {/* Asignacion Card */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%', bgcolor: 'slate.50' }}>
+              <Typography variant="subtitle1" fontWeight="700" mb={2}>Responsables</Typography>
+              <Box mb={2}>
+                <Typography variant="caption" color="text.secondary" fontWeight="600">Recepcionista</Typography>
+                <Typography variant="body2" fontWeight="600">{orden.recepcionista_nombre}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight="600">Mecánico Asignado</Typography>
+                {orden.mecanico_nombre ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Chip label={orden.mecanico_nombre} color="primary" variant="outlined" sx={{ fontWeight: 600, flexGrow: 1, justifyContent: 'flex-start' }} />
+                    <Button size="small" variant="text" onClick={handleOpenMecanicoModal} sx={{ minWidth: 0, p: 0.5, borderRadius: '8px' }} title="Cambiar Mecánico">
+                      <Settings size={18} className="text-slate-500" />
+                    </Button>
+                  </Box>
+                ) : (
+                  <Box sx={{ mt: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="body2" color="error.main" fontWeight="600">Sin asignar</Typography>
+                    <Button variant="outlined" size="small" onClick={handleOpenMecanicoModal} startIcon={<User size={16} />} sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, alignSelf: 'flex-start' }}>
+                      Asignar ahora
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Paper>
+          
+        </Box>
+
+        {/* Bottom Area: Workflow */}
+        <Box sx={{ width: '100%' }}>
+          
+          {/* Actions Banner based on status */}
+          {orden.estado === 'RECEPCIONADO' && (
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: '#fff0f2', border: '1px solid', borderColor: '#ffe4e6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+              <Box>
+                <Typography variant="h6" fontWeight="700" color="#be123c" mb={0.5}>El vehículo está en recepción</Typography>
+                <Typography variant="body2" color="#e11d48">Asigna un mecánico para iniciar la inspección técnica o genera la cotización directamente si ya hay servicios.</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {(orden.servicios.length > 0 || orden.repuestos.length > 0) && (
+                  <Button 
+                    variant="outlined" 
+                    size="large"
+                    sx={{ color: '#be123c', borderColor: '#be123c', '&:hover': { bgcolor: '#ffe4e6', borderColor: '#9f1239' }, borderRadius: '12px', fontWeight: 600, px: 3 }}
+                    onClick={handleGenerarCotizacion}
+                  >
+                    Generar Cotización Directa
+                  </Button>
+                )}
+                <Button 
+                  variant="contained" 
+                  size="large"
+                  sx={{ bgcolor: '#e11d48', '&:hover': { bgcolor: '#be123c' }, borderRadius: '12px', fontWeight: 600, px: 4 }}
+                  onClick={handleOpenMecanicoModal}
+                >
+                  Enviar a Inspección
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {orden.estado === 'ESPERANDO_APROBACION' && (
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: '#f0fdf4', border: '1px solid', borderColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+              <Box>
+                <Typography variant="h6" fontWeight="700" color="#166534" mb={0.5}>Esperando Aprobación del Cliente</Typography>
+                <Typography variant="body2" color="#15803d">La cotización ha sido generada. Registra la confirmación del cliente para comenzar los trabajos y reservar el stock.</Typography>
+              </Box>
+              <Button 
+                variant="contained" 
+                size="large"
+                sx={{ bgcolor: '#16a34a', '&:hover': { bgcolor: '#15803d' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
+                onClick={handleOpenAprobacionModal}
+              >
+                Registrar Aprobación
+              </Button>
+            </Paper>
+          )}
+
+          {orden.estado === 'APROBADO' && (
+            <Box mb={4}>
+              <Typography variant="h6" fontWeight="800" mb={2} color="primary.main" display="flex" alignItems="center" gap={1}>
+                <CheckCircle size={24} /> Panel de Ejecución
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'slate.50', height: '100%' }}>
+                    <Typography variant="subtitle1" fontWeight="700" mb={2} display="flex" justifyContent="space-between">
+                      Servicios Aprobados
+                      <Chip label={`${orden.servicios.filter(s => s.aprobado_cliente && s.completado).length}/${orden.servicios.filter(s => s.aprobado_cliente).length}`} size="small" />
+                    </Typography>
+                    <Box display="flex" flexDirection="column" gap={2}>
+                      {orden.servicios.filter(s => s.aprobado_cliente).map(s => (
+                        <Paper key={s.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white' }}>
+                          <Typography variant="body2" fontWeight="600">{s.descripcion}</Typography>
+                          <Button 
+                            variant={s.completado ? "contained" : "outlined"}
+                            color={s.completado ? "success" : "warning"}
+                            size="small"
+                            onClick={() => handleToggleCompletado(s.id)}
+                            startIcon={s.completado ? <CheckCircle size={16}/> : <Clock size={16}/>}
+                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+                          >
+                            {s.completado ? 'Terminado' : 'Pendiente'}
+                          </Button>
+                        </Paper>
+                      ))}
+                      {orden.servicios.filter(s => s.aprobado_cliente).length === 0 && (
+                        <Typography variant="body2" color="text.secondary">No hay servicios aprobados.</Typography>
+                      )}
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'slate.50', height: '100%' }}>
+                    <Typography variant="subtitle1" fontWeight="700" mb={2} display="flex" justifyContent="space-between">
+                      Repuestos Aprobados
+                      <Chip label={`${orden.repuestos.filter(r => r.aprobado_cliente && r.instalado).length}/${orden.repuestos.filter(r => r.aprobado_cliente).length}`} size="small" />
+                    </Typography>
+                    <Box display="flex" flexDirection="column" gap={2}>
+                      {orden.repuestos.filter(r => r.aprobado_cliente).map(r => (
+                        <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white' }}>
+                          <Box>
+                            <Typography variant="body2" fontWeight="600">{r.repuesto_detalle?.nombre}</Typography>
+                            <Typography variant="caption" color="text.secondary">Cant: {parseFloat(r.cantidad)}</Typography>
+                          </Box>
+                          <Button 
+                            variant={r.instalado ? "contained" : "outlined"}
+                            color={r.instalado ? "success" : "warning"}
+                            size="small"
+                            onClick={() => handleToggleInstalado(r.id)}
+                            startIcon={r.instalado ? <CheckCircle size={16}/> : <Clock size={16}/>}
+                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+                          >
+                            {r.instalado ? 'Instalado' : 'Pendiente'}
+                          </Button>
+                        </Paper>
+                      ))}
+                      {orden.repuestos.filter(r => r.aprobado_cliente).length === 0 && (
+                        <Typography variant="body2" color="text.secondary">No hay repuestos aprobados.</Typography>
+                      )}
+                    </Box>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Inspección */}
+            <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+              <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
+                  <ClipboardList size={20} className="text-slate-500" />
+                  1. Inspección y Hallazgos
+                </Typography>
+                <Button 
+                  size="small" 
+                  variant="outlined"
+                  startIcon={<Plus size={16} />} 
+                  onClick={() => setHallazgoModal(true)}
+                  disabled={!esEditable}
+                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Nuevo Hallazgo
+                </Button>
+              </Box>
+              
+              <Box sx={{ p: 3 }}>
+                {orden.hallazgos.length === 0 ? (
+                  <Box py={4} textAlign="center">
+                    <Typography variant="body2" color="text.secondary">No se han registrado hallazgos durante la inspección.</Typography>
+                  </Box>
+                ) : (
+                  <Grid container spacing={2}>
+                    {orden.hallazgos.map((h, i) => (
+                      <Grid item xs={12} sm={6} key={h.id}>
+                        <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: '12px', bgcolor: 'slate.50' }}>
+                          <Typography variant="caption" color="text.secondary" fontWeight="600" display="block" mb={0.5}>Hallazgo #{i+1}</Typography>
+                          <Typography variant="body2" fontWeight="500">{h.descripcion}</Typography>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+            </Paper>
+
+            {/* Servicios */}
+            <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+              <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
+                  <Wrench size={20} className="text-slate-500" />
+                  2. Servicios y Mano de Obra a Cotizar
+                </Typography>
+                <Button 
+                  size="small" 
+                  variant="outlined"
+                  startIcon={<Plus size={16} />} 
+                  onClick={() => setServicioModal(true)}
+                  disabled={!esEditable}
+                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Agregar Servicio
+                </Button>
+              </Box>
+
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'transparent' }}>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Descripción del Servicio</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Costo Estimado</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Estado Aprobación</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {orden.servicios.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center" sx={{ py: 6 }}>
+                        <Typography variant="body2" color="text.secondary">No hay servicios agregados a la cotización.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    orden.servicios.map(s => (
+                      <TableRow key={s.id} hover>
+                        <TableCell sx={{ fontWeight: 500 }}>{s.descripcion}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>S/ {parseFloat(s.precio_estimado).toFixed(2)}</TableCell>
+                        <TableCell align="center">
+                          {s.aprobado_cliente ? (
+                            <Chip label="Aprobado" color="success" size="small" sx={{ fontWeight: 600, borderRadius: '6px' }} />
+                          ) : (
+                            <Chip label="Pendiente" size="small" sx={{ fontWeight: 600, borderRadius: '6px', bgcolor: 'slate.100', color: 'slate.600' }} />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+
+            {/* Repuestos */}
+            <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+              <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
+                  <Package size={20} className="text-slate-500" />
+                  3. Repuestos y Materiales
+                </Typography>
+                <Button 
+                  size="small" 
+                  variant="outlined"
+                  startIcon={<Plus size={16} />} 
+                  onClick={handleOpenRepuestoModal}
+                  disabled={!esEditable}
+                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Agregar Repuesto
+                </Button>
+              </Box>
+
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'transparent' }}>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Repuesto</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Cantidad</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Precio Unit.</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Total</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {orden.repuestos.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                        <Typography variant="body2" color="text.secondary">No hay repuestos agregados a la cotización.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    orden.repuestos.map(r => (
+                      <TableRow key={r.id} hover>
+                        <TableCell sx={{ fontWeight: 500 }}>
+                          {r.repuesto_detalle?.nombre || 'Repuesto'} 
+                          {r.repuesto_detalle?.codigo_fabricante && <Typography variant="caption" display="block" color="text.secondary">{r.repuesto_detalle.codigo_fabricante}</Typography>}
+                        </TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>{parseFloat(r.cantidad).toString()}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>S/ {parseFloat(r.precio_unitario).toFixed(2)}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          S/ {(parseFloat(r.cantidad) * parseFloat(r.precio_unitario)).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+
+            {/* Acciones Generales (Enviar Cotizacion) */}
+            {orden.estado === 'INSPECCION' && (
+              <Box sx={{ p: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button variant="contained" sx={{ bgcolor: 'slate.900', color: 'white', '&:hover': { bgcolor: 'slate.800' }, borderRadius: '10px', px: 4, py: 1.5, fontWeight: 600 }} onClick={handleGenerarCotizacion}>
+                  Enviar Cotización a Cliente (Simular PDF)
+                </Button>
+              </Box>
+            )}
+
+          </Box>
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
-        {/* Info del Vehículo */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, borderRadius: '12px', height: '100%' }}>
-            <Typography variant="subtitle1" fontWeight="600" mb={2}>Datos del Vehículo</Typography>
-            <Typography variant="body2" color="text.secondary">Placa</Typography>
-            <Typography variant="body1" mb={1}>{orden.vehiculo_detalle?.placa}</Typography>
-            
-            <Typography variant="body2" color="text.secondary">Marca y Modelo</Typography>
-            <Typography variant="body1" mb={1}>{orden.vehiculo_detalle?.marca} {orden.vehiculo_detalle?.modelo}</Typography>
-            
-            <Typography variant="body2" color="text.secondary">Kilometraje</Typography>
-            <Typography variant="body1" mb={1}>{orden.kilometraje_ingreso || 'N/A'}</Typography>
-            
-            <Divider sx={{ my: 2 }} />
-            
-            <Typography variant="body2" color="text.secondary">Motivo Ingreso (Correctivo)</Typography>
-            <Typography variant="body1">{orden.motivo_ingreso || 'Mantenimiento Preventivo Normal'}</Typography>
-          </Paper>
-        </Grid>
+      {/* --- MODALS --- */}
+      
+      {/* Modal Asignar Mecanico */}
+      <Dialog open={mecanicoModal} onClose={() => setMecanicoModal(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight="700">Asignar Mecánico</Typography>
+          <Typography variant="body2" color="text.secondary">Selecciona el mecánico responsable de la inspección.</Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Autocomplete
+              options={mecanicos}
+              getOptionLabel={(option) => `${option.nombres} ${option.apellidos}`}
+              onChange={(e, val) => setSelectedMecanico(val)}
+              renderInput={(params) => <TextField {...params} label="Buscar Mecánico" fullWidth />}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setMecanicoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
+          <Button 
+            onClick={handleAsignarMecanico} 
+            variant="contained" 
+            disabled={!selectedMecanico || savingMecanico}
+            sx={{ borderRadius: '10px', fontWeight: 600, px: 3, boxShadow: 'none' }}
+          >
+            {savingMecanico ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Asignación'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-        {/* Hallazgos y Servicios */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, borderRadius: '12px', mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" fontWeight="600">1. Inspección y Hallazgos (Técnico)</Typography>
-              <Button size="small" startIcon={<Plus size={16} />} onClick={() => setHallazgoModal(true)}>
-                Agregar Hallazgo
-              </Button>
-            </Box>
-            
-            {orden.hallazgos.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">No se registraron hallazgos adicionales.</Typography>
-            ) : (
-              <ul>
-                {orden.hallazgos.map(h => (
-                  <li key={h.id}><Typography variant="body2">{h.descripcion}</Typography></li>
-                ))}
-              </ul>
-            )}
-          </Paper>
-
-          <Paper sx={{ p: 3, borderRadius: '12px' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" fontWeight="600">2. Servicios y Mano de Obra</Typography>
-              <Button size="small" startIcon={<Plus size={16} />} onClick={() => setServicioModal(true)}>
-                Agregar Servicio
-              </Button>
-            </Box>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Descripción</TableCell>
-                  <TableCell align="right">Costo Estimado</TableCell>
-                  <TableCell align="center">Aprobado</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {orden.servicios.map(s => (
-                  <TableRow key={s.id}>
-                    <TableCell>{s.descripcion}</TableCell>
-                    <TableCell align="right">S/ {s.precio_estimado}</TableCell>
-                    <TableCell align="center">
-                      {s.aprobado_cliente ? <Chip label="Sí" color="success" size="small" /> : <Chip label="No" size="small" />}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            
-            {orden.estado !== 'APROBADO' && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="contained" color="primary" onClick={handleAprobarTodo} startIcon={<Check size={18} />}>
-                  Aprobar Cotización (Simular Cliente)
-                </Button>
-              </Box>
-            )}
-            
-            {orden.estado === 'APROBADO' && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="contained" color="success" onClick={() => alert('Integración con POS de Ventas en proceso...')} >
-                  Finalizar y Mandar a Caja
-                </Button>
-              </Box>
-            )}
-
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Modals para agregar cosas rápido */}
-      <Dialog open={hallazgoModal} onClose={() => setHallazgoModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Registrar Hallazgo</DialogTitle>
+      {/* Modal Hallazgo */}
+      <Dialog open={hallazgoModal} onClose={() => setHallazgoModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+        <DialogTitle><Typography variant="h6" fontWeight="700">Registrar Hallazgo</Typography></DialogTitle>
         <DialogContent>
           <TextField 
-            autoFocus margin="dense" label="Descripción del Hallazgo" fullWidth 
+            autoFocus margin="dense" label="Descripción detallada" fullWidth multiline rows={3}
             value={nuevoHallazgo} onChange={e => setNuevoHallazgo(e.target.value)}
+            sx={{ mt: 1 }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setHallazgoModal(false)}>Cancelar</Button>
-          <Button onClick={handleAddHallazgo} variant="contained">Guardar</Button>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setHallazgoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
+          <Button onClick={handleAddHallazgo} variant="contained" disabled={!nuevoHallazgo} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Guardar</Button>
         </DialogActions>
       </Dialog>
       
-      <Dialog open={servicioModal} onClose={() => setServicioModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Agregar Servicio a Cotizar</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+      {/* Modal Servicio */}
+      <Dialog open={servicioModal} onClose={() => setServicioModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+        <DialogTitle><Typography variant="h6" fontWeight="700">Agregar Servicio a Cotizar</Typography></DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <TextField 
             label="Descripción del Servicio" fullWidth 
             value={nuevoServicio.descripcion} onChange={e => setNuevoServicio({...nuevoServicio, descripcion: e.target.value})}
+            sx={{ mt: 1 }}
           />
           <TextField 
-            label="Costo (Mano de Obra)" type="number" fullWidth 
+            label="Costo Estimado (S/)" type="number" fullWidth 
             value={nuevoServicio.precio} onChange={e => setNuevoServicio({...nuevoServicio, precio: e.target.value})}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setServicioModal(false)}>Cancelar</Button>
-          <Button onClick={handleAddServicio} variant="contained">Guardar</Button>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setServicioModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
+          <Button onClick={handleAddServicio} variant="contained" disabled={!nuevoServicio.descripcion} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Agregar</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Modal Repuesto */}
+      <Dialog open={repuestoModal} onClose={() => setRepuestoModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+        <DialogTitle><Typography variant="h6" fontWeight="700">Agregar Repuesto a Cotizar</Typography></DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+          <Autocomplete
+            options={repuestosInventario}
+            getOptionLabel={(option) => `${option.nombre} ${option.codigo_fabricante ? `(${option.codigo_fabricante})` : ''}`}
+            onChange={(e, val) => setNuevoRepuesto({...nuevoRepuesto, repuesto: val, precio_unitario: val?.precio_lista || 0})}
+            renderInput={(params) => <TextField {...params} label="Buscar Repuesto en Inventario" fullWidth />}
+          />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField 
+              label="Cantidad" type="number" fullWidth 
+              value={nuevoRepuesto.cantidad} onChange={e => setNuevoRepuesto({...nuevoRepuesto, cantidad: e.target.value})}
+            />
+            <TextField 
+              label="Precio Unitario (S/)" type="number" fullWidth 
+              value={nuevoRepuesto.precio_unitario} onChange={e => setNuevoRepuesto({...nuevoRepuesto, precio_unitario: e.target.value})}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setRepuestoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
+          <Button onClick={handleAddRepuesto} variant="contained" disabled={!nuevoRepuesto.repuesto} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Agregar</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Modal Aprobacion Cotizacion */}
+      <Dialog open={aprobacionModal} onClose={() => setAprobacionModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight="700">Aprobar Cotización</Typography>
+          <Typography variant="body2" color="text.secondary">Selecciona los servicios y repuestos que el cliente ha aprobado realizar.</Typography>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="subtitle2" fontWeight="700" color="primary.main" mb={1}>Servicios</Typography>
+          <FormGroup sx={{ mb: 3 }}>
+            {orden?.servicios.map(s => (
+              <FormControlLabel 
+                key={s.id} 
+                control={<Checkbox checked={serviciosSeleccionados.includes(s.id)} onChange={e => {
+                  if (e.target.checked) setServiciosSeleccionados([...serviciosSeleccionados, s.id]);
+                  else setServiciosSeleccionados(serviciosSeleccionados.filter(id => id !== s.id));
+                }} />} 
+                label={<Typography variant="body2">{s.descripcion} (S/ {parseFloat(s.precio_estimado).toFixed(2)})</Typography>} 
+              />
+            ))}
+            {orden?.servicios.length === 0 && <Typography variant="body2" color="text.secondary">No hay servicios cotizados.</Typography>}
+          </FormGroup>
+
+          <Typography variant="subtitle2" fontWeight="700" color="primary.main" mb={1}>Repuestos</Typography>
+          <FormGroup>
+            {orden?.repuestos.map(r => (
+              <FormControlLabel 
+                key={r.id} 
+                control={<Checkbox checked={repuestosSeleccionados.includes(r.id)} onChange={e => {
+                  if (e.target.checked) setRepuestosSeleccionados([...repuestosSeleccionados, r.id]);
+                  else setRepuestosSeleccionados(repuestosSeleccionados.filter(id => id !== r.id));
+                }} />} 
+                label={<Typography variant="body2">{r.repuesto_detalle?.nombre} x{parseFloat(r.cantidad)} (S/ {parseFloat(r.precio_unitario * r.cantidad).toFixed(2)})</Typography>} 
+              />
+            ))}
+            {orden?.repuestos.length === 0 && <Typography variant="body2" color="text.secondary">No hay repuestos cotizados.</Typography>}
+          </FormGroup>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setAprobacionModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
+          <Button onClick={handleAprobarCotizacion} variant="contained" color="success" sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Confirmar Aprobación</Button>
         </DialogActions>
       </Dialog>
 
