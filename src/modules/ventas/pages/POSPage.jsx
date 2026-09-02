@@ -70,11 +70,18 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
     }
   };
 
-  const formatearFecha = (fechaStr) => {
-    if (!fechaStr) return '';
-    const date = new Date(fechaStr);
-    return date.toLocaleString();
-  };
+    const formatearFecha = (fechaStr) => {
+      if (!fechaStr) return '';
+      const date = new Date(fechaStr);
+      return date.toLocaleString();
+    };
+  
+    const getSaleOrigin = (ticket_kiosko) => {
+      if (!ticket_kiosko) return { text: 'Directa', color: 'info' };
+      if (ticket_kiosko.startsWith('OT-')) return { text: 'Taller', color: 'primary' };
+      if (ticket_kiosko.startsWith('TK-')) return { text: 'Kiosko', color: 'secondary' };
+      return { text: 'Otro', color: 'default' };
+    };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -105,11 +112,12 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
-                    <TableCell><strong>ID / Ticket</strong></TableCell>
+                    <TableCell><strong>Origen</strong></TableCell>
+                    <TableCell><strong>Referencia</strong></TableCell>
+                    <TableCell><strong>Comprobante</strong></TableCell>
                     <TableCell><strong>Fecha</strong></TableCell>
                     <TableCell><strong>Cliente</strong></TableCell>
                     <TableCell><strong>Vehículo</strong></TableCell>
-                    <TableCell align="center"><strong>Ítems</strong></TableCell>
                     <TableCell align="right"><strong>Total (S/)</strong></TableCell>
                     <TableCell align="center"><strong>Estado</strong></TableCell>
                     <TableCell align="center"><strong>Acción</strong></TableCell>
@@ -118,16 +126,21 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                 <TableBody>
                   {ventas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ py: 3 }}>No hay pedidos encontrados para esta categoría.</TableCell>
+                      <TableCell colSpan={9} align="center" sx={{ py: 3 }}>No hay pedidos encontrados para esta categoría.</TableCell>
                     </TableRow>
                   ) : (
-                    ventas.map((venta) => (
+                    ventas.map((venta) => {
+                      const origen = getSaleOrigin(venta.ticket_kiosko);
+                      return (
                       <TableRow key={venta.id} hover sx={{ cursor: venta.estado === 'PRE_VENTA' ? 'pointer' : 'default', backgroundColor: venta.estado === 'PRE_VENTA' ? 'inherit' : '#fafafa' }}>
-                        <TableCell>{venta.id} {venta.ticket_kiosko ? `(Ticket #${venta.ticket_kiosko})` : ''}</TableCell>
+                        <TableCell>
+                          <Chip label={origen.text} color={origen.color} size="small" sx={{ fontWeight: 'bold' }} />
+                        </TableCell>
+                        <TableCell>{venta.ticket_kiosko || '-'}</TableCell>
+                        <TableCell><strong>{venta.serie_correlativo || 'Por emitir'}</strong></TableCell>
                         <TableCell>{formatearFecha(venta.creado_en)}</TableCell>
                         <TableCell>{venta.cliente_nombre || 'Cliente General'}</TableCell>
                         <TableCell>{venta.vehiculo_placa || '-'}</TableCell>
-                        <TableCell align="center">{venta.detalles ? venta.detalles.length : 0}</TableCell>
                         <TableCell align="right"><strong>{(parseFloat(venta.total) || 0).toFixed(2)}</strong></TableCell>
                         <TableCell align="center">{getStatusChip(venta.estado)}</TableCell>
                         <TableCell align="center">
@@ -153,7 +166,8 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>

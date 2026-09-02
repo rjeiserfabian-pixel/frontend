@@ -27,6 +27,7 @@ import OrdenesTrabajoPage from './modules/taller/pages/OrdenesTrabajoPage';
 import NuevaOrdenPage from './modules/taller/pages/NuevaOrdenPage';
 import DetalleOrdenPage from './modules/taller/pages/DetalleOrdenPage';
 import PlantillasPage from './modules/taller/pages/PlantillasPage';
+import ConsultaVehiculoPage from './modules/public/pages/ConsultaVehiculoPage';
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
         {/* Rutas Públicas / Kiosko (Full Screen) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/kiosko" element={<KioskoPage />} />
+        <Route path="/estado-vehiculo" element={<ConsultaVehiculoPage />} />
         
         {/* Rutas Protegidas (Requieren Login) */}
         <Route element={<DashboardLayout />}>
