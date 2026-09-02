@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, Chip, IconButton, 
@@ -207,7 +208,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
               {selectedSaleDetails?.detalles && selectedSaleDetails.detalles.length > 0 ? (
                 selectedSaleDetails.detalles.map((item, idx) => (
                   <TableRow key={idx}>
-                    <TableCell>{item.repuesto_nombre || `Producto ${item.repuesto}`}</TableCell>
+                    <TableCell>{item.descripcion_servicio || item.repuesto_nombre || `Producto ${item.repuesto || 'Adicional'}`}</TableCell>
                     <TableCell align="center">{item.cantidad}</TableCell>
                     <TableCell align="right">S/ {parseFloat(item.precio_unitario || 0).toFixed(2)}</TableCell>
                     <TableCell align="right">S/ {(parseFloat(item.precio_unitario || 0) * item.cantidad).toFixed(2)}</TableCell>
@@ -540,7 +541,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
                 order.detalles.map((item, idx) => (
                   <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, borderBottom: '1px solid #f0f0f0', pb: 1 }}>
                     <Box>
-                      <Typography variant="body2" fontWeight="bold">{item.repuesto_nombre || `Producto ${item.repuesto}`}</Typography>
+                      <Typography variant="body2" fontWeight="bold">{item.descripcion_servicio || item.repuesto_nombre || `Producto ${item.repuesto || 'Adicional'}`}</Typography>
                       <Typography variant="caption" color="textSecondary">Cantidad: {item.cantidad}</Typography>
                     </Box>
                     <Typography variant="body2" fontWeight="bold">S/ {(parseFloat(item.precio_unitario) * item.cantidad).toFixed(2)}</Typography>
@@ -593,12 +594,13 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const [carrito, setCarrito] = useState(() => {
     if (initialOrder && initialOrder.detalles) {
       return initialOrder.detalles.map(d => ({
-        id: d.repuesto,
-        nombre: d.repuesto_nombre || `Producto ${d.repuesto}`,
-        codigo: d.repuesto_codigo || '',
+        id: d.repuesto || `srv_${d.id}`,
+        nombre: d.descripcion_servicio || d.repuesto_nombre || `Producto ${d.repuesto || 'Adicional'}`,
+        codigo: d.repuesto_codigo || 'SRV',
         precio_venta: parseFloat(d.precio_unitario || 0),
-        precio_lista: parseFloat(d.precio_unitario || 0),
-        cantidad: d.cantidad || 1
+        cantidad: parseFloat(d.cantidad || 1),
+        tipo: d.repuesto ? 'REPUESTO' : 'SERVICIO',
+        originalDetalleId: d.id
       }));
     }
     return [];
@@ -1448,9 +1450,31 @@ export const POSPage = () => {
     }
   };
 
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDirectSale, setIsDirectSale] = useState(false);
   
+  useEffect(() => {
+    if (location.state?.autoOpenVentaId && !selectedOrder) {
+      const fetchVenta = async () => {
+        try {
+          const response = await ventasService.getVentas();
+          const ventasList = response.results ? response.results : response;
+          const venta = ventasList.find(v => v.id === location.state.autoOpenVentaId);
+          if (venta) {
+            setSelectedOrder(venta);
+            // Limpiar el state de react-router para que no vuelva a abrirse si el usuario le da a Cancelar o termina
+            navigate(location.pathname, { replace: true, state: {} });
+          }
+        } catch (error) {
+          console.error("Error fetching venta para auto-open:", error);
+        }
+      };
+      fetchVenta();
+    }
+  }, [location.state, selectedOrder, navigate, location.pathname]);
+
   const handleComplete = () => {
     setSelectedOrder(null);
     setIsDirectSale(false);

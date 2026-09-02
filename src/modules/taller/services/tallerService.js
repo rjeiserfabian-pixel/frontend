@@ -28,6 +28,17 @@ export const tallerService = {
     return response.data;
   },
 
+  finalizarOrden: async (id) => {
+    const response = await api.post(`taller/ordenes/${id}/finalizar_orden/`);
+    return response.data;
+  },
+
+  enviarAPos: async (id) => {
+    const response = await api.post(`taller/ordenes/${id}/enviar_a_pos/`);
+    return response.data;
+  },
+
+
   // Hallazgos
   crearHallazgo: async (data) => {
     const response = await api.post('taller/hallazgos/', data);

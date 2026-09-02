@@ -117,17 +117,19 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
         <table style={{ width: '100%', fontSize: '11px', marginBottom: '10px', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid black' }}>
-              <th style={{ textAlign: 'left', paddingBottom: '4px' }}>Cant</th>
-              <th style={{ textAlign: 'left', paddingBottom: '4px' }}>Descripción</th>
-              <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Total</th>
+              <th style={{ textAlign: 'left', paddingBottom: '4px', width: '15%' }}>Cant</th>
+              <th style={{ textAlign: 'left', paddingBottom: '4px', width: '15%' }}>U.M.</th>
+              <th style={{ textAlign: 'left', paddingBottom: '4px', width: '50%' }}>Descripción</th>
+              <th style={{ textAlign: 'right', paddingBottom: '4px', width: '20%' }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {venta.detalles && venta.detalles.length > 0 ? (
               venta.detalles.map((item, idx) => (
                 <tr key={idx}>
-                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.cantidad} {item.repuesto_unidad_medida || 'Und'}</td>
-                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.repuesto_nombre || 'Producto'}</td>
+                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.cantidad}</td>
+                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{!item.descripcion_servicio ? (item.repuesto_unidad_medida || 'NIU') : 'ZZ'}</td>
+                  <td style={{ verticalAlign: 'top', paddingTop: '4px' }}>{item.descripcion_servicio || item.repuesto_nombre || 'Producto'}</td>
                   <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '4px' }}>
                     {(parseFloat(item.precio_unitario || item.precio_venta) * item.cantidad).toFixed(2)}
                   </td>
@@ -135,7 +137,7 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
               ))
             ) : (
               <tr>
-                <td colSpan={3} style={{ textAlign: 'center', paddingTop: '4px' }}>Sin ítems</td>
+                <td colSpan={4} style={{ textAlign: 'center', paddingTop: '4px' }}>Sin ítems</td>
               </tr>
             )}
           </tbody>

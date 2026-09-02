@@ -207,6 +207,28 @@ export default function DetalleOrdenPage() {
     }
   };
 
+  const handleFinalizarOrden = async () => {
+    try {
+      await tallerService.finalizarOrden(id);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Error al finalizar la orden");
+    }
+  };
+
+  const handleEnviarAPos = async () => {
+    try {
+      const data = await tallerService.enviarAPos(id);
+      // Redirigir al POS (Punto de Venta) con el ticket generado
+      navigate(`/ventas/pos`, { state: { autoOpenVentaId: data.venta_id } });
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Error al enviar al Punto de Venta");
+    }
+  };
+
+
   const handleToggleInstalado = async (repuestoId) => {
     try {
       await api.patch(`taller/repuestos/${repuestoId}/marcar_instalado/`);
@@ -423,9 +445,27 @@ export default function DetalleOrdenPage() {
 
           {orden.estado === 'APROBADO' && (
             <Box mb={4}>
-              <Typography variant="h6" fontWeight="800" mb={2} color="primary.main" display="flex" alignItems="center" gap={1}>
-                <CheckCircle size={24} /> Panel de Ejecución
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" fontWeight="800" color="primary.main" display="flex" alignItems="center" gap={1}>
+                  <CheckCircle size={24} /> Panel de Ejecución
+                </Typography>
+                
+                <Button
+                  variant="contained"
+                  onClick={handleFinalizarOrden}
+                  disabled={
+                    !(orden.servicios.filter(s => s.aprobado_cliente).length > 0 || orden.repuestos.filter(r => r.aprobado_cliente).length > 0) ||
+                    !orden.servicios.filter(s => s.aprobado_cliente).every(s => s.completado) ||
+                    !orden.repuestos.filter(r => r.aprobado_cliente).every(r => r.instalado)
+                  }
+                  sx={{
+                    bgcolor: 'slate.900', color: 'white', '&:hover': { bgcolor: 'slate.800' }, 
+                    borderRadius: '10px', px: 4, py: 1.5, fontWeight: 600, boxShadow: 'none'
+                  }}
+                >
+                  Finalizar Orden
+                </Button>
+              </Box>
               
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
@@ -492,7 +532,24 @@ export default function DetalleOrdenPage() {
             </Box>
           )}
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {orden.estado === 'FINALIZADO' && (
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: '#eff6ff', border: '1px solid', borderColor: '#bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+              <Box>
+                <Typography variant="h6" fontWeight="700" color="#1e3a8a" mb={0.5}>Orden de Trabajo Finalizada</Typography>
+                <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja.</Typography>
+              </Box>
+              <Button 
+                variant="contained" 
+                size="large"
+                sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
+                onClick={handleEnviarAPos}
+              >
+                Cobrar en Punto de Venta
+              </Button>
+            </Paper>
+          )}
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 3 }}>
             {/* Inspección */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
               <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
