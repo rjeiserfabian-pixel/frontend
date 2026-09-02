@@ -269,6 +269,7 @@ const ConfiguracionVentasPage = () => {
                   {activeTab === 'cajas' && <th className="p-4 font-medium">Sucursal</th>}
                   {activeTab === 'cajas' && <th className="p-4 font-medium">Almacén por Defecto</th>}
                   {activeTab === 'series' && <th className="p-4 font-medium">Tipo / Correlativo</th>}
+                  {activeTab === 'series' && <th className="p-4 font-medium">Sucursal</th>}
                   <th className="p-4 font-medium text-right">Acciones</th>
                 </tr>
               </thead>
@@ -302,6 +303,7 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4">{index + 1}</td>
                     <td className="p-4 font-medium text-slate-800">{s.serie}</td>
                     <td className="p-4">{s.tipo_comprobante_nombre} (Act: {s.correlativo_actual})</td>
+                    <td className="p-4">{s.sucursal_nombre || 'Sede Principal / Global'}</td>
                     <td className="p-4 text-right">
                       <button onClick={() => handleEditar(s, 'series')} className="text-blue-500 hover:text-blue-700 p-2"><Edit2 size={18} /></button>
                       <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>

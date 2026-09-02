@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
-  TextField, Button, CircularProgress, MenuItem, Select, FormControl, InputLabel
+  TextField, Button, CircularProgress, MenuItem, Select, FormControl, InputLabel, FormHelperText
 } from '@mui/material';
 import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -21,6 +21,7 @@ export const UbigeoPage = () => {
   const [modalType, setModalType] = useState(''); // 'dep', 'prov', 'dist'
   const [editData, setEditData] = useState(null);
   const [formData, setFormData] = useState({ nombre: '', departamento_id: '', provincia_id: '' });
+  const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   // Modal Provinces for dropdown (when creating district)
@@ -127,11 +128,28 @@ export const UbigeoPage = () => {
       departamento_id: defaultDepId,
       provincia_id: defaultProvId
     });
+    setFormErrors({});
     setModalOpen(true);
   };
 
   const handleSave = async () => {
-    if (!formData.nombre.trim()) return;
+    const errors = {};
+    if (!formData.nombre.trim()) errors.nombre = 'El nombre es obligatorio';
+    
+    if (modalType === 'prov' && !formData.departamento_id) {
+      errors.departamento_id = 'Debe seleccionar un departamento';
+    }
+    
+    if (modalType === 'dist' && !formData.provincia_id) {
+      errors.provincia_id = 'Debe seleccionar una provincia';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
     setSaving(true);
     try {
       let endpoint = '';
@@ -140,17 +158,9 @@ export const UbigeoPage = () => {
       if (modalType === 'dep') {
         endpoint = '/seguridad/departamentos/';
       } else if (modalType === 'prov') {
-        if (!formData.departamento_id) {
-          Swal.fire('Error', 'Debe seleccionar un departamento', 'error');
-          setSaving(false); return;
-        }
         endpoint = '/seguridad/provincias/';
         payload.departamento = formData.departamento_id;
       } else if (modalType === 'dist') {
-        if (!formData.provincia_id) {
-          Swal.fire('Error', 'Debe seleccionar una provincia', 'error');
-          setSaving(false); return;
-        }
         endpoint = '/seguridad/distritos/';
         payload.provincia = formData.provincia_id;
       }
@@ -171,7 +181,33 @@ export const UbigeoPage = () => {
       Swal.fire('Éxito', 'Guardado correctamente', 'success');
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'Hubo un problema al guardar', 'error');
+      let errorMessage = 'Hubo un error al guardar.';
+      
+      if (error.response && error.response.data) {
+        // Soporta formato {errores: {...}} o directamente el array de errores
+        const errData = error.response.data.errores || error.response.data;
+        
+        if (errData.nombre) {
+          errorMessage = 'Ya existe un registro con este nombre.';
+        } else if (errData.non_field_errors) {
+          errorMessage = errData.non_field_errors[0];
+        } else if (typeof errData === 'object') {
+          const firstKey = Object.keys(errData)[0];
+          if (firstKey && Array.isArray(errData[firstKey])) {
+            errorMessage = errData[firstKey][0];
+          }
+        }
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'No se pudo guardar',
+        text: errorMessage,
+        didOpen: () => {
+          const container = document.querySelector('.swal2-container');
+          if (container) container.style.zIndex = '9999';
+        }
+      });
     } finally {
       setSaving(false);
     }
@@ -349,32 +385,40 @@ export const UbigeoPage = () => {
         <DialogContent dividers className="flex flex-col gap-5 pt-4">
           
           {modalType !== 'dep' && (
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" error={!!formErrors.departamento_id}>
               <InputLabel>Departamento</InputLabel>
               <Select
                 value={formData.departamento_id}
                 label="Departamento"
-                onChange={(e) => setFormData({ ...formData, departamento_id: e.target.value, provincia_id: '' })}
+                onChange={(e) => {
+                  setFormData({ ...formData, departamento_id: e.target.value, provincia_id: '' });
+                  if (formErrors.departamento_id) setFormErrors({ ...formErrors, departamento_id: null });
+                }}
               >
                 {departamentos.map(d => (
                   <MenuItem key={d.id} value={d.id}>{d.nombre}</MenuItem>
                 ))}
               </Select>
+              {formErrors.departamento_id && <FormHelperText>{formErrors.departamento_id}</FormHelperText>}
             </FormControl>
           )}
 
           {modalType === 'dist' && (
-            <FormControl fullWidth size="small" disabled={!formData.departamento_id}>
+            <FormControl fullWidth size="small" disabled={!formData.departamento_id} error={!!formErrors.provincia_id}>
               <InputLabel>Provincia</InputLabel>
               <Select
                 value={formData.provincia_id}
                 label="Provincia"
-                onChange={(e) => setFormData({ ...formData, provincia_id: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, provincia_id: e.target.value });
+                  if (formErrors.provincia_id) setFormErrors({ ...formErrors, provincia_id: null });
+                }}
               >
                 {modalProvincias.map(p => (
                   <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>
                 ))}
               </Select>
+              {formErrors.provincia_id && <FormHelperText>{formErrors.provincia_id}</FormHelperText>}
             </FormControl>
           )}
 
@@ -386,10 +430,17 @@ export const UbigeoPage = () => {
             size="small"
             variant="outlined"
             value={formData.nombre}
-            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, nombre: e.target.value });
+              if (e.target.value.trim() && formErrors.nombre) {
+                setFormErrors({ ...formErrors, nombre: null });
+              }
+            }}
             onKeyPress={(e) => {
               if (e.key === 'Enter') handleSave();
             }}
+            error={!!formErrors.nombre}
+            helperText={formErrors.nombre}
           />
         </DialogContent>
         <DialogActions>

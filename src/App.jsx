@@ -7,6 +7,7 @@ import RolesPage from './modules/seguridad/pages/RolesPage';
 import ConfiguracionEmpresaPage from './modules/seguridad/pages/ConfiguracionEmpresaPage';
 import UbigeoPage from './modules/seguridad/pages/UbigeoPage';
 import PerfilPage from './modules/seguridad/pages/PerfilPage';
+import CuentasBancariasPage from './modules/seguridad/pages/CuentasBancariasPage';
 import CategoriasPage from './modules/inventario/pages/CategoriasPage';
 import MarcasPage from './modules/inventario/pages/MarcasPage';
 import UnidadesPage from './modules/inventario/pages/UnidadesPage';
@@ -47,6 +48,7 @@ function App() {
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/seguridad/empresa" element={<ConfiguracionEmpresaPage />} />
           <Route path="/seguridad/ubigeo" element={<UbigeoPage />} />
+          <Route path="/seguridad/cuentas-bancarias" element={<CuentasBancariasPage />} />
           <Route path="/seguridad/perfil" element={<PerfilPage />} />
           <Route path="/inventario/categorias" element={<CategoriasPage />} />
           <Route path="/inventario/marcas" element={<MarcasPage />} />

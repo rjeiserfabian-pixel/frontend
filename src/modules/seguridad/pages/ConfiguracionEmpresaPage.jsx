@@ -24,6 +24,8 @@ export const ConfiguracionEmpresaPage = () => {
     provincia: '',
     distrito: '',
     telefono: '',
+    email: '',
+    web: '',
     logo: null
   });
 
@@ -50,6 +52,8 @@ export const ConfiguracionEmpresaPage = () => {
           provincia: data.provincia || '',
           distrito: data.distrito || '',
           telefono: data.telefono || '',
+          email: data.email || '',
+          web: data.web || '',
           logo: null 
         });
         
@@ -140,6 +144,8 @@ export const ConfiguracionEmpresaPage = () => {
       payload.append('provincia', formData.provincia);
       payload.append('distrito', formData.distrito);
       payload.append('telefono', formData.telefono);
+      payload.append('email', formData.email);
+      payload.append('web', formData.web);
       if (formData.logo) {
         payload.append('logo', formData.logo);
       }
@@ -283,6 +289,29 @@ export const ConfiguracionEmpresaPage = () => {
                 name="telefono"
                 fullWidth
                 value={formData.telefono}
+                onChange={handleChange}
+                variant="outlined"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-12 gap-4 mt-4">
+            <div className="col-span-12 md:col-span-6">
+              <TextField
+                label="Email de la Empresa (Ej: contacto@omega.com)"
+                name="email"
+                type="email"
+                fullWidth
+                value={formData.email}
+                onChange={handleChange}
+                variant="outlined"
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <TextField
+                label="Sitio Web (Ej: https://www.omega.com)"
+                name="web"
+                fullWidth
+                value={formData.web}
                 onChange={handleChange}
                 variant="outlined"
               />
