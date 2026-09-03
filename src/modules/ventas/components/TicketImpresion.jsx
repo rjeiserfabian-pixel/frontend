@@ -94,24 +94,46 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
           <Typography variant="body2" sx={{ fontSize: '11px' }}>
             Tel: {getEmpresaData('telefono', '000-000-000')}
           </Typography>
+          {getEmpresaData('pagina_web') && (
+            <Typography variant="body2" sx={{ fontSize: '11px' }}>
+              Pagina: {getEmpresaData('pagina_web')}
+            </Typography>
+          )}
         </Box>
 
         <Box sx={{ textAlign: 'center', my: 1, borderTop: '1px dashed black', borderBottom: '1px dashed black', py: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '13px' }}>
-            TICKET DE VENTA #{venta.id}
+          <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>
+            {venta.tipo_comprobante_nombre || 'TICKET DE VENTA'}
           </Typography>
-          <Typography variant="body2" sx={{ fontSize: '11px' }}>
-            {formatDate(venta.creado_en)}
+          <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '13px' }}>
+            {venta.serie_correlativo || `TK-${venta.id}`}
           </Typography>
         </Box>
 
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" sx={{ fontSize: '11px' }}>
-            <strong>CLIENTE:</strong> {venta.cliente_nombre || 'Público General'}
+        <Box sx={{ mb: 2, textAlign: 'center' }}>
+          <Typography variant="body2" sx={{ fontSize: '11px', textTransform: 'uppercase' }}>
+            <strong>CLIENTE:</strong><br />
+            {venta.cliente_nombre ? `${venta.cliente_nombre} ${venta.cliente_apellidos || ''}` : 'PÚBLICO GENERAL'}
+          </Typography>
+          {venta.cliente_dni && (
+            <Typography variant="body2" sx={{ fontSize: '11px', fontWeight: 'bold' }}>
+              DNI/RUC: {venta.cliente_dni}
+            </Typography>
+          )}
+        </Box>
+
+        <Box sx={{ textAlign: 'center', borderTop: '1px dashed black', borderBottom: '1px dashed black', py: 1, mb: 2 }}>
+          <Typography variant="body2" sx={{ fontSize: '11px', fontWeight: 'bold' }}>
+            FECHA: {venta.creado_en ? new Date(venta.creado_en).toLocaleDateString('es-PE') : ''} HORA: {venta.creado_en ? new Date(venta.creado_en).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
           </Typography>
           <Typography variant="body2" sx={{ fontSize: '11px' }}>
-            <strong>VEHÍCULO:</strong> {venta.vehiculo_placa || '-'}
+            <strong>VENDEDOR:</strong> {venta.vendedor_nombre || 'Sistema'}
           </Typography>
+          {venta.caja_nombre && (
+            <Typography variant="body2" sx={{ fontSize: '11px' }}>
+              <strong>CAJA:</strong> {venta.caja_nombre}
+            </Typography>
+          )}
         </Box>
 
         <table style={{ width: '100%', fontSize: '11px', marginBottom: '10px', borderCollapse: 'collapse' }}>
