@@ -304,7 +304,7 @@ export default function DetalleOrdenPage() {
                 OT-{orden.numero}
               </Typography>
               <Typography variant="body2" color="text.secondary" fontWeight="500">
-                Creado el {new Date(orden.fecha_ingreso).toLocaleDateString()}
+                Creado el {orden.fecha_ingreso ? new Date(orden.fecha_ingreso).toLocaleDateString() : 'Fecha no registrada'}
               </Typography>
             </Box>
           </Box>
@@ -320,13 +320,46 @@ export default function DetalleOrdenPage() {
 
         <Box sx={{ width: '100%', px: 2 }}>
           <Stepper activeStep={activeStep} alternativeLabel>
-            {PASOS_ORDEN.map((label) => (
-              <Step key={label}>
-                <StepLabel sx={{ '& .MuiStepLabel-label': { fontWeight: 600, mt: 1 } }}>
-                  {label.replace(/_/g, ' ')}
-                </StepLabel>
-              </Step>
-            ))}
+            {PASOS_ORDEN.map((label, index) => {
+              let labelDate = null;
+              
+              // Mostrar la fecha de ingreso en el primer paso (Recepcionado) si está disponible
+              if (index === 0 && orden.fecha_ingreso) {
+                const dateObj = new Date(orden.fecha_ingreso);
+                if (!isNaN(dateObj)) {
+                  labelDate = dateObj.toLocaleString('es-PE', { 
+                    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true 
+                  });
+                }
+              }
+
+              // Mostrar la fecha de finalización si existe (tendría que venir del backend)
+              if (label === 'FINALIZADO' && orden.fecha_finalizacion) {
+                const dateObj = new Date(orden.fecha_finalizacion);
+                if (!isNaN(dateObj)) {
+                  labelDate = dateObj.toLocaleString('es-PE', { 
+                    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true 
+                  });
+                }
+              }
+
+              return (
+                <Step key={label}>
+                  <StepLabel 
+                    optional={
+                      labelDate ? (
+                        <Typography variant="caption" display="block" align="center" color="text.secondary" sx={{ mt: 0.5 }}>
+                          {labelDate}
+                        </Typography>
+                      ) : null
+                    }
+                    sx={{ '& .MuiStepLabel-label': { fontWeight: 600, mt: 1 } }}
+                  >
+                    {label.replace(/_/g, ' ')}
+                  </StepLabel>
+                </Step>
+              );
+            })}
           </Stepper>
         </Box>
       </Paper>

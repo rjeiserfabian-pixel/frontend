@@ -82,7 +82,7 @@ const ConsultaVehiculoPage = () => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             
             {/* FORMULARIO */}
-            <div className="bg-[#111827] rounded-3xl p-8 border border-slate-800 shadow-2xl flex flex-col items-center">
+            <div className="bg-[#111827] rounded-3xl p-8 border border-slate-800 shadow-2xl flex flex-col items-center h-fit xl:sticky xl:top-12">
               <div className="w-16 h-16 rounded-full bg-[#1f2937] flex items-center justify-center text-[#e50914] mb-6">
                 <Search size={32} />
               </div>

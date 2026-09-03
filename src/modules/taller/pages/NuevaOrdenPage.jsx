@@ -173,6 +173,11 @@ export default function NuevaOrdenPage() {
     }
   };
 
+  // Filtrar vehículos según el cliente seleccionado
+  const vehiculosFiltrados = formData.cliente_id 
+    ? vehiculos.filter(v => v.clientes && v.clientes.some(c => (c.id || c) === formData.cliente_id))
+    : vehiculos;
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-12">
       <div className="flex items-center gap-3">
@@ -205,10 +210,24 @@ export default function NuevaOrdenPage() {
                     options={clientes}
                     value={clientes.find(c => c.id === formData.cliente_id) || null}
                     getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
-                    onChange={(e, val) => setFormData(prev => ({ 
-                      ...prev, 
-                      cliente_id: val?.id || null 
-                    }))}
+                    onChange={(e, val) => {
+                      const newClientId = val?.id || null;
+                      let newVehiculoId = formData.vehiculo_id;
+                      
+                      // Si hay un vehículo seleccionado y se escoge un cliente diferente
+                      // verificamos si el vehículo le pertenece. Si no, lo limpiamos.
+                      if (newClientId && newVehiculoId) {
+                        const vehiculoSel = vehiculos.find(v => v.id === newVehiculoId);
+                        const pertenece = vehiculoSel?.clientes?.some(c => (c.id || c) === newClientId);
+                        if (!pertenece) newVehiculoId = null;
+                      }
+
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        cliente_id: newClientId,
+                        vehiculo_id: newVehiculoId
+                      }));
+                    }}
                     renderInput={(params) => <TextField {...params} label="Buscar Cliente *" error={!!formErrors.cliente} helperText={formErrors.cliente} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
                   />
                 </div>
@@ -224,21 +243,21 @@ export default function NuevaOrdenPage() {
               <div className="flex gap-2 w-full">
                 <div className="flex-1">
                   <Autocomplete
-                    options={vehiculos}
+                    options={vehiculosFiltrados}
                     value={vehiculos.find(v => v.id === formData.vehiculo_id) || null}
                     getOptionLabel={(option) => `${option.placa} - ${option.marca} ${option.modelo}`}
                     onChange={(e, val) => {
-                      // Attempt to auto-fill client if vehicle has a known client history and no client is selected yet
                       let suggestedClientId = formData.cliente_id;
-                      if (val && val.clientes && val.clientes.length > 0 && !formData.cliente_id) {
-                        suggestedClientId = val.clientes[0].id || val.clientes[0]; // depends on how API returns M:N
+                      // Si el vehículo tiene clientes asignados, auto-seleccionamos el propietario
+                      if (val && val.clientes && val.clientes.length > 0) {
+                        suggestedClientId = val.clientes[0].id || val.clientes[0];
                       }
                       
                       setFormData(prev => ({ 
                         ...prev, 
                         vehiculo_id: val?.id || null,
                         kilometraje: val?.kilometraje_actual || '',
-                        cliente_id: suggestedClientId
+                        cliente_id: val ? suggestedClientId : prev.cliente_id
                       }));
                     }}
                     renderInput={(params) => <TextField {...params} label="Buscar Vehículo por Placa *" error={!!formErrors.vehiculo} helperText={formErrors.vehiculo} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
