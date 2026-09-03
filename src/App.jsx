@@ -25,6 +25,7 @@ import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasP
 import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
 import RegistroManualVentasPage from './modules/ventas/pages/RegistroManualVentasPage';
 import CuentasCobrarPage from './modules/ventas/pages/CuentasCobrarPage';
+import CuentasCobrarDetallePage from './modules/ventas/pages/CuentasCobrarDetallePage';
 import OrdenesTrabajoPage from './modules/taller/pages/OrdenesTrabajoPage';
 import NuevaOrdenPage from './modules/taller/pages/NuevaOrdenPage';
 import DetalleOrdenPage from './modules/taller/pages/DetalleOrdenPage';
@@ -73,6 +74,7 @@ function App() {
           <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
           <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
           <Route path="/cuentas/por-cobrar" element={<CuentasCobrarPage />} />
+          <Route path="/cuentas/por-cobrar/:id" element={<CuentasCobrarDetallePage />} />
         </Route>
         
         {/* Redirección por defecto */}
