@@ -323,19 +323,20 @@ export default function DetalleOrdenPage() {
             {PASOS_ORDEN.map((label, index) => {
               let labelDate = null;
               
-              // Mostrar la fecha de ingreso en el primer paso (Recepcionado) si está disponible
-              if (index === 0 && orden.fecha_ingreso) {
-                const dateObj = new Date(orden.fecha_ingreso);
+              // 1. Intentar buscar en el historial de estados
+              const historyForStep = orden.historial_estados?.find(h => h.estado === label);
+              
+              if (historyForStep) {
+                const dateObj = new Date(historyForStep.fecha_registro);
                 if (!isNaN(dateObj)) {
                   labelDate = dateObj.toLocaleString('es-PE', { 
                     day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true 
                   });
                 }
-              }
-
-              // Mostrar la fecha de finalización si existe (tendría que venir del backend)
-              if (label === 'FINALIZADO' && orden.fecha_finalizacion) {
-                const dateObj = new Date(orden.fecha_finalizacion);
+              } 
+              // 2. Fallback para órdenes antiguas: Mostrar fecha de ingreso si es el paso 1
+              else if (index === 0 && orden.fecha_ingreso) {
+                const dateObj = new Date(orden.fecha_ingreso);
                 if (!isNaN(dateObj)) {
                   labelDate = dateObj.toLocaleString('es-PE', { 
                     day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true 
