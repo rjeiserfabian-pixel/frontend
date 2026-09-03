@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Settings, Plus, Trash2, Edit } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -185,6 +185,7 @@ const ConfiguracionVentasPage = () => {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
     });
 
     if (result.isConfirmed) {
@@ -280,7 +281,7 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4 font-medium text-slate-800">{m.nombre}</td>
                     <td className="p-4">{m.requiere_referencia ? 'Sí' : 'No'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(m, 'metodos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit2 size={18} /></button>
+                      <button onClick={() => handleEditar(m, 'metodos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
                       <button onClick={() => handleEliminar(m.id, 'metodos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                     </td>
                   </tr>
@@ -292,7 +293,7 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4 font-medium text-slate-800">{t.nombre}</td>
                     <td className="p-4">{t.codigo_sunat || '-'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(t, 'tipos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit2 size={18} /></button>
+                      <button onClick={() => handleEditar(t, 'tipos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
                       <button onClick={() => handleEliminar(t.id, 'tipos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                     </td>
                   </tr>
@@ -305,7 +306,7 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4">{s.tipo_comprobante_nombre} (Act: {s.correlativo_actual})</td>
                     <td className="p-4">{s.sucursal_nombre || 'Sede Principal / Global'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(s, 'series')} className="text-blue-500 hover:text-blue-700 p-2"><Edit2 size={18} /></button>
+                      <button onClick={() => handleEditar(s, 'series')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
                       <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                     </td>
                   </tr>
@@ -318,7 +319,7 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4">{c.sucursal_nombre}</td>
                     <td className="p-4">{c.almacen_nombre || '-'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(c, 'cajas')} className="text-blue-500 hover:text-blue-700 p-2"><Edit2 size={18} /></button>
+                      <button onClick={() => handleEditar(c, 'cajas')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
                       <button onClick={() => handleEliminar(c.id, 'cajas')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                     </td>
                   </tr>

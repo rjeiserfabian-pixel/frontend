@@ -5,7 +5,7 @@ import {
   TextField, Box, CircularProgress, TablePagination 
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useClientes } from '../hooks/useClientes';
 import ClientesForm from '../components/ClientesForm';
 import Swal from 'sweetalert2';
@@ -103,7 +103,7 @@ const ClientesPage = () => {
                         <TableCell>{row.direccion || '-'}</TableCell>
                         <TableCell align="center">
                           <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                            <Edit2 size={18} />
+                            <Edit size={18} />
                           </IconButton>
                         </TableCell>
                       </TableRow>

@@ -84,12 +84,33 @@ export const tallerService = {
   },
   
   actualizarPlantilla: async (id, data) => {
-    const response = await api.patch(`taller/plantillas/${id}/`, data);
+    const response = await api.put(`taller/plantillas/${id}/`, data);
     return response.data;
   },
   
   eliminarPlantilla: async (id) => {
     const response = await api.delete(`taller/plantillas/${id}/`);
+    return response.data;
+  },
+
+  // Tipos de Servicio
+  getTiposServicio: async (params) => {
+    const response = await api.get('taller/tipos-servicio/', { params });
+    return response.data;
+  },
+
+  crearTipoServicio: async (data) => {
+    const response = await api.post('taller/tipos-servicio/', data);
+    return response.data;
+  },
+
+  actualizarTipoServicio: async (id, data) => {
+    const response = await api.put(`taller/tipos-servicio/${id}/`, data);
+    return response.data;
+  },
+
+  eliminarTipoServicio: async (id) => {
+    const response = await api.delete(`taller/tipos-servicio/${id}/`);
     return response.data;
   }
 };

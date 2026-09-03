@@ -6,7 +6,7 @@ import {
   CircularProgress, Grid, Card, CardContent, Checkbox, FormControlLabel,
   Select, MenuItem, FormControl, Divider, Alert, TablePagination, Radio
 } from '@mui/material';
-import { Plus, Edit2, Trash2, Shield, Settings2, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, Settings2, Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import api from '../../../core/api/axios';
 
@@ -101,8 +101,8 @@ export default function RolesPage() {
       text: "El rol será eliminado permanentemente.",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });
@@ -268,7 +268,7 @@ export default function RolesPage() {
                       </TableCell>
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                         <IconButton color="primary" onClick={() => handleOpen(rol)} size="small" sx={{ mr: 1 }}>
-                          <Edit2 size={18} />
+                          <Edit size={18} />
                         </IconButton>
                         <IconButton color="error" onClick={() => handleDelete(rol.id_rol || rol.id)} size="small" disabled={rol.es_sistema}>
                           <Trash2 size={18} />

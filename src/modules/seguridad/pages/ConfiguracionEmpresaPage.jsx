@@ -26,6 +26,7 @@ export const ConfiguracionEmpresaPage = () => {
     telefono: '',
     email: '',
     web: '',
+    dias_validez_cotizacion: 15,
     logo: null
   });
 
@@ -54,6 +55,7 @@ export const ConfiguracionEmpresaPage = () => {
           telefono: data.telefono || '',
           email: data.email || '',
           web: data.web || '',
+          dias_validez_cotizacion: data.dias_validez_cotizacion ?? 15,
           logo: null 
         });
         
@@ -146,6 +148,7 @@ export const ConfiguracionEmpresaPage = () => {
       payload.append('telefono', formData.telefono);
       payload.append('email', formData.email);
       payload.append('web', formData.web);
+      payload.append('dias_validez_cotizacion', formData.dias_validez_cotizacion);
       if (formData.logo) {
         payload.append('logo', formData.logo);
       }
@@ -314,6 +317,28 @@ export const ConfiguracionEmpresaPage = () => {
                 value={formData.web}
                 onChange={handleChange}
                 variant="outlined"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* PARÁMETROS DEL SISTEMA */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <p className="text-base font-bold text-blue-600 mb-1">Parámetros del Sistema</p>
+          <hr className="border-slate-200 mb-6" />
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-12 md:col-span-4">
+              <TextField
+                label="Días de Validez Cotización"
+                name="dias_validez_cotizacion"
+                type="number"
+                fullWidth
+                value={formData.dias_validez_cotizacion}
+                onChange={handleChange}
+                required
+                variant="outlined"
+                helperText="Días por defecto antes de que expire una proforma"
+                inputProps={{ min: 1 }}
               />
             </div>
           </div>

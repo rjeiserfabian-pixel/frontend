@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
 
@@ -238,6 +239,32 @@ export default function DetalleOrdenPage() {
     }
   };
 
+  const handleEditarFechaVencimiento = async () => {
+    const { value: newDateStr } = await Swal.fire({
+      title: 'Extender Vencimiento',
+      input: 'date',
+      inputValue: orden.fecha_vencimiento_cotizacion ? new Date(orden.fecha_vencimiento_cotizacion).toISOString().split('T')[0] : '',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        container: 'z-[9999]'
+      }
+    });
+
+    if (newDateStr) {
+      try {
+        await tallerService.actualizarOrden(id, { fecha_vencimiento_cotizacion: newDateStr + 'T23:59:59Z' });
+        fetchOrden();
+        Swal.fire('Actualizado', 'La fecha de vencimiento ha sido actualizada.', 'success');
+      } catch (error) {
+        Swal.fire('Error', 'No se pudo actualizar la fecha.', 'error');
+      }
+    }
+  };
+
   // Helper para mostrar motivos de ingreso estructurados
   const renderMotivos = (texto) => {
     if (!texto) return <Typography variant="body2" color="text.secondary">Sin motivo especificado</Typography>;
@@ -259,6 +286,7 @@ export default function DetalleOrdenPage() {
 
   const activeStep = PASOS_ORDEN.indexOf(orden.estado);
   const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
+  const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
 
   return (
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
@@ -427,19 +455,36 @@ export default function DetalleOrdenPage() {
           )}
 
           {orden.estado === 'ESPERANDO_APROBACION' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: '#f0fdf4', border: '1px solid', borderColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: isExpirada ? '#fef2f2' : '#f0fdf4', border: '1px solid', borderColor: isExpirada ? '#fecaca' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
-                <Typography variant="h6" fontWeight="700" color="#166534" mb={0.5}>Esperando Aprobación del Cliente</Typography>
-                <Typography variant="body2" color="#15803d">La cotización ha sido generada. Registra la confirmación del cliente para comenzar los trabajos y reservar el stock.</Typography>
+                <Typography variant="h6" fontWeight="700" color={isExpirada ? "#991b1b" : "#166534"} mb={0.5}>
+                  {isExpirada ? "Cotización Expirada" : "Esperando Aprobación del Cliente"}
+                </Typography>
+                <Typography variant="body2" color={isExpirada ? "#7f1d1d" : "#15803d"}>
+                  {isExpirada 
+                    ? `La cotización expiró el ${new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString()}. Edite la fecha de vencimiento para poder aprobarla.` 
+                    : `La cotización ha sido generada (Vence: ${orden.fecha_vencimiento_cotizacion ? new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString() : 'N/A'}). Registra la confirmación del cliente para comenzar los trabajos.`}
+                </Typography>
               </Box>
-              <Button 
-                variant="contained" 
-                size="large"
-                sx={{ bgcolor: '#16a34a', '&:hover': { bgcolor: '#15803d' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
-                onClick={handleOpenAprobacionModal}
-              >
-                Registrar Aprobación
-              </Button>
+              <Box display="flex" gap={2}>
+                <Button 
+                  variant="outlined" 
+                  size="large"
+                  sx={{ color: '#0f172a', borderColor: '#cbd5e1', '&:hover': { bgcolor: '#f1f5f9' }, borderRadius: '12px', fontWeight: 600 }}
+                  onClick={handleEditarFechaVencimiento}
+                >
+                  Editar Fecha
+                </Button>
+                <Button 
+                  variant="contained" 
+                  size="large"
+                  disabled={isExpirada}
+                  sx={{ bgcolor: isExpirada ? '#94a3b8' : '#16a34a', '&:hover': { bgcolor: isExpirada ? '#94a3b8' : '#15803d' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
+                  onClick={handleOpenAprobacionModal}
+                >
+                  Registrar Aprobación
+                </Button>
+              </Box>
             </Paper>
           )}
 

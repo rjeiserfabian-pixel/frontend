@@ -5,7 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, TablePagination
 } from '@mui/material';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
@@ -102,6 +102,8 @@ export default function MarcasPage() {
       text: "La marca se eliminará del listado.",
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });
@@ -158,7 +160,7 @@ export default function MarcasPage() {
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell align="center">
                         <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                          <Edit2 size={18} />
+                          <Edit size={18} />
                         </IconButton>
                         <IconButton color="error" onClick={() => handleDelete(row.id)}>
                           <Trash2 size={18} />

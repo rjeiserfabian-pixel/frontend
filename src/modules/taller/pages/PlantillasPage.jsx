@@ -130,6 +130,8 @@ export default function PlantillasPage() {
       text: "La plantilla se eliminará permanentemente.",
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });

@@ -58,6 +58,7 @@ const ConfiguracionIgvPage = () => {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
     });
 
     if (result.isConfirmed) {

@@ -4,7 +4,7 @@ import {
   TableContainer, TableHead, TableRow, IconButton, 
   CircularProgress, TablePagination, TextField 
 } from '@mui/material';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import VehiculosForm from '../components/VehiculosForm';
@@ -59,6 +59,8 @@ export default function VehiculosPage() {
       text: "El vehículo se eliminará de forma lógica.",
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });
@@ -144,7 +146,7 @@ export default function VehiculosPage() {
                       <TableCell align="right">{row.kilometraje_actual ? `${row.kilometraje_actual} km` : '-'}</TableCell>
                       <TableCell align="center">
                         <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                          <Edit2 size={18} />
+                          <Edit size={18} />
                         </IconButton>
                         <IconButton color="error" onClick={() => handleDelete(row.id)}>
                           <Trash2 size={18} />

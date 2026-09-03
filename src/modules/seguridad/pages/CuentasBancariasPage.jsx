@@ -5,7 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, FormControl, InputLabel, Select, MenuItem, FormHelperText
 } from '@mui/material';
-import { Plus, Edit2, Trash2, CreditCard } from 'lucide-react';
+import { Plus, Edit, Trash2, CreditCard } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
@@ -131,6 +131,8 @@ export default function CuentasBancariasPage() {
       text: "El registro se eliminará de forma permanente.",
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });
@@ -244,8 +246,8 @@ export default function CuentasBancariasPage() {
                               <TableCell className="font-medium text-slate-800">{row.banco}</TableCell>
                               <TableCell className="text-slate-700">{row.tipo_cuenta_nombre || '-'}</TableCell>
                               <TableCell className="text-slate-700">
-                                {row.numero_cuenta}
-                                {row.cci && <Typography variant="caption" display="block" color="textSecondary">CCI: {row.cci}</Typography>}
+                                <div>{row.numero_cuenta}</div>
+                                {row.cci && <div className="text-xs text-slate-500 mt-0.5">CCI: {row.cci}</div>}
                               </TableCell>
                               <TableCell className="text-slate-700">{row.moneda}</TableCell>
                               <TableCell className="text-slate-700">{row.titular}</TableCell>
@@ -256,7 +258,7 @@ export default function CuentasBancariasPage() {
 
                           <TableCell align="right">
                             <IconButton color="primary" onClick={() => handleOpenModal(row)} className="hover:bg-blue-50">
-                              <Edit2 size={18} />
+                              <Edit size={18} />
                             </IconButton>
                             <IconButton color="error" onClick={() => handleDelete(row.id)} className="hover:bg-red-50">
                               <Trash2 size={18} />

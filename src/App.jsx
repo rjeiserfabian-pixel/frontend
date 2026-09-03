@@ -28,6 +28,7 @@ import OrdenesTrabajoPage from './modules/taller/pages/OrdenesTrabajoPage';
 import NuevaOrdenPage from './modules/taller/pages/NuevaOrdenPage';
 import DetalleOrdenPage from './modules/taller/pages/DetalleOrdenPage';
 import PlantillasPage from './modules/taller/pages/PlantillasPage';
+import TiposServicioPage from './modules/taller/pages/TiposServicioPage';
 import ConsultaVehiculoPage from './modules/public/pages/ConsultaVehiculoPage';
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
@@ -63,6 +64,7 @@ function App() {
           <Route path="/taller/ordenes/nueva" element={<NuevaOrdenPage />} />
           <Route path="/taller/ordenes/:id" element={<DetalleOrdenPage />} />
           <Route path="/taller/plantillas" element={<PlantillasPage />} />
+          <Route path="/taller/tipos-servicio" element={<TiposServicioPage />} />
           <Route path="/vehiculos" element={<VehiculosPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/caja" element={<CajaPage />} />

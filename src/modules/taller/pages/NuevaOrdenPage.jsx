@@ -18,12 +18,17 @@ export default function NuevaOrdenPage() {
   const [vehiculos, setVehiculos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
+  const [tiposServicio, setTiposServicio] = useState([]);
 
   const [formData, setFormData] = useState({
     cliente_id: null,
     vehiculo_id: null,
+    tipo_servicio_id: null,
     kilometraje: '',
   });
+
+  const [formErrors, setFormErrors] = useState({});
+  const [modalError, setModalError] = useState('');
 
   const [preventivo, setPreventivo] = useState({});
   const [motivosList, setMotivosList] = useState(['']); // Start with one empty item
@@ -31,11 +36,14 @@ export default function NuevaOrdenPage() {
   // Quick Registration Modals
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [tipoServicioModalOpen, setTipoServicioModalOpen] = useState(false);
+  const [nuevoTipoNombre, setNuevoTipoNombre] = useState('');
 
   useEffect(() => {
     fetchVehiculos();
     fetchClientes();
     fetchPlantillas();
+    fetchTiposServicio();
   }, []);
 
   const fetchPlantillas = async () => {
@@ -45,6 +53,39 @@ export default function NuevaOrdenPage() {
       setPlantillas(res.results || res);
     } catch (err) {
       console.error('Error cargando plantillas:', err);
+    }
+  };
+
+  const fetchTiposServicio = async (selectId = null) => {
+    try {
+      const res = await tallerService.getTiposServicio({ estado: true });
+      const data = res.results || res;
+      setTiposServicio(data);
+      if (selectId) {
+        setFormData(prev => ({ ...prev, tipo_servicio_id: selectId }));
+      }
+    } catch (err) {
+      console.error('Error cargando tipos de servicio:', err);
+    }
+  };
+
+  const handleSaveTipoServicio = async () => {
+    if (!nuevoTipoNombre.trim()) {
+      setModalError('El nombre es obligatorio');
+      return;
+    }
+    setModalError('');
+    try {
+      setLoading(true);
+      const nuevo = await tallerService.crearTipoServicio({ nombre: nuevoTipoNombre, estado: true });
+      Swal.fire('Éxito', 'Tipo de Servicio registrado', 'success');
+      setTipoServicioModalOpen(false);
+      setNuevoTipoNombre('');
+      await fetchTiposServicio(nuevo.id);
+    } catch (err) {
+      Swal.fire('Error', err.response?.data?.nombre?.[0] || 'Error al guardar', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,14 +124,18 @@ export default function NuevaOrdenPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.cliente_id) {
-      alert('Seleccione el cliente que trae el vehículo');
+    
+    // Validación
+    const newErrors = {};
+    if (!formData.cliente_id) newErrors.cliente = 'El cliente es obligatorio';
+    if (!formData.vehiculo_id) newErrors.vehiculo = 'El vehículo es obligatorio';
+    if (!formData.tipo_servicio_id) newErrors.tipo_servicio = 'El tipo de servicio es obligatorio';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
       return;
     }
-    if (!formData.vehiculo_id) {
-      alert('Seleccione un vehículo');
-      return;
-    }
+    setFormErrors({});
 
     try {
       setLoading(true);
@@ -98,15 +143,15 @@ export default function NuevaOrdenPage() {
       const motivosLlenos = motivosList.filter(m => m.trim() !== '');
       const motivosString = motivosLlenos.map(m => `- ${m.trim()}`).join('\n');
       
-      const ordenData = {
+      const payload = {
         cliente: formData.cliente_id,
         vehiculo: formData.vehiculo_id,
-        kilometraje_ingreso: formData.kilometraje || null,
-        tipo_servicio: motivosLlenos.length > 0 ? 'AMBOS' : 'PREVENTIVO',
-        motivo_ingreso: motivosString,
+        tipo_servicio: formData.tipo_servicio_id,
+        kilometraje_ingreso: formData.kilometraje ? parseInt(formData.kilometraje) : null,
+        motivo_ingreso: motivosString
       };
 
-      const newOrden = await tallerService.crearOrden(ordenData);
+      const newOrden = await tallerService.crearOrden(payload);
 
       // Crear servicios preventivos dinámicos seleccionados
       for (const plantilla of plantillas) {
@@ -164,7 +209,7 @@ export default function NuevaOrdenPage() {
                       ...prev, 
                       cliente_id: val?.id || null 
                     }))}
-                    renderInput={(params) => <TextField {...params} label="Buscar Cliente" required InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
+                    renderInput={(params) => <TextField {...params} label="Buscar Cliente *" error={!!formErrors.cliente} helperText={formErrors.cliente} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
                   />
                 </div>
                 <Button 
@@ -196,7 +241,7 @@ export default function NuevaOrdenPage() {
                         cliente_id: suggestedClientId
                       }));
                     }}
-                    renderInput={(params) => <TextField {...params} label="Buscar Vehículo por Placa" required InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
+                    renderInput={(params) => <TextField {...params} label="Buscar Vehículo por Placa *" error={!!formErrors.vehiculo} helperText={formErrors.vehiculo} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
                   />
                 </div>
                 <Button 
@@ -217,6 +262,28 @@ export default function NuevaOrdenPage() {
                   onChange={(e) => setFormData({ ...formData, kilometraje: e.target.value })}
                   InputProps={{ sx: { borderRadius: '12px' } }}
                 />
+              </div>
+
+              <div className="flex gap-2 w-full">
+                <div className="flex-1">
+                  <Autocomplete
+                    options={tiposServicio}
+                    value={tiposServicio.find(t => t.id === formData.tipo_servicio_id) || null}
+                    getOptionLabel={(option) => option.nombre}
+                    onChange={(e, val) => setFormData(prev => ({ 
+                      ...prev, 
+                      tipo_servicio_id: val?.id || null 
+                    }))}
+                    renderInput={(params) => <TextField {...params} label="Tipo de Servicio *" error={!!formErrors.tipo_servicio} helperText={formErrors.tipo_servicio} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
+                  />
+                </div>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setTipoServicioModalOpen(true)}
+                  sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
+                >
+                  <Plus size={24} />
+                </Button>
               </div>
             </div>
           </section>
@@ -339,6 +406,38 @@ export default function NuevaOrdenPage() {
           }}
         />
       )}
+
+      {/* Modal para registro rápido de Tipo de Servicio */}
+      <Dialog open={tipoServicioModalOpen} onClose={() => setTipoServicioModalOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Nuevo Tipo de Servicio</DialogTitle>
+        <DialogContent dividers>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nombre"
+            fullWidth
+            value={nuevoTipoNombre}
+            onChange={(e) => {
+              setNuevoTipoNombre(e.target.value);
+              if (modalError) setModalError('');
+            }}
+            error={!!modalError}
+            helperText={modalError}
+            InputProps={{ sx: { borderRadius: '12px' } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setTipoServicioModalOpen(false)} sx={{ color: 'slate.500' }}>Cancelar</Button>
+          <Button 
+            onClick={handleSaveTipoServicio} 
+            variant="contained" 
+            disabled={loading}
+            sx={{ bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' } }}
+          >
+            {loading ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

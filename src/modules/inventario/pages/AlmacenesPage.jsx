@@ -5,7 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Chip, FormControl, InputLabel, Select, MenuItem, TablePagination, Autocomplete
 } from '@mui/material';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
@@ -168,7 +168,7 @@ export default function AlmacenesPage() {
                       </TableCell>
                       <TableCell align="center">
                         <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
-                          <Edit2 size={18} />
+                          <Edit size={18} />
                         </IconButton>
                         <IconButton color="error" onClick={() => handleDelete(row.id, row.nombre)} title="Desactivar">
                           <Trash2 size={18} />

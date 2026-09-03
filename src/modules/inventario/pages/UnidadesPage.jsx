@@ -5,7 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Checkbox, FormControlLabel
 } from '@mui/material';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
@@ -82,6 +82,8 @@ export default function UnidadesPage() {
       text: "La unidad de medida se eliminará.",
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });
@@ -142,7 +144,7 @@ export default function UnidadesPage() {
                       <TableCell>{row.permite_decimales ? 'Sí' : 'No'}</TableCell>
                       <TableCell align="center">
                         <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                          <Edit2 size={18} />
+                          <Edit size={18} />
                         </IconButton>
                         <IconButton color="error" onClick={() => handleDelete(row.id)}>
                           <Trash2 size={18} />

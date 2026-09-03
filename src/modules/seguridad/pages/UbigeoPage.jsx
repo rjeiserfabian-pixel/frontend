@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, 
   TextField, Button, CircularProgress, MenuItem, Select, FormControl, InputLabel, FormHelperText
 } from '@mui/material';
-import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 
@@ -219,9 +219,10 @@ export const UbigeoPage = () => {
       text: "Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33',
     });
 
     if (result.isConfirmed) {
@@ -272,7 +273,7 @@ export const UbigeoPage = () => {
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     title="Editar"
                   >
-                    <Edit2 size={18} />
+                    <Edit size={18} />
                   </button>
                   <button 
                     onClick={() => handleDelete(type, item.id)} 
