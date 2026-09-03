@@ -771,13 +771,36 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
     }
   };
 
+  const getStockDisponible = (producto) => {
+    if (!producto || !producto.inventario_stock) return producto?.stock_total_disponible || 0;
+    const selectedAlmacen = todosAlmacenes.find(a => a.id === almacenOrigenId);
+    if (!selectedAlmacen) return 0;
+    // Sumar el stock de todas las ubicaciones dentro de ese almacén
+    const stockEnAlmacen = producto.inventario_stock
+      .filter(s => s.almacen_nombre === selectedAlmacen.nombre)
+      .reduce((sum, s) => sum + parseFloat(s.stock_disponible || 0), 0);
+    return stockEnAlmacen;
+  };
+
   const agregarAlCarrito = (producto) => {
     if (!producto) return;
+    
+    // Validar si el producto está agotado en el almacén seleccionado
+    const stockReal = getStockDisponible(producto);
+    if (stockReal <= 0) {
+      Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Producto agotado en este almacén', showConfirmButton: false, timer: 2500 });
+      return;
+    }
+    
     const existe = carrito.find(item => item.id === producto.id);
     if (existe) {
-      setCarrito(carrito.map(item => item.id === producto.id ? { ...item, cantidad: item.cantidad + 1 } : item));
+      if (existe.cantidad + 1 > stockReal) {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: `Solo hay ${stockReal} unidades disponibles`, showConfirmButton: false, timer: 2500 });
+        return;
+      }
+      setCarrito(carrito.map(item => item.id === producto.id ? { ...item, cantidad: item.cantidad + 1, stock_maximo: stockReal } : item));
     } else {
-      setCarrito([...carrito, { ...producto, cantidad: 1, precio_venta: parseFloat(producto.precio_lista || producto.precio_cash || 0) }]);
+      setCarrito([...carrito, { ...producto, cantidad: 1, precio_venta: parseFloat(producto.precio_lista || producto.precio_cash || 0), stock_maximo: stockReal }]);
     }
     setBusquedaProducto('');
     setResultadosProductos([]);
@@ -814,6 +837,12 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       if (item.id === id) {
         const step = item.unidad_medida_permite_decimales ? 0.1 : 1;
         const nuevaCant = Math.max(step, item.cantidad + (delta > 0 ? step : -step));
+        
+        if (item.stock_maximo !== undefined && nuevaCant > item.stock_maximo) {
+          Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: `Solo hay ${item.stock_maximo} disponibles`, showConfirmButton: false, timer: 2500 });
+          return { ...item, cantidad: item.stock_maximo };
+        }
+        
         return { ...item, cantidad: Number(nuevaCant.toFixed(2)) };
       }
       return item;
@@ -826,6 +855,12 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
         let cant = parseFloat(val);
         if (isNaN(cant) || cant <= 0) cant = item.unidad_medida_permite_decimales ? 0.1 : 1;
         if (!item.unidad_medida_permite_decimales) cant = Math.floor(cant);
+        
+        if (item.stock_maximo !== undefined && cant > item.stock_maximo) {
+          Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: `Solo hay ${item.stock_maximo} disponibles`, showConfirmButton: false, timer: 2500 });
+          cant = item.stock_maximo;
+        }
+        
         return { ...item, cantidad: cant };
       }
       return item;
@@ -996,7 +1031,9 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       Swal.fire('Venta Directa Procesada', 'La venta se ha registrado exitosamente en la base de datos.', 'success').then(() => onComplete());
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'Hubo un problema al procesar la venta o registrar el cliente.', 'error');
+      const backendError = error.response?.data?.error;
+      const errorMsg = backendError || 'Hubo un problema al procesar la venta o registrar el cliente.';
+      Swal.fire('Error', errorMsg, 'error');
     } finally {
       setProcesando(false);
     }
@@ -1295,6 +1332,25 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
               freeSolo
               options={resultadosProductos}
               getOptionLabel={(option) => typeof option === 'string' ? option : `${option.codigo || ''} - ${option.nombre}`}
+              getOptionDisabled={(option) => getStockDisponible(option) <= 0}
+              renderOption={(props, option) => {
+                const stockOption = getStockDisponible(option);
+                const agotado = stockOption <= 0;
+                // Para evitar errores en Material UI al pasar key y otros props
+                const { key, ...otherProps } = props;
+                return (
+                  <li key={key || option.id} {...otherProps} style={{ color: agotado ? '#aaa' : 'inherit', cursor: agotado ? 'not-allowed' : 'pointer', opacity: agotado ? 0.7 : 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body2">{option.codigo} - {option.nombre}</Typography>
+                      {agotado ? (
+                        <Typography variant="caption" color="error" fontWeight="bold">AGOTADO</Typography>
+                      ) : (
+                        <Typography variant="caption" color="textSecondary" fontWeight="bold">Stock disponible: {stockOption}</Typography>
+                      )}
+                    </Box>
+                  </li>
+                );
+              }}
               loading={cargandoProductos}
               onInputChange={(e, val) => {
                 setBusquedaProducto(val);
