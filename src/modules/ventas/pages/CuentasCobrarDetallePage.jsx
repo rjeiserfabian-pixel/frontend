@@ -5,9 +5,11 @@ import {
   TableHead, TableRow, Button, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, Grid, Card, CardContent, Divider
 } from '@mui/material';
-import { ArrowLeft, DollarSign, X, Plus, Trash2, Wrench, FileText } from 'lucide-react';
+import { ArrowLeft, DollarSign, X, Plus, Trash2, Wrench, FileText, Eye, Printer } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import { useReactToPrint } from 'react-to-print';
+import TicketReciboAbono from '../components/TicketReciboAbono';
 
 export default function CuentasCobrarDetallePage() {
   const { id } = useParams();
@@ -19,6 +21,35 @@ export default function CuentasCobrarDetallePage() {
   // Dialog de Pago
   const [openPago, setOpenPago] = useState(false);
   const [selectedCuota, setSelectedCuota] = useState(null);
+
+  // Dialog de Historial
+  const [openHistorial, setOpenHistorial] = useState(false);
+  const [cuotaHistorial, setCuotaHistorial] = useState(null);
+
+  // Impresión
+  const printRef = React.useRef();
+  const [abonoParaImprimir, setAbonoParaImprimir] = useState(null);
+  
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    onAfterPrint: () => setAbonoParaImprimir(null),
+  });
+  
+  const getPagosAgrupados = (pagos) => {
+    if (!pagos) return [];
+    const agrupados = {};
+    pagos.forEach(pago => {
+      const opId = pago.operacion_id || pago.id;
+      if (!agrupados[opId]) {
+        agrupados[opId] = { ...pago, subpagos: [pago] };
+      } else {
+        agrupados[opId].monto = Number(agrupados[opId].monto) + Number(pago.monto);
+        agrupados[opId].metodo_pago_nombre = 'Múltiple';
+        agrupados[opId].subpagos.push(pago);
+      }
+    });
+    return Object.values(agrupados).sort((a, b) => new Date(b.fecha_pago) - new Date(a.fecha_pago));
+  };
   
   // Múltiples Pagos
   const [metodosPago, setMetodosPago] = useState([]);
@@ -76,6 +107,28 @@ export default function CuentasCobrarDetallePage() {
     setReferencia('');
   };
 
+  const handleOpenHistorial = (cuota) => {
+    setCuotaHistorial(cuota);
+    setOpenHistorial(true);
+  };
+
+  const handleCloseHistorial = () => {
+    setOpenHistorial(false);
+    setCuotaHistorial(null);
+  };
+
+  const handlePrintAbono = (pago, cuota = null) => {
+    setAbonoParaImprimir(pago);
+    if (cuota) {
+      setCuotaHistorial(cuota);
+    }
+    setTimeout(() => {
+      if (printRef.current) {
+        handlePrint();
+      }
+    }, 100);
+  };
+
   const agregarPago = () => {
     if (!montoIngreso || isNaN(montoIngreso) || Number(montoIngreso) <= 0) {
       Swal.fire('Error', 'Ingrese un monto válido', 'warning');
@@ -128,18 +181,37 @@ export default function CuentasCobrarDetallePage() {
       Swal.fire('Atención', 'Agregue al menos un método de pago', 'warning');
       return;
     }
+
     if (totalPorPagar > Number(selectedCuota.saldo_pendiente)) {
       Swal.fire('Error', 'El monto supera el saldo pendiente de la cuota', 'error');
       return;
     }
 
     try {
-      await api.post(`/ventas/cuentas-por-cobrar/pagar-cuota/${selectedCuota.id}/`, {
+      const response = await api.post(`/ventas/cuentas-por-cobrar/pagar-cuota/${selectedCuota.id}/`, {
         pagos: pagosActuales
       });
       Swal.fire('Éxito', 'Pago registrado correctamente', 'success');
+      const nuevosPagos = response.data.pagos || [];
+      const agrupadosNuevos = getPagosAgrupados(nuevosPagos);
+      const pagoImprimir = agrupadosNuevos.length > 0 ? agrupadosNuevos[0] : null;
+      const cuotaActual = selectedCuota; // Guardamos la cuota actual antes de cerrar el modal
+
       handleClosePago();
       fetchCuentaDetalle();
+      
+      Swal.fire({
+        title: 'Pago Exitoso',
+        text: '¿Desea imprimir el recibo ahora?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, Imprimir',
+        cancelButtonText: 'Más tarde'
+      }).then((result) => {
+        if (result.isConfirmed && pagoImprimir) {
+            handlePrintAbono(pagoImprimir, cuotaActual);
+        }
+      });
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.error || 'Ocurrió un error al procesar el pago.';
@@ -323,27 +395,45 @@ export default function CuentasCobrarDetallePage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {cuenta.cuotas?.map((cuota) => (
-              <TableRow key={cuota.id}>
-                <TableCell>{cuota.numero_cuota}</TableCell>
-                <TableCell>{cuota.fecha_vencimiento}</TableCell>
-                <TableCell align="right">S/ {Number(cuota.monto).toFixed(2)}</TableCell>
-                <TableCell align="right">S/ {Number(cuota.saldo_pendiente).toFixed(2)}</TableCell>
-                <TableCell align="center">{getEstadoChip(cuota.estado)}</TableCell>
+            {cuenta.cuotas?.map((cuota) => {
+              const [y, m, d] = (cuota.fecha_vencimiento || '').split('-');
+              const fechaFormat = y ? `${d}/${m}/${y}` : '';
+              return (
+                <TableRow key={cuota.id}>
+                  <TableCell>{cuota.numero_cuota}</TableCell>
+                  <TableCell>{fechaFormat}</TableCell>
+                  <TableCell align="right">S/ {Number(cuota.monto).toFixed(2)}</TableCell>
+                  <TableCell align="right">S/ {Number(cuota.saldo_pendiente).toFixed(2)}</TableCell>
+                  <TableCell align="center">{getEstadoChip(cuota.estado)}</TableCell>
                 <TableCell align="center">
-                  {cuota.estado !== 'PAGADA' && (
-                    <Button 
-                      variant="contained" 
-                      size="small" 
-                      startIcon={<DollarSign size={16} />}
-                      onClick={() => handleOpenPago(cuota)}
-                    >
-                      Cobrar
-                    </Button>
-                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                    {cuota.estado !== 'PAGADA' && (
+                      <Button 
+                        variant="contained" 
+                        size="small" 
+                        startIcon={<DollarSign size={16} />}
+                        onClick={() => handleOpenPago(cuota)}
+                      >
+                        Cobrar
+                      </Button>
+                    )}
+                    {(cuota.estado === 'PAGADA' || cuota.estado === 'PARCIAL' || (cuota.pagos && cuota.pagos.length > 0)) && (
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        onClick={() => handleOpenHistorial(cuota)}
+                        title="Ver Historial de Pagos"
+                        sx={{ minWidth: 40, px: 1 }}
+                      >
+                        <Eye size={18} />
+                      </Button>
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
-            ))}
+            );
+          })}
             {(!cuenta.cuotas || cuenta.cuotas.length === 0) && (
               <TableRow>
                 <TableCell colSpan={6} align="center">No hay cuotas registradas.</TableCell>
@@ -465,6 +555,69 @@ export default function CuentasCobrarDetallePage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* MODAL DE HISTORIAL DE ABONOS */}
+      <Dialog open={openHistorial} onClose={handleCloseHistorial} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Historial de Pagos - Cuota {cuotaHistorial?.numero_cuota}
+        </DialogTitle>
+        <DialogContent dividers>
+          {!cuotaHistorial?.pagos || cuotaHistorial.pagos.length === 0 ? (
+            <Typography align="center" sx={{ py: 3, color: 'text.secondary' }}>
+              No hay pagos registrados para esta cuota.
+            </Typography>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                  <TableRow>
+                    <TableCell><strong>Fecha</strong></TableCell>
+                    <TableCell><strong>Método</strong></TableCell>
+                    <TableCell align="right"><strong>Monto</strong></TableCell>
+                    <TableCell align="center"><strong>Recibo</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {getPagosAgrupados(cuotaHistorial.pagos).map((pago) => (
+                    <TableRow key={pago.operacion_id || pago.id}>
+                      <TableCell>{new Date(pago.fecha_pago).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {pago.subpagos && pago.subpagos.length > 1 
+                          ? 'Múltiple' 
+                          : (pago.referencia ? `${pago.metodo_pago_nombre} (Op: ${pago.referencia})` : pago.metodo_pago_nombre)}
+                      </TableCell>
+                      <TableCell align="right">S/ {Number(pago.monto).toFixed(2)}</TableCell>
+                      <TableCell align="center">
+                        <IconButton 
+                          size="small" 
+                          color="primary" 
+                          onClick={() => handlePrintAbono(pago)}
+                          title="Imprimir Recibo"
+                        >
+                          <Printer size={18} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHistorial}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Ticket Invisible para Impresión */}
+      <Box sx={{ display: 'none' }}>
+        <TicketReciboAbono 
+          ref={printRef} 
+          pagoAbono={abonoParaImprimir} 
+          cuenta={cuenta} 
+          cuota={cuotaHistorial} 
+        />
+      </Box>
     </Box>
   );
 }

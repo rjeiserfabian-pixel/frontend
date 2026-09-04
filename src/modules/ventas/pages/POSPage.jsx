@@ -1009,6 +1009,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
         tipo_comprobante_id: tipoComprobanteId,
         serie_id: serieId,
         condicion_pago: condicionPago,
+        fecha_limite: condicionPago === 'CREDITO' ? fechaLimite : null,
         almacen_origen_id: almacenOrigenId || null,
         sesion_caja_id: sesionActiva.id,
         detalles: carrito.map(item => ({
