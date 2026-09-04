@@ -26,7 +26,8 @@ import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
 import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
 import RegistroManualVentasPage from './modules/ventas/pages/RegistroManualVentasPage';
-import CuentasCobrarPage from './modules/ventas/pages/CuentasCobrarPage';
+import CuentasCobrarResumenPage from './modules/ventas/pages/CuentasCobrarResumenPage';
+import CuentasCobrarClientePage from './modules/ventas/pages/CuentasCobrarClientePage';
 import CuentasCobrarDetallePage from './modules/ventas/pages/CuentasCobrarDetallePage';
 import OrdenesTrabajoPage from './modules/taller/pages/OrdenesTrabajoPage';
 import NuevaOrdenPage from './modules/taller/pages/NuevaOrdenPage';
@@ -77,8 +78,9 @@ function App() {
           <Route path="/ventas/pos" element={<POSPage />} />
           <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
           <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
-          <Route path="/cuentas/por-cobrar" element={<CuentasCobrarPage />} />
-          <Route path="/cuentas/por-cobrar/:id" element={<CuentasCobrarDetallePage />} />
+          <Route path="/cuentas/por-cobrar" element={<CuentasCobrarResumenPage />} />
+          <Route path="/cuentas/por-cobrar/cliente/:clienteId" element={<CuentasCobrarClientePage />} />
+          <Route path="/cuentas/por-cobrar/credito/:id" element={<CuentasCobrarDetallePage />} />
         </Route>
         
         {/* Redirección por defecto */}

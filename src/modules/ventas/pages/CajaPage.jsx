@@ -9,7 +9,7 @@ import {
   TextField, Button, Box, Typography, Divider,
   FormControl, InputLabel, Select, MenuItem,
   Grid, Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Chip
+  TableHead, TableRow, Chip, TablePagination
 } from '@mui/material';
 import api from '../../../core/api/axios';
 
@@ -27,10 +27,15 @@ export const CajaPage = () => {
   const [movimientos, setMovimientos] = useState([]);
   const [fechaApertura, setFechaApertura] = useState('');
   
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalMovimientos, setTotalMovimientos] = useState(0);
+
   // States para Modals
   const [openAperturaModal, setOpenAperturaModal] = useState(false);
   const [cajaSeleccionadaId, setCajaSeleccionadaId] = useState('');
-  const [saldoInicial, setSaldoInicial] = useState('0.00');
+  const [saldoInicial, setSaldoInicial] = useState('100.00'); // default 100
 
   const [openCierreModal, setOpenCierreModal] = useState(false);
   const [saldoCierre, setSaldoCierre] = useState('');
@@ -39,6 +44,12 @@ export const CajaPage = () => {
     cargarCajas();
     verificarSesionActiva();
   }, []);
+
+  useEffect(() => {
+    if (cajaActualSesionId) {
+      fetchDetalleSesion(cajaActualSesionId, page, rowsPerPage);
+    }
+  }, [page, rowsPerPage, cajaActualSesionId]);
 
   const cargarCajas = async () => {
     try {
@@ -61,21 +72,33 @@ export const CajaPage = () => {
           setIsCajaAbierta(true);
           setCajaActual({ id: sesion.caja_id, nombre: sesion.caja_nombre });
           if (sesion.abierto_en) setFechaApertura(new Date(sesion.abierto_en).toLocaleString());
-          fetchDetalleSesion(sesion.id);
+          fetchDetalleSesion(sesion.id, page, rowsPerPage);
         }
       } catch(e) {}
     }
   };
 
-  const fetchDetalleSesion = async (sesionId) => {
+  const fetchDetalleSesion = async (sesionId, currentPage = page, currentRows = rowsPerPage) => {
     try {
-      const res = await api.get(`/ventas/sesiones/${sesionId}/detalle-activa/`);
+      const res = await api.get(`/ventas/sesiones/${sesionId}/detalle-activa/`, {
+        params: {
+          page: currentPage + 1,
+          page_size: currentRows
+        }
+      });
       const d = res.data;
       setSaldoInicialStats(d.saldo_inicial || 0);
       setIngresosStats(d.ingresos || 0);
       setEgresosStats(d.egresos || 0);
       setSaldoActualStats(d.saldo_actual || 0);
-      setMovimientos(d.movimientos || []);
+      
+      if (d.movimientos && d.movimientos.results) {
+        setMovimientos(d.movimientos.results);
+        setTotalMovimientos(d.movimientos.count);
+      } else {
+        setMovimientos(d.movimientos || []);
+        setTotalMovimientos((d.movimientos || []).length);
+      }
     } catch (error) {
       console.error('Error fetching session detail:', error);
     }
@@ -325,6 +348,22 @@ export const CajaPage = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              component="div"
+              count={totalMovimientos || 0}
+              page={page}
+              onPageChange={(e, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={[10, 25, 50]}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelDisplayedRows={({ from, to, count }) => {
+                return `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`;
+              }}
+              labelRowsPerPage="Filas por página:"
+            />
           </Paper>
         </div>
       )}

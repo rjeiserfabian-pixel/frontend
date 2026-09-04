@@ -66,7 +66,7 @@ export default function CuentasCobrarDetallePage() {
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'No se pudo cargar el detalle de la cuenta.', 'error');
-      navigate('/cuentas/por-cobrar');
+      navigate(-1);
     } finally {
       setLoading(false);
     }
@@ -238,7 +238,7 @@ export default function CuentasCobrarDetallePage() {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/cuentas/por-cobrar')} sx={{ mr: 2 }}>
+        <IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
           <ArrowLeft />
         </IconButton>
         <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
