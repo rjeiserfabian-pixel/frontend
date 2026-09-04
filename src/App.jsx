@@ -20,6 +20,8 @@ import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
 import KardexPage from './modules/inventario/pages/KardexPage';
 import ClientesPage from './modules/clientes/pages/ClientesPage';
 import ProveedoresPage from './modules/clientes/pages/ProveedoresPage';
+import TransportistasPage from './modules/clientes/pages/TransportistasPage';
+import VehiculosTransportePage from './modules/vehiculos/pages/VehiculosTransportePage';
 import KioskoPage from './modules/ventas/pages/KioskoPage';
 import CajaPage from './modules/ventas/pages/CajaPage';
 import POSPage from './modules/ventas/pages/POSPage';
@@ -74,6 +76,8 @@ function App() {
           <Route path="/vehiculos" element={<VehiculosPage />} />
           <Route path="/contactos/clientes" element={<ClientesPage />} />
           <Route path="/contactos/proveedores" element={<ProveedoresPage />} />
+          <Route path="/contactos/transportistas" element={<TransportistasPage />} />
+          <Route path="/configuracion/vehiculos-transporte" element={<VehiculosTransportePage />} />
           <Route path="/caja" element={<CajaPage />} />
           <Route path="/ventas/pos" element={<POSPage />} />
           <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
