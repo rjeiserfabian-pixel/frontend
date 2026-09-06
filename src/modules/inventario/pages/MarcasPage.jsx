@@ -143,7 +143,7 @@ export default function MarcasPage() {
             <Table>
               <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                 <TableRow>
-                  <TableCell><strong>ID</strong></TableCell>
+                  <TableCell><strong>Nº</strong></TableCell>
                   <TableCell><strong>Nombre</strong></TableCell>
                   <TableCell align="center"><strong>Acciones</strong></TableCell>
                 </TableRow>
@@ -154,9 +154,9 @@ export default function MarcasPage() {
                     <TableCell colSpan={3} align="center">No hay marcas registradas.</TableCell>
                   </TableRow>
                 ) : (
-                  marcas.map((row) => (
+                  marcas.map((row, index) => (
                     <TableRow key={row.id} hover>
-                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell align="center">
                         <IconButton color="primary" onClick={() => handleOpenModal(row)}>

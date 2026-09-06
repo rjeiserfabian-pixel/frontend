@@ -16,19 +16,19 @@ import ModalNuevoProveedor from '../components/ModalNuevoProveedor';
 
 const NuevaCompraPage = () => {
   const navigate = useNavigate();
-  const { currentSucursal } = useSucursal();
+  const { activeSucursalId } = useSucursal();
 
   // Main form state
   const [formData, setFormData] = useState({
     proveedor: null,
     fecha_emision: new Date().toISOString().split('T')[0],
-    tipo_comprobante: 'Factura',
+    tipo_comprobante_fk: '',
     serie: '',
     numero_comprobante: '',
     tipo_pago: 'Contado',
     dias_credito: 30,
     observaciones: '',
-    ubicacion_id: '' // Where is this stored? We need to select an Almacen/Ubicacion.
+    almacen_id: '' 
   });
 
   const [detalles, setDetalles] = useState([]);
@@ -36,22 +36,39 @@ const NuevaCompraPage = () => {
   // Autocomplete states
   const [proveedores, setProveedores] = useState([]);
   const [repuestos, setRepuestos] = useState([]);
-  const [ubicaciones, setUbicaciones] = useState([]);
+  const [almacenes, setAlmacenes] = useState([]);
+  const [tiposComprobante, setTiposComprobante] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalProveedorOpen, setModalProveedorOpen] = useState(false);
 
   useEffect(() => {
     fetchProveedores();
     fetchRepuestos();
-    if (currentSucursal) {
-      fetchUbicaciones(currentSucursal.id);
+    fetchTiposComprobante();
+    if (activeSucursalId) {
+      fetchAlmacenes(activeSucursalId);
     }
-  }, [currentSucursal]);
+  }, [activeSucursalId]);
+
+  const fetchTiposComprobante = async () => {
+    try {
+      const data = await comprasService.getTiposComprobante();
+      const list = Array.isArray(data) ? data : (data.results || []);
+      const activos = list.filter(t => t.estado_activo);
+      setTiposComprobante(activos);
+      if (activos.length > 0) {
+        setFormData(prev => ({ ...prev, tipo_comprobante_fk: activos[0].id }));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const fetchProveedores = async () => {
     try {
-      const data = await proveedorService.getProveedores();
-      setProveedores(data);
+      const data = await proveedorService.listar();
+      const list = Array.isArray(data) ? data : (data.results || data.data || []);
+      setProveedores(list);
     } catch (error) {
       console.error(error);
     }
@@ -60,20 +77,20 @@ const NuevaCompraPage = () => {
   const fetchRepuestos = async () => {
     try {
       const data = await inventarioService.getRepuestos();
-      setRepuestos(data);
+      const list = Array.isArray(data) ? data : (data.results || data.data || []);
+      setRepuestos(list);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const fetchUbicaciones = async (sucursalId) => {
-    // In a real scenario you would fetch locations by sucursal
-    // For now we assume a getUbicaciones endpoint exists.
+  const fetchAlmacenes = async (sucursalId) => {
     try {
-      const data = await inventarioService.getUbicaciones(null, sucursalId);
-      setUbicaciones(data);
-      if (data.length > 0) {
-        setFormData(prev => ({ ...prev, ubicacion_id: data[0].id }));
+      const data = await inventarioService.getAlmacenes(sucursalId);
+      const list = Array.isArray(data) ? data : (data.results || data.data || []);
+      setAlmacenes(list);
+      if (list.length > 0) {
+        setFormData(prev => ({ ...prev, almacen_id: list[0].id }));
       }
     } catch (error) {
       console.error(error);
@@ -119,8 +136,10 @@ const NuevaCompraPage = () => {
 
   // Calculate totals
   const subtotalTotal = detalles.reduce((acc, curr) => acc + curr.subtotal, 0);
-  const igvTotal = formData.tipo_comprobante === 'Factura' ? subtotalTotal * 0.18 : 0;
-  const totalGeneral = formData.tipo_comprobante === 'Factura' ? subtotalTotal + igvTotal : subtotalTotal;
+  const tipoSeleccionado = tiposComprobante.find(t => t.id === formData.tipo_comprobante_fk);
+  const esFactura = tipoSeleccionado?.nombre.toLowerCase().includes('factura');
+  const igvTotal = esFactura ? subtotalTotal * 0.18 : 0;
+  const totalGeneral = esFactura ? subtotalTotal + igvTotal : subtotalTotal;
 
   const handleSubmit = async () => {
     if (!formData.proveedor || !formData.serie || !formData.numero_comprobante) {
@@ -131,8 +150,8 @@ const NuevaCompraPage = () => {
       Swal.fire('Error', 'Agregue al menos un repuesto a la compra', 'error');
       return;
     }
-    if (!formData.ubicacion_id) {
-       Swal.fire('Error', 'Debe seleccionar un almacén/ubicación de destino', 'error');
+    if (!formData.almacen_id) {
+       Swal.fire('Error', 'Debe seleccionar un almacén de destino', 'error');
        return;
     }
 
@@ -141,7 +160,7 @@ const NuevaCompraPage = () => {
       const payload = {
         proveedor: formData.proveedor.id,
         fecha_emision: formData.fecha_emision,
-        tipo_comprobante: formData.tipo_comprobante,
+        tipo_comprobante_fk: formData.tipo_comprobante_fk,
         serie: formData.serie,
         numero_comprobante: formData.numero_comprobante,
         tipo_pago: formData.tipo_pago,
@@ -149,7 +168,7 @@ const NuevaCompraPage = () => {
         igv: igvTotal,
         total: totalGeneral,
         observaciones: formData.observaciones,
-        ubicacion_id: formData.ubicacion_id,
+        almacen_id: formData.almacen_id,
         dias_credito: formData.dias_credito,
         detalles: detalles.map(d => ({
           repuesto: d.repuesto.id,
@@ -222,14 +241,14 @@ const NuevaCompraPage = () => {
               <div>
                 <TextField 
                   fullWidth select label="Tipo de comprobante" 
-                  value={formData.tipo_comprobante}
-                  onChange={(e) => setFormData({ ...formData, tipo_comprobante: e.target.value })}
+                  value={formData.tipo_comprobante_fk}
+                  onChange={(e) => setFormData({ ...formData, tipo_comprobante_fk: e.target.value })}
                   InputProps={{ sx: { borderRadius: '12px' } }}
                 >
-                  <MenuItem value="Factura">Factura</MenuItem>
-                  <MenuItem value="Boleta">Boleta</MenuItem>
-                  <MenuItem value="Guia">Guía de Remisión</MenuItem>
-                  <MenuItem value="Ticket">Ticket</MenuItem>
+                  {tiposComprobante.map(tipo => (
+                    <MenuItem key={tipo.id} value={tipo.id}>{tipo.nombre}</MenuItem>
+                  ))}
+                  {tiposComprobante.length === 0 && <MenuItem value="">Sin tipos disponibles</MenuItem>}
                 </TextField>
               </div>
               
@@ -277,15 +296,15 @@ const NuevaCompraPage = () => {
 
               <div>
                  <TextField 
-                    fullWidth select label="Ubicación de ingreso" 
-                    value={formData.ubicacion_id}
-                    onChange={(e) => setFormData({ ...formData, ubicacion_id: e.target.value })}
+                    fullWidth select label="Almacén de ingreso" 
+                    value={formData.almacen_id}
+                    onChange={(e) => setFormData({ ...formData, almacen_id: e.target.value })}
                     InputProps={{ sx: { borderRadius: '12px' } }}
                   >
-                    {ubicaciones.map(ub => (
-                      <MenuItem key={ub.id} value={ub.id}>{ub.codigo} - {ub.almacen?.nombre}</MenuItem>
+                    {almacenes.map(al => (
+                      <MenuItem key={al.id} value={al.id}>{al.nombre}</MenuItem>
                     ))}
-                    {ubicaciones.length === 0 && <MenuItem value="">Sin ubicaciones</MenuItem>}
+                    {almacenes.length === 0 && <MenuItem value="">Sin almacenes</MenuItem>}
                 </TextField>
               </div>
 
@@ -374,7 +393,7 @@ const NuevaCompraPage = () => {
                     <Typography variant="body2" color="text.secondary">Subtotal:</Typography>
                     <Typography variant="body2" fontWeight="medium">S/ {subtotalTotal.toFixed(2)}</Typography>
                   </Box>
-                  {formData.tipo_comprobante === 'Factura' && (
+                  {esFactura && (
                     <Box display="flex" justifyContent="space-between" mb={1}>
                       <Typography variant="body2" color="text.secondary">IGV (18%):</Typography>
                       <Typography variant="body2" fontWeight="medium">S/ {igvTotal.toFixed(2)}</Typography>

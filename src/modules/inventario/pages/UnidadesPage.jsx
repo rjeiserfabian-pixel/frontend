@@ -123,7 +123,7 @@ export default function UnidadesPage() {
             <Table>
               <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                 <TableRow>
-                  <TableCell><strong>ID</strong></TableCell>
+                  <TableCell><strong>Nº</strong></TableCell>
                   <TableCell><strong>Nombre</strong></TableCell>
                   <TableCell><strong>Abreviatura</strong></TableCell>
                   <TableCell><strong>¿Permite Decimales?</strong></TableCell>
@@ -136,9 +136,9 @@ export default function UnidadesPage() {
                     <TableCell colSpan={5} align="center">No hay unidades registradas.</TableCell>
                   </TableRow>
                 ) : (
-                  unidades.map((row) => (
+                  unidades.map((row, index) => (
                     <TableRow key={row.id} hover>
-                      <TableCell>{row.id}</TableCell>
+                      <TableCell>{index + 1}</TableCell>
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell>{row.abreviatura}</TableCell>
                       <TableCell>{row.permite_decimales ? 'Sí' : 'No'}</TableCell>

@@ -85,4 +85,25 @@ export const comprasService = {
     const response = await pagosApiClient.post('/', payload);
     return response.data;
   },
+
+  // Tipos de Comprobante
+  getTiposComprobante: async () => {
+    const response = await apiClient.get('/tipos-comprobante/');
+    return response.data;
+  },
+  
+  createTipoComprobante: async (payload) => {
+    const response = await apiClient.post('/tipos-comprobante/', payload);
+    return response.data;
+  },
+  
+  updateTipoComprobante: async (id, payload) => {
+    const response = await apiClient.put(`/tipos-comprobante/${id}/`, payload);
+    return response.data;
+  },
+  
+  deleteTipoComprobante: async (id) => {
+    const response = await apiClient.delete(`/tipos-comprobante/${id}/`);
+    return response.data;
+  }
 };

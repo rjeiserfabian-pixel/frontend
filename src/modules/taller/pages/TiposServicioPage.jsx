@@ -145,7 +145,7 @@ export default function TiposServicioPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Nº</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Nombre</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#475569', textAlign: 'center' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#475569', textAlign: 'center' }}>Acciones</TableCell>
@@ -165,9 +165,9 @@ export default function TiposServicioPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                tipos.map((row) => (
+                tipos.map((row, index) => (
                   <TableRow key={row.id} hover>
-                    <TableCell>{row.id}</TableCell>
+                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{row.nombre}</TableCell>
                     <TableCell align="center">
                       <Chip 

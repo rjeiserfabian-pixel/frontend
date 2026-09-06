@@ -44,6 +44,7 @@ import ComprasPage from './modules/compras/pages/ComprasPage';
 import NuevaCompraPage from './modules/compras/pages/NuevaCompraPage';
 import CuentasPorPagarPage from './modules/compras/pages/CuentasPorPagarPage';
 import CuentasPorPagarProveedorPage from './modules/compras/pages/CuentasPorPagarProveedorPage';
+import TiposComprobantePage from './modules/compras/pages/TiposComprobantePage';
 
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
@@ -96,6 +97,7 @@ function App() {
           <Route path="/cuentas/por-cobrar/credito/:id" element={<CuentasCobrarDetallePage />} />
           <Route path="/compras" element={<ComprasPage />} />
           <Route path="/compras/nueva" element={<NuevaCompraPage />} />
+          <Route path="/compras/tipos-comprobante" element={<TiposComprobantePage />} />
           <Route path="/compras/cuentas-por-pagar" element={<CuentasPorPagarPage />} />
           <Route path="/compras/cuentas-por-pagar/proveedor/:proveedorId" element={<CuentasPorPagarProveedorPage />} />
         </Route>

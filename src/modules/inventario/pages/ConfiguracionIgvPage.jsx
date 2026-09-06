@@ -103,7 +103,7 @@ const ConfiguracionIgvPage = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
               <tr>
-                <th className="p-4 font-medium">ID</th>
+                <th className="p-4 font-medium">Nº</th>
                 <th className="p-4 font-medium">Nombre</th>
                 <th className="p-4 font-medium">Tasa (%)</th>
                 <th className="p-4 font-medium">Código SUNAT</th>
@@ -111,9 +111,9 @@ const ConfiguracionIgvPage = () => {
               </tr>
             </thead>
             <tbody className="text-slate-700 divide-y divide-slate-100 bg-white">
-              {impuestos.map(i => (
+              {impuestos.map((i, index) => (
                 <tr key={i.id} className="hover:bg-slate-50">
-                  <td className="p-4">{i.id}</td>
+                  <td className="p-4">{index + 1}</td>
                   <td className="p-4 font-medium text-slate-800">{i.nombre}</td>
                   <td className="p-4">{i.tasa}%</td>
                   <td className="p-4">{i.codigo_sunat || '-'}</td>

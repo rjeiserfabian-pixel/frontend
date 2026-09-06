@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TablePagination } from '@mui/material';
 import { Plus, Search, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { comprasService } from '../services/comprasApi';
@@ -8,16 +8,26 @@ const ComprasPage = () => {
   const navigate = useNavigate();
   const [compras, setCompras] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Paginación
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     fetchCompras();
-  }, []);
+  }, [page, rowsPerPage]);
 
   const fetchCompras = async () => {
     try {
       setLoading(true);
-      const data = await comprasService.getCompras();
-      setCompras(data);
+      const data = await comprasService.getCompras({ 
+        page: page + 1, 
+        page_size: rowsPerPage 
+      });
+      const list = Array.isArray(data) ? data : (data.results || data.data || []);
+      setCompras(list);
+      setTotalCount(data.count !== undefined ? data.count : list.length);
     } catch (error) {
       console.error("Error al cargar compras", error);
     } finally {
@@ -26,30 +36,38 @@ const ComprasPage = () => {
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">Listado de Compras</Typography>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, color: '#0f172a' }}>
+          Listado de Compras
+        </Typography>
         <Button 
           variant="contained" 
-          startIcon={<Plus />}
+          startIcon={<Plus size={20} />}
           onClick={() => navigate('/compras/nueva')}
+          sx={{
+            bgcolor: '#2563eb',
+            '&:hover': { bgcolor: '#1d4ed8' },
+            textTransform: 'none',
+            borderRadius: 2
+          }}
         >
           Nueva Compra
         </Button>
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2 }}>
-        <TableContainer sx={{ maxHeight: '70vh' }}>
-          <Table stickyHeader>
+      <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+        <TableContainer sx={{ maxHeight: 'calc(100vh - 250px)' }}>
+          <Table stickyHeader sx={{ minWidth: 650 }}>
             <TableHead>
-              <TableRow>
-                <TableCell><b>Fecha</b></TableCell>
-                <TableCell><b>Comprobante</b></TableCell>
-                <TableCell><b>Proveedor</b></TableCell>
-                <TableCell><b>Tipo Pago</b></TableCell>
-                <TableCell align="right"><b>Total</b></TableCell>
-                <TableCell align="center"><b>Estado</b></TableCell>
-                <TableCell align="center"><b>Acciones</b></TableCell>
+              <TableRow sx={{ bgcolor: '#f8fafc' }}>
+                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Fecha</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Comprobante</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Proveedor</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Tipo Pago</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600, color: '#475569' }}>Total</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, color: '#475569' }}>Estado</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, color: '#475569' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -70,7 +88,7 @@ const ComprasPage = () => {
                   <TableRow key={compra.id} hover>
                     <TableCell>{compra.fecha_emision}</TableCell>
                     <TableCell>
-                      {compra.tipo_comprobante} {compra.serie}-{compra.numero_comprobante}
+                      {compra.tipo_comprobante_nombre} {compra.serie}-{compra.numero_comprobante}
                     </TableCell>
                     <TableCell>{compra.proveedor_detalle?.nombre_o_razon_social}</TableCell>
                     <TableCell>
@@ -100,6 +118,19 @@ const ComprasPage = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50]}
+          component="div"
+          count={totalCount}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          labelRowsPerPage="Filas por página:"
+        />
       </Paper>
     </Box>
   );

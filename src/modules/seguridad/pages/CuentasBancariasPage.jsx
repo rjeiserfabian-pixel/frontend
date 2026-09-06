@@ -212,7 +212,7 @@ export default function CuentasBancariasPage() {
                 <Table>
                   <TableHead className="bg-slate-50">
                     <TableRow>
-                      <TableCell className="font-medium text-slate-600">ID</TableCell>
+                      <TableCell className="font-medium text-slate-600">Nº</TableCell>
                       
                       {activeTab === 'cuentas' ? (
                         <>
@@ -237,9 +237,9 @@ export default function CuentasBancariasPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (activeTab === 'cuentas' ? cuentas : tiposCuenta).map((row) => (
+                      (activeTab === 'cuentas' ? cuentas : tiposCuenta).map((row, index) => (
                         <TableRow key={row.id} className="hover:bg-slate-50 transition-colors">
-                          <TableCell className="text-slate-800">{row.id}</TableCell>
+                          <TableCell className="text-slate-800">{index + 1}</TableCell>
                           
                           {activeTab === 'cuentas' ? (
                             <>

@@ -36,8 +36,14 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'list-checks': Icons.ListChecks,
     'credit-card': Icons.CreditCard,
     'truck': Icons.Truck,
+    'shopping-cart': Icons.ShoppingCart,
+    'shopping-bag': Icons.ShoppingBag,
+    'plus-circle': Icons.PlusCircle,
+    'history': Icons.History,
+    'circle': Icons.Circle,
+    'shoppingcart': Icons.ShoppingCart,
   };
-  const IconComponent = iconMapping[name.toLowerCase()] || Icons.Circle;
+  const IconComponent = iconMapping[name?.toLowerCase()] || Icons.Circle;
   return <IconComponent size={size} />;
 };
 
@@ -322,29 +328,45 @@ export default function DashboardLayout() {
                   
                   <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding sx={{ mt: 0.5 }}>
-                      {item.submodulos.map((child) => {
-                        const isSelected = location.pathname.startsWith(child.ruta);
-                        return (
-                          <ListItemButton
-                            key={child.id_modulo}
-                            onClick={() => navigate(child.ruta)}
-                            sx={{
-                              minHeight: 42,
-                              pl: 6.5,
-                              pr: 2.5,
-                              borderRadius: '10px',
-                              bgcolor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                              color: isSelected ? '#60a5fa' : 'rgba(255,255,255,0.6)',
-                              '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: 'white' },
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: 'inherit' }}>
-                              <DynamicIcon name={child.icono || 'circle'} size={18} />
-                            </ListItemIcon>
-                            <ListItemText primary={child.nombre} sx={{ '& .MuiTypography-root': { fontSize: '0.875rem', fontWeight: isSelected ? 500 : 400 } }} />
-                          </ListItemButton>
-                        );
-                      })}
+                      {(() => {
+                        let activeChildId = null;
+                        let maxMatchLength = -1;
+                        item.submodulos.forEach(child => {
+                          if (child.ruta && location.pathname.startsWith(child.ruta)) {
+                            // Asegurar que la coincidencia sea exacta o seguida de un '/'
+                            if (location.pathname === child.ruta || location.pathname.charAt(child.ruta.length) === '/') {
+                              if (child.ruta.length > maxMatchLength) {
+                                maxMatchLength = child.ruta.length;
+                                activeChildId = child.id_modulo;
+                              }
+                            }
+                          }
+                        });
+
+                        return item.submodulos.map((child) => {
+                          const isSelected = child.id_modulo === activeChildId;
+                          return (
+                            <ListItemButton
+                              key={child.id_modulo}
+                              onClick={() => navigate(child.ruta)}
+                              sx={{
+                                minHeight: 42,
+                                pl: 6.5,
+                                pr: 2.5,
+                                borderRadius: '10px',
+                                bgcolor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                                color: isSelected ? '#60a5fa' : 'rgba(255,255,255,0.6)',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: 'white' },
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: 'inherit' }}>
+                                <DynamicIcon name={child.icono || 'circle'} size={18} />
+                              </ListItemIcon>
+                              <ListItemText primary={child.nombre} sx={{ '& .MuiTypography-root': { fontSize: '0.875rem', fontWeight: isSelected ? 500 : 400 } }} />
+                            </ListItemButton>
+                          );
+                        });
+                      })()}
                     </List>
                   </Collapse>
                 </Box>
