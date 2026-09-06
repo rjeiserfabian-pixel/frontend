@@ -54,17 +54,17 @@ export const comprasService = {
   // Compras
   getCompras: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const response = await apiClient.get(`/?${queryString}`);
+    const response = await apiClient.get(`/compras/?${queryString}`);
     return response.data;
   },
 
   getCompraById: async (id) => {
-    const response = await apiClient.get(`/${id}/`);
+    const response = await apiClient.get(`/compras/${id}/`);
     return response.data;
   },
 
   crearCompra: async (payload) => {
-    const response = await apiClient.post('/', payload);
+    const response = await apiClient.post('/compras/', payload);
     return response.data;
   },
 

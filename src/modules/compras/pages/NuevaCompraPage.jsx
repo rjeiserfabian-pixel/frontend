@@ -38,6 +38,8 @@ const NuevaCompraPage = () => {
   const [repuestos, setRepuestos] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [tiposComprobante, setTiposComprobante] = useState([]);
+  const [impuestosList, setImpuestosList] = useState([]);
+  const [impuestoSeleccionado, setImpuestoSeleccionado] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalProveedorOpen, setModalProveedorOpen] = useState(false);
 
@@ -45,6 +47,7 @@ const NuevaCompraPage = () => {
     fetchProveedores();
     fetchRepuestos();
     fetchTiposComprobante();
+    fetchImpuestos();
     if (activeSucursalId) {
       fetchAlmacenes(activeSucursalId);
     }
@@ -58,6 +61,23 @@ const NuevaCompraPage = () => {
       setTiposComprobante(activos);
       if (activos.length > 0) {
         setFormData(prev => ({ ...prev, tipo_comprobante_fk: activos[0].id }));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchImpuestos = async () => {
+    try {
+      const data = await inventarioService.getTiposIgv();
+      const list = Array.isArray(data) ? data : (data.results || data.data || []);
+      setImpuestosList(list);
+      
+      const inafecto = list.find(i => parseFloat(i.tasa) === 0);
+      if (inafecto) {
+        setImpuestoSeleccionado(inafecto);
+      } else if (list.length > 0) {
+        setImpuestoSeleccionado(list[0]);
       }
     } catch (error) {
       console.error(error);
@@ -105,11 +125,12 @@ const NuevaCompraPage = () => {
          return;
       }
       
+      const precioBase = parseFloat(newValue.precio_compra) || 0;
       setDetalles([...detalles, {
         repuesto: newValue,
         cantidad: 1,
-        precio_unitario: newValue.precio_compra || 0,
-        subtotal: newValue.precio_compra || 0
+        precio_unitario: precioBase,
+        subtotal: precioBase
       }]);
     }
   };
@@ -138,7 +159,8 @@ const NuevaCompraPage = () => {
   const subtotalTotal = detalles.reduce((acc, curr) => acc + curr.subtotal, 0);
   const tipoSeleccionado = tiposComprobante.find(t => t.id === formData.tipo_comprobante_fk);
   const esFactura = tipoSeleccionado?.nombre.toLowerCase().includes('factura');
-  const igvTotal = esFactura ? subtotalTotal * 0.18 : 0;
+  const tasaActiva = impuestoSeleccionado ? parseFloat(impuestoSeleccionado.tasa) : 18;
+  const igvTotal = esFactura ? subtotalTotal * (tasaActiva / 100) : 0;
   const totalGeneral = esFactura ? subtotalTotal + igvTotal : subtotalTotal;
 
   const handleSubmit = async () => {
@@ -308,6 +330,23 @@ const NuevaCompraPage = () => {
                 </TextField>
               </div>
 
+              <div>
+                 <TextField 
+                    fullWidth select label="Impuesto a aplicar" 
+                    value={impuestoSeleccionado ? impuestoSeleccionado.id : ''}
+                    onChange={(e) => {
+                      const sel = impuestosList.find(i => i.id === e.target.value);
+                      setImpuestoSeleccionado(sel || null);
+                    }}
+                    InputProps={{ sx: { borderRadius: '12px' } }}
+                  >
+                    {impuestosList.map(imp => (
+                      <MenuItem key={imp.id} value={imp.id}>{imp.nombre} ({parseFloat(imp.tasa)}%)</MenuItem>
+                    ))}
+                    {impuestosList.length === 0 && <MenuItem value="">Sin impuestos</MenuItem>}
+                </TextField>
+              </div>
+
               {formData.tipo_pago === 'Credito' && (
                 <div className="md:col-span-3">
                   <TextField 
@@ -365,7 +404,7 @@ const NuevaCompraPage = () => {
                             }}
                           />
                         </TableCell>
-                        <TableCell align="right">S/ {det.subtotal.toFixed(2)}</TableCell>
+                        <TableCell align="right">S/ {Number(det.subtotal || 0).toFixed(2)}</TableCell>
                         <TableCell>
                            <IconButton color="error" size="small" onClick={() => removeDetalle(index)}>
                              <Trash2 size={18} />
@@ -395,7 +434,9 @@ const NuevaCompraPage = () => {
                   </Box>
                   {esFactura && (
                     <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography variant="body2" color="text.secondary">IGV (18%):</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        IGV ({impuestoSeleccionado ? parseFloat(impuestoSeleccionado.tasa) : 18}%):
+                      </Typography>
                       <Typography variant="body2" fontWeight="medium">S/ {igvTotal.toFixed(2)}</Typography>
                     </Box>
                   )}
