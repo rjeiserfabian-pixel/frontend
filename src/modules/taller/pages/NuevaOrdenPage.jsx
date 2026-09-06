@@ -179,7 +179,7 @@ export default function NuevaOrdenPage() {
     : vehiculos;
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-12">
+    <div className="flex flex-col gap-6 w-full pb-12">
       <div className="flex items-center gap-3">
         <button 
           onClick={() => navigate('/taller/ordenes')} 

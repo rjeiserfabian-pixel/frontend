@@ -18,6 +18,7 @@ import SucursalesPage from './modules/inventario/pages/SucursalesPage';
 import AlmacenesPage from './modules/inventario/pages/AlmacenesPage';
 import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
 import KardexPage from './modules/inventario/pages/KardexPage';
+import RevisionPreciosPage from './modules/inventario/pages/RevisionPreciosPage';
 import ClientesPage from './modules/clientes/pages/ClientesPage';
 import ProveedoresPage from './modules/clientes/pages/ProveedoresPage';
 import TransportistasPage from './modules/clientes/pages/TransportistasPage';
@@ -37,6 +38,13 @@ import DetalleOrdenPage from './modules/taller/pages/DetalleOrdenPage';
 import PlantillasPage from './modules/taller/pages/PlantillasPage';
 import TiposServicioPage from './modules/taller/pages/TiposServicioPage';
 import ConsultaVehiculoPage from './modules/public/pages/ConsultaVehiculoPage';
+
+// --- Módulo Compras ---
+import ComprasPage from './modules/compras/pages/ComprasPage';
+import NuevaCompraPage from './modules/compras/pages/NuevaCompraPage';
+import CuentasPorPagarPage from './modules/compras/pages/CuentasPorPagarPage';
+import CuentasPorPagarProveedorPage from './modules/compras/pages/CuentasPorPagarProveedorPage';
+
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
 function App() {
@@ -67,6 +75,7 @@ function App() {
           <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
           <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
           <Route path="/inventario/kardex" element={<KardexPage />} />
+          <Route path="/inventario/revision-precios" element={<RevisionPreciosPage />} />
           <Route path="/inventario/impuestos" element={<ConfiguracionIgvPage />} />
           <Route path="/taller/ordenes" element={<OrdenesTrabajoPage />} />
           <Route path="/taller/ordenes/nueva" element={<NuevaOrdenPage />} />
@@ -85,6 +94,10 @@ function App() {
           <Route path="/cuentas/por-cobrar" element={<CuentasCobrarResumenPage />} />
           <Route path="/cuentas/por-cobrar/cliente/:clienteId" element={<CuentasCobrarClientePage />} />
           <Route path="/cuentas/por-cobrar/credito/:id" element={<CuentasCobrarDetallePage />} />
+          <Route path="/compras" element={<ComprasPage />} />
+          <Route path="/compras/nueva" element={<NuevaCompraPage />} />
+          <Route path="/compras/cuentas-por-pagar" element={<CuentasPorPagarPage />} />
+          <Route path="/compras/cuentas-por-pagar/proveedor/:proveedorId" element={<CuentasPorPagarProveedorPage />} />
         </Route>
         
         {/* Redirección por defecto */}
