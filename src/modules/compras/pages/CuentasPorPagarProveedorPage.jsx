@@ -4,9 +4,11 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Chip, Button, CircularProgress
 } from '@mui/material';
-import { CreditCard, ArrowLeft } from 'lucide-react';
+import { CreditCard, ArrowLeft, Eye } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import ModalAbonar from '../components/ModalAbonar';
+import ModalHistorialPagos from '../components/ModalHistorialPagos';
 
 export default function CuentasPorPagarProveedorPage() {
   const { proveedorId } = useParams();
@@ -14,6 +16,10 @@ export default function CuentasPorPagarProveedorPage() {
   const [cuentas, setCuentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [proveedorInfo, setProveedorInfo] = useState(null);
+  
+  const [modalAbonarOpen, setModalAbonarOpen] = useState(false);
+  const [modalHistorialOpen, setModalHistorialOpen] = useState(false);
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState(null);
 
   const fetchCuentasProveedor = async () => {
     try {
@@ -104,9 +110,34 @@ export default function CuentasPorPagarProveedorPage() {
                       />
                     </TableCell>
                     <TableCell align="center">
-                       <Button size="small" variant="outlined" disabled={cuenta.estado === 'Pagada'} startIcon={<CreditCard size={16}/>}>
-                          Abonar
-                       </Button>
+                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                         <Button 
+                           size="small" 
+                           variant="contained"
+                           color="primary"
+                           disabled={cuenta.estado === 'Pagada'} 
+                           startIcon={<CreditCard size={16}/>}
+                           onClick={() => {
+                             setCuentaSeleccionada(cuenta);
+                             setModalAbonarOpen(true);
+                           }}
+                         >
+                            Abonar
+                         </Button>
+                         <Button 
+                           size="small" 
+                           variant="outlined" 
+                           color="secondary"
+                           title="Ver Historial de Pagos"
+                           sx={{ minWidth: 40, px: 1 }}
+                           onClick={() => {
+                             setCuentaSeleccionada(cuenta);
+                             setModalHistorialOpen(true);
+                           }}
+                         >
+                            <Eye size={18}/>
+                         </Button>
+                       </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -114,6 +145,25 @@ export default function CuentasPorPagarProveedorPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <ModalAbonar 
+        open={modalAbonarOpen} 
+        onClose={() => {
+          setModalAbonarOpen(false);
+          setCuentaSeleccionada(null);
+        }} 
+        cuenta={cuentaSeleccionada} 
+        onSuccess={fetchCuentasProveedor}
+      />
+
+      <ModalHistorialPagos 
+        open={modalHistorialOpen}
+        onClose={() => {
+          setModalHistorialOpen(false);
+          setCuentaSeleccionada(null);
+        }}
+        cuenta={cuentaSeleccionada}
+      />
     </Box>
   );
 }

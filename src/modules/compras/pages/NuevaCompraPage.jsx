@@ -18,15 +18,21 @@ const NuevaCompraPage = () => {
   const navigate = useNavigate();
   const { activeSucursalId } = useSucursal();
 
+  const getLocalDate = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  };
+
   // Main form state
   const [formData, setFormData] = useState({
     proveedor: null,
-    fecha_emision: new Date().toISOString().split('T')[0],
+    fecha_emision: getLocalDate(),
     tipo_comprobante_fk: '',
     serie: '',
     numero_comprobante: '',
     tipo_pago: 'Contado',
-    dias_credito: 30,
+    fecha_vencimiento: getLocalDate(),
     observaciones: '',
     almacen_id: '' 
   });
@@ -177,6 +183,16 @@ const NuevaCompraPage = () => {
        return;
     }
 
+    if (formData.tipo_pago === 'Credito') {
+      const emision = new Date(formData.fecha_emision);
+      const vencimiento = new Date(formData.fecha_vencimiento);
+      
+      if (vencimiento <= emision) {
+        Swal.fire('Error', 'Para compras al crédito, la fecha de vencimiento debe ser posterior a la fecha de emisión.', 'warning');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const payload = {
@@ -191,7 +207,7 @@ const NuevaCompraPage = () => {
         total: totalGeneral,
         observaciones: formData.observaciones,
         almacen_id: formData.almacen_id,
-        dias_credito: formData.dias_credito,
+        fecha_vencimiento: formData.fecha_vencimiento,
         detalles: detalles.map(d => ({
           repuesto: d.repuesto.id,
           cantidad: d.cantidad,
@@ -348,15 +364,26 @@ const NuevaCompraPage = () => {
               </div>
 
               {formData.tipo_pago === 'Credito' && (
-                <div className="md:col-span-3">
+                <div>
                   <TextField 
-                    fullWidth type="number" label="Días de Crédito"
-                    value={formData.dias_credito}
-                    onChange={(e) => setFormData({ ...formData, dias_credito: e.target.value })}
-                    InputProps={{ sx: { borderRadius: '12px' } }}
+                    fullWidth type="date" label="Vencimiento"
+                    value={formData.fecha_vencimiento}
+                    onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
+                    InputProps={{ sx: { borderRadius: '12px' }, notched: true }}
+                    InputLabelProps={{ shrink: true }}
                   />
                 </div>
               )}
+              
+              <div className="md:col-span-3">
+                <TextField 
+                  fullWidth multiline rows={2} label="Observaciones"
+                  placeholder="Detalles adicionales sobre la compra..."
+                  value={formData.observaciones}
+                  onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                  InputProps={{ sx: { borderRadius: '12px' } }}
+                />
+              </div>
             </div>
           </div>
 

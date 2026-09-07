@@ -18,9 +18,9 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Para cuentas por pagar, ya que la ruta no es /compras/cuentas-por-pagar sino /api/cuentas-por-pagar
+// Para cuentas por pagar, corrigiendo la ruta para que apunte correctamente a /compras/cuentas-por-pagar
 const cuentasApiClient = axios.create({
-  baseURL: `${API_URL}/cuentas-por-pagar`,
+  baseURL: `${API_URL}/compras/cuentas-por-pagar`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ cuentasApiClient.interceptors.request.use((config) => {
 });
 
 const pagosApiClient = axios.create({
-  baseURL: `${API_URL}/pagos-cuenta`,
+  baseURL: `${API_URL}/compras/pagos-cuenta`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -81,6 +81,11 @@ export const comprasService = {
   },
 
   // Pagos
+  getPagosPorCuenta: async (cuentaId) => {
+    const response = await pagosApiClient.get(`/?cuenta_id=${cuentaId}`);
+    return response.data;
+  },
+
   registrarPago: async (payload) => {
     const response = await pagosApiClient.post('/', payload);
     return response.data;

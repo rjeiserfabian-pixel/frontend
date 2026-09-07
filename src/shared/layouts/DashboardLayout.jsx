@@ -128,6 +128,42 @@ export default function DashboardLayout() {
     }
     return 'Dashboard';
   };
+  const getActiveState = () => {
+    let globalActiveChildId = null;
+    let globalActiveParentId = null;
+    let maxMatchLength = -1;
+
+    menuItems.forEach(item => {
+      if (item.submodulos && item.submodulos.length > 0) {
+        item.submodulos.forEach(child => {
+          if (child.ruta && location.pathname.startsWith(child.ruta)) {
+            if (location.pathname === child.ruta || location.pathname.charAt(child.ruta.length) === '/') {
+              if (child.ruta.length > maxMatchLength) {
+                maxMatchLength = child.ruta.length;
+                globalActiveChildId = child.id_modulo;
+                globalActiveParentId = null;
+              }
+            }
+          }
+        });
+      } else {
+        if (item.ruta && location.pathname.startsWith(item.ruta)) {
+          if (location.pathname === item.ruta || location.pathname.charAt(item.ruta.length) === '/') {
+            if (item.ruta.length > maxMatchLength) {
+              maxMatchLength = item.ruta.length;
+              globalActiveParentId = item.id_modulo;
+              globalActiveChildId = null;
+            }
+          }
+        }
+      }
+    });
+
+    return { globalActiveChildId, globalActiveParentId };
+  };
+
+  const { globalActiveChildId, globalActiveParentId } = getActiveState();
+
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'slate.50' }}>
@@ -328,23 +364,8 @@ export default function DashboardLayout() {
                   
                   <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding sx={{ mt: 0.5 }}>
-                      {(() => {
-                        let activeChildId = null;
-                        let maxMatchLength = -1;
-                        item.submodulos.forEach(child => {
-                          if (child.ruta && location.pathname.startsWith(child.ruta)) {
-                            // Asegurar que la coincidencia sea exacta o seguida de un '/'
-                            if (location.pathname === child.ruta || location.pathname.charAt(child.ruta.length) === '/') {
-                              if (child.ruta.length > maxMatchLength) {
-                                maxMatchLength = child.ruta.length;
-                                activeChildId = child.id_modulo;
-                              }
-                            }
-                          }
-                        });
-
-                        return item.submodulos.map((child) => {
-                          const isSelected = child.id_modulo === activeChildId;
+                      {item.submodulos.map((child) => {
+                          const isSelected = child.id_modulo === globalActiveChildId;
                           return (
                             <ListItemButton
                               key={child.id_modulo}
@@ -365,15 +386,14 @@ export default function DashboardLayout() {
                               <ListItemText primary={child.nombre} sx={{ '& .MuiTypography-root': { fontSize: '0.875rem', fontWeight: isSelected ? 500 : 400 } }} />
                             </ListItemButton>
                           );
-                        });
-                      })()}
+                        })}
                     </List>
                   </Collapse>
                 </Box>
               );
             }
 
-            const isSelected = item.ruta && location.pathname.startsWith(item.ruta);
+            const isSelected = item.id_modulo === globalActiveParentId;
             return (
               <ListItem key={item.id_modulo} disablePadding sx={{ mb: 1 }}>
                 <ListItemButton
