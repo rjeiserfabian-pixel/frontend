@@ -146,7 +146,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
         Swal.fire('Atención', `La cantidad debe ser mayor a 0 para el producto: ${d.repuesto_nombre}`, 'warning');
         return;
       }
-      if (d.cantidad > d.stock_disponible) {
+      if (parseFloat(d.cantidad) > parseFloat(d.stock_disponible)) {
         Swal.fire('Atención', `No hay suficiente stock en origen para: ${d.repuesto_nombre}`, 'warning');
         return;
       }

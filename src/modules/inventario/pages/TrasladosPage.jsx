@@ -2,24 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
-  Chip
+  TablePagination
 } from '@mui/material';
-import { ArrowRightLeft, Printer } from 'lucide-react';
+import { ArrowRightLeft, Printer, Eye } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import ModalNuevoTraslado from '../components/ModalNuevoTraslado';
-import { generarTicketTraslado } from '../utils/printTraslado';
+import ModalDetalleTraslado from '../components/ModalDetalleTraslado';
+import { useReactToPrint } from 'react-to-print';
+import PrintTrasladoComponent from '../components/PrintTrasladoComponent';
 
 export default function TrasladosPage() {
   const [traslados, setTraslados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
+  const [selectedTraslado, setSelectedTraslado] = useState(null);
+  
+  // Paginación
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchTraslados = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/inventario/traslados/');
-      setTraslados(res.data.results || res.data || []);
+      const res = await api.get('/inventario/traslados/', {
+        params: {
+          page: page + 1,
+          page_size: rowsPerPage
+        }
+      });
+      if (res.data.results) {
+        setTraslados(res.data.results);
+        setTotalCount(res.data.count);
+      } else {
+        setTraslados(res.data);
+        setTotalCount(res.data.length);
+      }
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'Error al cargar los traslados', 'error');
@@ -30,10 +49,34 @@ export default function TrasladosPage() {
 
   useEffect(() => {
     fetchTraslados();
-  }, []);
+  }, [page, rowsPerPage]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const [trasladoParaImprimir, setTrasladoParaImprimir] = useState(null);
+  const printRef = React.useRef();
+
+  const handlePrintAction = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: 'Nota_de_Traslado',
+    onAfterPrint: () => setTrasladoParaImprimir(null),
+  });
+
+  useEffect(() => {
+    if (trasladoParaImprimir) {
+      handlePrintAction();
+    }
+  }, [trasladoParaImprimir, handlePrintAction]);
 
   const handlePrint = (traslado) => {
-    generarTicketTraslado(traslado);
+    setTrasladoParaImprimir(traslado);
   };
 
   return (
@@ -84,6 +127,9 @@ export default function TrasladosPage() {
                   <TableCell>{item.usuario_nombre}</TableCell>
                   <TableCell>{item.observaciones || '-'}</TableCell>
                   <TableCell align="center">
+                    <IconButton color="info" onClick={() => setSelectedTraslado(item)} title="Ver Detalle" sx={{ mr: 1 }}>
+                      <Eye size={18} />
+                    </IconButton>
                     <IconButton color="primary" onClick={() => handlePrint(item)} title="Imprimir Nota">
                       <Printer size={18} />
                     </IconButton>
@@ -95,6 +141,18 @@ export default function TrasladosPage() {
         </Table>
       </TableContainer>
 
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        component="div"
+        count={totalCount}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Filas por página:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`}
+      />
+
       {openModal && (
         <ModalNuevoTraslado 
           open={openModal} 
@@ -105,6 +163,16 @@ export default function TrasladosPage() {
           }} 
         />
       )}
+
+      <ModalDetalleTraslado 
+        open={!!selectedTraslado}
+        onClose={() => setSelectedTraslado(null)}
+        traslado={selectedTraslado}
+      />
+
+      <div style={{ display: 'none' }}>
+        <PrintTrasladoComponent ref={printRef} traslado={trasladoParaImprimir} />
+      </div>
     </Box>
   );
 }
