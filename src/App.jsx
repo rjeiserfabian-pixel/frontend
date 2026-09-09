@@ -48,6 +48,15 @@ import CuentasPorPagarPage from './modules/compras/pages/CuentasPorPagarPage';
 import CuentasPorPagarProveedorPage from './modules/compras/pages/CuentasPorPagarProveedorPage';
 import TiposComprobantePage from './modules/compras/pages/TiposComprobantePage';
 
+// --- Módulo Reportes ---
+import ReporteCajaPage from './modules/reportes/pages/ReporteCajaPage';
+import ReporteVentasPage from './modules/reportes/pages/ReporteVentasPage';
+import ReporteProductosPage from './modules/reportes/pages/ReporteProductosPage';
+import ReporteClientesPage from './modules/reportes/pages/ReporteClientesPage';
+import ReporteComprasPage from './modules/reportes/pages/ReporteComprasPage';
+import ReporteAvanzadoPage from './modules/reportes/pages/ReporteAvanzadoPage';
+import ReporteVehiculosPage from './modules/reportes/pages/ReporteVehiculosPage';
+
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
 function App() {
@@ -104,6 +113,15 @@ function App() {
           <Route path="/compras/tipos-comprobante" element={<TiposComprobantePage />} />
           <Route path="/compras/cuentas-por-pagar" element={<CuentasPorPagarPage />} />
           <Route path="/compras/cuentas-por-pagar/proveedor/:proveedorId" element={<CuentasPorPagarProveedorPage />} />
+
+          {/* Rutas de Reportes */}
+          <Route path="/reportes/caja"      element={<ReporteCajaPage />} />
+          <Route path="/reportes/ventas"    element={<ReporteVentasPage />} />
+          <Route path="/reportes/productos" element={<ReporteProductosPage />} />
+          <Route path="/reportes/clientes"  element={<ReporteClientesPage />} />
+          <Route path="/reportes/compras"   element={<ReporteComprasPage />} />
+          <Route path="/reportes/avanzado"  element={<ReporteAvanzadoPage />} />
+          <Route path="/reportes/vehiculos" element={<ReporteVehiculosPage />} />
         </Route>
         
         {/* Redirección por defecto */}
