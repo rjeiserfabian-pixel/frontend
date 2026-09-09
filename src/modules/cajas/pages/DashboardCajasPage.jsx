@@ -8,7 +8,7 @@ import {
 import {
   Banknote, TrendingUp, TrendingDown,
   Plus, Eye, ArrowRightLeft, Lock,
-  RefreshCw, Wallet
+  RefreshCw, Wallet, Landmark
 } from 'lucide-react';
 import { getDashboardCajas } from '../services/cajas.service';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
@@ -150,7 +150,12 @@ export default function DashboardCajasPage() {
       {/* Encabezado */}
       <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ marginBottom: '24px' }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>💰 Módulo de Cajas</Typography>
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box sx={{ bgcolor: '#fef9c3', borderRadius: 2, p: 0.8, display: 'inline-flex', alignItems: 'center', color: '#ca8a04', flexShrink: 0, width: 'fit-content' }}>
+              <Landmark size={22} />
+            </Box>
+            <Typography variant="h5" fontWeight={700}>Módulo de Cajas</Typography>
+          </Box>
           <Typography variant="body2" color="text.secondary">
             Centro de control del dinero físico y electrónico
           </Typography>
@@ -171,7 +176,7 @@ export default function DashboardCajasPage() {
           <Button
             variant="contained" size="small"
             startIcon={<Plus size={16} />}
-            onClick={() => navigate('/cajas/nueva')}
+            onClick={() => navigate('/cajas/apertura')}
           >
             Nueva Caja
           </Button>

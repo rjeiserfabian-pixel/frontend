@@ -105,11 +105,35 @@ export default function MovimientosPage() {
   const handleRefresh = () => { cargarResumen(); setPage(0); };
 
   const handleAprobar = async (movId) => {
-    if (!window.confirm('¿Está seguro de aprobar este movimiento?')) return;
+    const result = await Swal.fire({
+      title: '¿Aprobar movimiento?',
+      text: 'Este movimiento quedará registrado como aprobado en la caja.',
+      icon: 'question',
+      iconColor: '#16a34a',
+      showCancelButton: true,
+      confirmButtonText: '✔ Sí, aprobar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true,
+      customClass: {
+        popup:          'swal-rounded',
+        confirmButton: 'swal-btn-confirm',
+        cancelButton:  'swal-btn-cancel',
+      },
+    });
+    if (!result.isConfirmed) return;
     try {
       setLoadingMovs(true);
       await aprobarMovimiento(movId);
-      Swal.fire({ icon: 'success', title: 'Movimiento aprobado', timer: 1500, showConfirmButton: false });
+      Swal.fire({
+        icon: 'success',
+        title: '¡Aprobado!',
+        text: 'El movimiento fue aprobado correctamente.',
+        timer: 2000,
+        showConfirmButton: false,
+        iconColor: '#16a34a',
+      });
       cargarResumen();
       cargarMovimientos(page, rowsPerPage, filtroTipo, filtroOrigen);
     } catch (err) {
@@ -119,12 +143,49 @@ export default function MovimientosPage() {
   };
 
   const handleRechazar = async (movId) => {
-    const motivo = window.prompt('Ingrese el motivo de rechazo:');
-    if (!motivo) return; // Si cancela o deja vacío, no hacemos nada
+    const result = await Swal.fire({
+      title: 'Rechazar movimiento',
+      html: `
+        <p style="color:#6b7280;margin-bottom:12px;font-size:0.9rem">
+          Indica el motivo por el cual se rechaza este movimiento.
+        </p>
+        <textarea
+          id="swal-motivo"
+          class="swal2-textarea"
+          placeholder="Ej: Comprobante no válido, monto incorrecto..."
+          style="resize:vertical;min-height:100px;width:90%;box-sizing:border-box;border-radius:10px;border:1.5px solid #d1d5db;padding:10px;font-size:0.9rem"
+        ></textarea>
+      `,
+      icon: 'warning',
+      iconColor: '#dc2626',
+      showCancelButton: true,
+      confirmButtonText: '✖ Rechazar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true,
+      preConfirm: () => {
+        const motivo = document.getElementById('swal-motivo')?.value?.trim();
+        if (!motivo) {
+          Swal.showValidationMessage('El motivo de rechazo es obligatorio.');
+          return false;
+        }
+        return motivo;
+      },
+    });
+    if (!result.isConfirmed) return;
+    const motivo = result.value;
     try {
       setLoadingMovs(true);
       await rechazarMovimiento(movId, motivo);
-      Swal.fire({ icon: 'success', title: 'Movimiento rechazado', timer: 1500, showConfirmButton: false });
+      Swal.fire({
+        icon: 'success',
+        title: 'Movimiento rechazado',
+        text: 'El movimiento fue rechazado y registrado correctamente.',
+        timer: 2000,
+        showConfirmButton: false,
+        iconColor: '#dc2626',
+      });
       cargarResumen();
       cargarMovimientos(page, rowsPerPage, filtroTipo, filtroOrigen);
     } catch (err) {
