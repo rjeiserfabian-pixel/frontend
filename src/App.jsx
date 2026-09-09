@@ -57,6 +57,15 @@ import ReporteComprasPage from './modules/reportes/pages/ReporteComprasPage';
 import ReporteAvanzadoPage from './modules/reportes/pages/ReporteAvanzadoPage';
 import ReporteVehiculosPage from './modules/reportes/pages/ReporteVehiculosPage';
 
+// --- Módulo Cajas ---
+import DashboardCajasPage from './modules/cajas/pages/DashboardCajasPage';
+import AperturaCajaPage from './modules/cajas/pages/AperturaCajaPage';
+import MovimientosPage from './modules/cajas/pages/MovimientosPage';
+import TransferenciasPage from './modules/cajas/pages/TransferenciasPage';
+import NuevoMovimientoPage from './modules/cajas/pages/NuevoMovimientoPage';
+import ArqueoYCierrePage from './modules/cajas/pages/ArqueoYCierrePage';
+import HistorialCajasPage from './modules/cajas/pages/HistorialCajasPage';
+
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 
 function App() {
@@ -122,6 +131,15 @@ function App() {
           <Route path="/reportes/compras"   element={<ReporteComprasPage />} />
           <Route path="/reportes/avanzado"  element={<ReporteAvanzadoPage />} />
           <Route path="/reportes/vehiculos" element={<ReporteVehiculosPage />} />
+
+          {/* Rutas de Cajas */}
+          <Route path="/cajas"                          element={<DashboardCajasPage />} />
+          <Route path="/cajas/apertura"                 element={<AperturaCajaPage />} />
+          <Route path="/cajas/sesion/:id"               element={<MovimientosPage />} />
+          <Route path="/cajas/movimiento/nuevo"         element={<NuevoMovimientoPage />} />
+          <Route path="/cajas/transferencias"           element={<TransferenciasPage />} />
+          <Route path="/cajas/historial"                element={<HistorialCajasPage />} />
+          <Route path="/cajas/cierre/:id"               element={<ArqueoYCierrePage />} />
         </Route>
         
         {/* Redirección por defecto */}

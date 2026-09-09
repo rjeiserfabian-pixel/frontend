@@ -19,6 +19,7 @@ const DRAWER_WIDTH = 280;
 const DynamicIcon = ({ name, size = 22 }) => {
   const iconMapping = {
     'dashboard': Icons.LayoutDashboard,
+    'layoutdashboard': Icons.LayoutDashboard,
     'shield': Icons.ShieldAlert,
     'users': Icons.Users,
     'settings': Icons.Settings,
@@ -43,6 +44,7 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'circle': Icons.Circle,
     'shoppingcart': Icons.ShoppingCart,
     'arrowrightleft': Icons.ArrowRightLeft,
+    'wallet': Icons.Wallet,
   };
   const IconComponent = iconMapping[name?.toLowerCase()] || Icons.Circle;
   return <IconComponent size={size} />;
@@ -423,7 +425,7 @@ export default function DashboardLayout() {
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: '#f8fafc', minHeight: '100vh', width: `calc(100% - ${open ? DRAWER_WIDTH : 0}px)` }}>
+      <Box component="main" sx={{ flexGrow: 1, px: 4, py: 3, bgcolor: '#f8fafc', minHeight: '100vh', width: `calc(100% - ${open ? DRAWER_WIDTH : 0}px)` }}>
         <Toolbar /> {/* Spacer */}
         <Outlet />
       </Box>
