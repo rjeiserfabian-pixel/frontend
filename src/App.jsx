@@ -19,6 +19,7 @@ import AlmacenesPage from './modules/inventario/pages/AlmacenesPage';
 import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
 import KardexPage from './modules/inventario/pages/KardexPage';
 import TrasladosPage from './modules/inventario/pages/TrasladosPage';
+import GuiasRemisionPage from './modules/inventario/pages/GuiasRemisionPage';
 import RevisionPreciosPage from './modules/inventario/pages/RevisionPreciosPage';
 import ClientesPage from './modules/clientes/pages/ClientesPage';
 import ProveedoresPage from './modules/clientes/pages/ProveedoresPage';
@@ -78,6 +79,7 @@ function App() {
           <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
           <Route path="/inventario/kardex" element={<KardexPage />} />
           <Route path="/inventario/traslados" element={<TrasladosPage />} />
+          <Route path="/inventario/guias-remision" element={<GuiasRemisionPage />} />
           <Route path="/inventario/revision-precios" element={<RevisionPreciosPage />} />
           <Route path="/inventario/impuestos" element={<ConfiguracionIgvPage />} />
           <Route path="/taller/ordenes" element={<OrdenesTrabajoPage />} />

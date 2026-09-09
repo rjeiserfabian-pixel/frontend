@@ -54,10 +54,15 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
     }
   }, [almacenOrigen]);
 
-  const fetchRepuestosEnOrigen = async (almacenId) => {
+  const [repuestoBusqueda, setRepuestoBusqueda] = useState('');
+
+  const fetchRepuestosEnOrigen = async (almacenId, query = '') => {
+    // Lógica híbrida: Si escribe 1 letra, ignorar.
+    if (query.length === 1) return;
+    
     try {
       setLoading(true);
-      const res = await api.get('/inventario/stock/', { params: { almacen: almacenId } });
+      const res = await api.get('/inventario/stock/', { params: { almacen: almacenId, search: query } });
       const data = res.data.results || res.data || [];
       setRepuestosOrigen(data.filter(s => s.stock_disponible > 0));
     } catch (error) {
@@ -365,6 +370,16 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
               options={repuestosOrigen}
               getOptionLabel={(opt) => `${opt.repuesto_codigo} - ${opt.repuesto_nombre} | Ubicación: ${opt.ubicacion_codigo} | Stock Disp: ${opt.stock_disponible}`}
               value={repuestoSeleccionado}
+              inputValue={repuestoBusqueda}
+              onOpen={() => {
+                if (repuestosOrigen.length === 0 && almacenOrigen) {
+                  fetchRepuestosEnOrigen(almacenOrigen.id, '');
+                }
+              }}
+              onInputChange={(e, newInputValue) => {
+                setRepuestoBusqueda(newInputValue);
+                if (almacenOrigen) fetchRepuestosEnOrigen(almacenOrigen.id, newInputValue);
+              }}
               onChange={(e, v) => setRepuestoSeleccionado(v)}
               disabled={!almacenOrigen || loading}
               renderInput={(params) => (

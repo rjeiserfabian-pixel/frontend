@@ -755,11 +755,8 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   }, [initialOrder]);
 
 
-  const buscarRepuestos = async (query) => {
-    if (!query) {
-      setResultadosProductos([]);
-      return;
-    }
+  const buscarRepuestos = async (query = '') => {
+    if (query.length === 1) return;
     setCargandoProductos(true);
     try {
       const res = await inventarioService.getRepuestos({ search: query });
@@ -1353,9 +1350,12 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                 );
               }}
               loading={cargandoProductos}
+              onOpen={() => {
+                if (resultadosProductos.length === 0) buscarRepuestos('');
+              }}
               onInputChange={(e, val) => {
                 setBusquedaProducto(val);
-                if (val.length >= 2) buscarRepuestos(val);
+                buscarRepuestos(val);
               }}
               onChange={(e, val) => {
                 if (typeof val === 'object' && val !== null) agregarAlCarrito(val);

@@ -263,15 +263,17 @@ export default function DashboardLayout() {
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               open={Boolean(anchorEl)}
               onClose={handleClose}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: 'visible',
-                  filter: 'drop-shadow(0px 4px 12px rgba(0,0,0,0.1))',
-                  mt: 1.5,
-                  borderRadius: '12px',
-                  minWidth: '200px'
-                },
+              slotProps={{
+                paper: {
+                  elevation: 0,
+                  sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 4px 12px rgba(0,0,0,0.1))',
+                    mt: 1.5,
+                    borderRadius: '12px',
+                    minWidth: '200px'
+                  }
+                }
               }}
             >
               <Box sx={{ px: 2, py: 1.5 }}>

@@ -13,6 +13,7 @@ import { proveedorService } from '../../clientes/services/proveedorService';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import ModalNuevoProveedor from '../components/ModalNuevoProveedor';
+import api from '../../../core/api/axios';
 
 const NuevaCompraPage = () => {
   const navigate = useNavigate();
@@ -100,11 +101,17 @@ const NuevaCompraPage = () => {
     }
   };
 
-  const fetchRepuestos = async () => {
+  const [repuestoBusqueda, setRepuestoBusqueda] = useState('');
+
+  const fetchRepuestos = async (query = '') => {
+    // Lógica híbrida
+    if (query.length === 1) return;
+    
     try {
-      const data = await inventarioService.getRepuestos();
-      const list = Array.isArray(data) ? data : (data.results || data.data || []);
-      setRepuestos(list);
+      // Use api directly to ensure search works
+      const res = await api.get('/inventario/repuestos/', { params: { search: query } });
+      const data = res.data.results || res.data || [];
+      setRepuestos(data);
     } catch (error) {
       console.error(error);
     }
@@ -396,6 +403,14 @@ const NuevaCompraPage = () => {
                   getOptionLabel={(option) => `${option.codigo} - ${option.nombre}`}
                   onChange={handleAddRepuesto}
                   value={null}
+                  inputValue={repuestoBusqueda}
+                  onOpen={() => {
+                    if (repuestos.length === 0) fetchRepuestos('');
+                  }}
+                  onInputChange={(e, newInputValue) => {
+                    setRepuestoBusqueda(newInputValue);
+                    fetchRepuestos(newInputValue);
+                  }}
                   renderInput={(params) => <TextField {...params} label="Buscar repuesto para agregar..." />}
                 />
              </Box>

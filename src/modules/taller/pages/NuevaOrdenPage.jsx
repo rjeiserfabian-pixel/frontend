@@ -89,9 +89,11 @@ export default function NuevaOrdenPage() {
     }
   };
 
-  const fetchClientes = async (selectId = null) => {
+  const [clienteBusqueda, setClienteBusqueda] = useState('');
+  const fetchClientes = async (query = '', selectId = null) => {
+    if (query.length === 1) return;
     try {
-      const res = await api.get('clientes/');
+      const res = await api.get('clientes/', { params: { search: query } });
       const data = res.data.results || res.data;
       setClientes(data);
       if (selectId) {
@@ -102,9 +104,11 @@ export default function NuevaOrdenPage() {
     }
   };
 
-  const fetchVehiculos = async (selectId = null) => {
+  const [vehiculoBusqueda, setVehiculoBusqueda] = useState('');
+  const fetchVehiculos = async (query = '', selectId = null) => {
+    if (query.length === 1) return;
     try {
-      const res = await api.get('vehiculos/');
+      const res = await api.get('vehiculos/', { params: { search: query } });
       const data = res.data.results || res.data;
       setVehiculos(data);
       if (selectId) {
@@ -209,6 +213,14 @@ export default function NuevaOrdenPage() {
                   <Autocomplete
                     options={clientes}
                     value={clientes.find(c => c.id === formData.cliente_id) || null}
+                    inputValue={clienteBusqueda}
+                    onOpen={() => {
+                      if (clientes.length === 0) fetchClientes('');
+                    }}
+                    onInputChange={(e, newInputValue) => {
+                      setClienteBusqueda(newInputValue);
+                      fetchClientes(newInputValue);
+                    }}
                     getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
                     onChange={(e, val) => {
                       const newClientId = val?.id || null;
@@ -245,6 +257,14 @@ export default function NuevaOrdenPage() {
                   <Autocomplete
                     options={vehiculosFiltrados}
                     value={vehiculos.find(v => v.id === formData.vehiculo_id) || null}
+                    inputValue={vehiculoBusqueda}
+                    onOpen={() => {
+                      if (vehiculos.length === 0) fetchVehiculos('');
+                    }}
+                    onInputChange={(e, newInputValue) => {
+                      setVehiculoBusqueda(newInputValue);
+                      fetchVehiculos(newInputValue);
+                    }}
                     getOptionLabel={(option) => `${option.placa} - ${option.marca} ${option.modelo}`}
                     onChange={(e, val) => {
                       let suggestedClientId = formData.cliente_id;

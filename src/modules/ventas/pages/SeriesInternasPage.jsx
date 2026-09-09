@@ -161,7 +161,9 @@ const SeriesInternasPage = () => {
                   <tr key={serie.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">{serie.sucursal_nombre}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
-                      {serie.tipo_documento === 'RECIBO_INGRESO' ? 'Recibo de Ingreso' : 'Código de Crédito'}
+                      {serie.tipo_documento === 'RECIBO_INGRESO' ? 'Recibo de Ingreso' : 
+                       serie.tipo_documento === 'GUIA_REMISION' ? 'Guía de Remisión' :
+                       'Código de Crédito'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{serie.prefijo}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{serie.correlativo_actual}</td>
@@ -221,6 +223,7 @@ const SeriesInternasPage = () => {
             >
               <MenuItem value="RECIBO_INGRESO">Recibo de Ingreso (RI)</MenuItem>
               <MenuItem value="CREDITO">Código de Crédito (CRED)</MenuItem>
+              <MenuItem value="GUIA_REMISION">Guía de Remisión (GR)</MenuItem>
             </Select>
           </FormControl>
 
