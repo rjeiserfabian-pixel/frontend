@@ -255,7 +255,8 @@ export default function PlantillasPage() {
                 type="number"
                 inputProps={{ step: "0.01" }}
                 fullWidth
-                {...register('precio_base', { 
+                {...register('precio_base', {
+                  required: 'El precio base es obligatorio',
                   min: { value: 0, message: 'No puede ser negativo' }
                 })}
                 error={!!errors.precio_base}

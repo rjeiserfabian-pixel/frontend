@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Button, Paper, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, IconButton, 
+import {
+  Box, Typography, Button, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Grid, Card, CardContent, Checkbox, FormControlLabel,
-  Select, MenuItem, FormControl, Divider, Alert, TablePagination, Radio
+  Select, MenuItem, FormControl, Alert, TablePagination, Radio,
+  Accordion, AccordionSummary, AccordionDetails, Chip, InputAdornment
 } from '@mui/material';
-import { Plus, Edit, Trash2, Shield, Settings2, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, Settings2, Save, ChevronDown, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import api from '../../../core/api/axios';
 
@@ -28,6 +29,8 @@ export default function RolesPage() {
   const [rolSeleccionado, setRolSeleccionado] = useState(null);
   const [permisosAsignados, setPermisosAsignados] = useState({}); // { id_permiso: alcance }
   const [guardandoPermisos, setGuardandoPermisos] = useState(false);
+  const [busquedaPermiso, setBusquedaPermiso] = useState('');
+  const [modulosExpandidos, setModulosExpandidos] = useState({}); // { [modulo]: bool }
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
@@ -127,6 +130,8 @@ export default function RolesPage() {
     if (rolSeleccionado && (rolSeleccionado.id_rol === rol.id_rol || rolSeleccionado.id === rol.id)) {
       setRolSeleccionado(null);
       setPermisosAsignados({});
+      setBusquedaPermiso('');
+      setModulosExpandidos({});
       return;
     }
 
@@ -139,6 +144,8 @@ export default function RolesPage() {
       });
     }
     setPermisosAsignados(asignados);
+    setBusquedaPermiso('');
+    setModulosExpandidos({});
   };
 
   const togglePermiso = (id_permiso) => {
@@ -158,6 +165,26 @@ export default function RolesPage() {
       ...prev,
       [id_permiso]: alcance
     }));
+  };
+
+  // Activa/desactiva de una sola vez todos los permisos de un módulo
+  const toggleModuloCompleto = (permisos) => {
+    setPermisosAsignados(prev => {
+      const nuevo = { ...prev };
+      const todosActivos = permisos.every(p => !!nuevo[p.id_permiso]);
+      permisos.forEach(p => {
+        if (todosActivos) {
+          delete nuevo[p.id_permiso];
+        } else if (!nuevo[p.id_permiso]) {
+          nuevo[p.id_permiso] = 'PROPIO';
+        }
+      });
+      return nuevo;
+    });
+  };
+
+  const toggleModuloExpandido = (modulo) => {
+    setModulosExpandidos(prev => ({ ...prev, [modulo]: !prev[modulo] }));
   };
 
   const guardarPermisos = async () => {
@@ -191,13 +218,21 @@ export default function RolesPage() {
     }
   };
 
-  // Agrupar permisos por módulo
-  const permisosAgrupados = todosPermisos.reduce((acc, p) => {
+  // Filtrar por nombre/código y agrupar por módulo
+  const permisosFiltrados = todosPermisos.filter(p => {
+    const q = busquedaPermiso.trim().toLowerCase();
+    if (!q) return true;
+    return p.nombre?.toLowerCase().includes(q) || p.codigo?.toLowerCase().includes(q);
+  });
+
+  const permisosAgrupados = permisosFiltrados.reduce((acc, p) => {
     const mod = p.modulo_nombre || 'General';
     if (!acc[mod]) acc[mod] = [];
     acc[mod].push(p);
     return acc;
   }, {});
+
+  const hayBusquedaActiva = busquedaPermiso.trim().length > 0;
 
   return (
     <Box>
@@ -336,6 +371,24 @@ export default function RolesPage() {
                   </Button>
                 </Box>
                 
+                <Box sx={{ px: 3, pt: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Buscar permiso por nombre o código..."
+                    value={busquedaPermiso}
+                    onChange={(e) => setBusquedaPermiso(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search size={16} />
+                        </InputAdornment>
+                      )
+                    }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                  />
+                </Box>
+
                 <Box sx={{ p: 3, overflowY: 'auto', flexGrow: 1, maxHeight: '600px' }}>
                   {rolSeleccionado.es_sistema && (
                      <Alert severity="info" sx={{ mb: 3 }}>
@@ -343,55 +396,100 @@ export default function RolesPage() {
                      </Alert>
                   )}
 
-                  {Object.entries(permisosAgrupados).map(([modulo, permisos]) => (
-                    <Box key={modulo} sx={{ mb: 4 }}>
-                      <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Shield size={16} className="text-blue-500" /> 
-                        </Box>
-                        Módulo: {modulo}
-                      </Typography>
-                      
-                      {permisos.map(p => {
-                        const isChecked = !!permisosAsignados[p.id_permiso];
-                        return (
-                          <Box key={p.id_permiso} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, '&:hover': { bgcolor: 'slate.50' }, borderRadius: '8px', mb: 1 }}>
-                            <FormControlLabel
-                              control={
-                                <Checkbox 
-                                  checked={isChecked} 
-                                  onChange={() => togglePermiso(p.id_permiso)}
+                  {Object.keys(permisosAgrupados).length === 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                      No se encontraron permisos que coincidan con "{busquedaPermiso}".
+                    </Typography>
+                  )}
+
+                  {Object.entries(permisosAgrupados).map(([modulo, permisos]) => {
+                    const activos = permisos.filter(p => !!permisosAsignados[p.id_permiso]).length;
+                    const total = permisos.length;
+                    const expandido = hayBusquedaActiva ? true : !!modulosExpandidos[modulo];
+
+                    return (
+                      <Accordion
+                        key={modulo}
+                        expanded={expandido}
+                        onChange={() => toggleModuloExpandido(modulo)}
+                        disableGutters
+                        elevation={0}
+                        sx={{
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: '8px !important',
+                          mb: 1.5,
+                          '&:before': { display: 'none' }
+                        }}
+                      >
+                        <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  size="small"
+                                  checked={total > 0 && activos === total}
+                                  indeterminate={activos > 0 && activos < total}
+                                  onChange={() => toggleModuloCompleto(permisos)}
                                   disabled={rolSeleccionado.es_sistema}
+                                  sx={{ p: 0.5 }}
                                 />
-                              }
-                              label={
-                                <Box>
-                                  <Typography variant="body2" fontWeight="500">{p.nombre}</Typography>
-                                  <Typography variant="caption" color="text.secondary">{p.codigo}</Typography>
-                                </Box>
-                              }
+                              </Box>
+                              <Shield size={16} className="text-blue-500" />
+                              <Typography variant="subtitle1" fontWeight="bold">
+                                {modulo}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={`${activos}/${total}`}
+                              size="small"
+                              color={activos > 0 ? 'primary' : 'default'}
+                              variant={activos > 0 ? 'filled' : 'outlined'}
                             />
-                            {isChecked && (
-                              <FormControl size="small" sx={{ minWidth: 140 }}>
-                                <Select
-                                  value={permisosAsignados[p.id_permiso]}
-                                  onChange={(e) => cambiarAlcance(p.id_permiso, e.target.value)}
-                                  disabled={rolSeleccionado.es_sistema}
-                                  sx={{ fontSize: '0.875rem', borderRadius: '8px' }}
-                                >
-                                  <MenuItem value="GLOBAL">Global</MenuItem>
-                                  <MenuItem value="TALLER">Taller</MenuItem>
-                                  <MenuItem value="ASIGNADO">Asignado a mí</MenuItem>
-                                  <MenuItem value="PROPIO">Creado por mí</MenuItem>
-                                </Select>
-                              </FormControl>
-                            )}
                           </Box>
-                        );
-                      })}
-                      <Divider sx={{ mt: 2 }} />
-                    </Box>
-                  ))}
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ pt: 0 }}>
+                          {permisos.map(p => {
+                            const isChecked = !!permisosAsignados[p.id_permiso];
+                            return (
+                              <Box key={p.id_permiso} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, '&:hover': { bgcolor: 'slate.50' }, borderRadius: '8px', mb: 1 }}>
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox
+                                      checked={isChecked}
+                                      onChange={() => togglePermiso(p.id_permiso)}
+                                      disabled={rolSeleccionado.es_sistema}
+                                    />
+                                  }
+                                  label={
+                                    <Box>
+                                      <Typography variant="body2" fontWeight="500">{p.nombre}</Typography>
+                                      <Typography variant="caption" color="text.secondary">{p.codigo}</Typography>
+                                    </Box>
+                                  }
+                                />
+                                {isChecked && (
+                                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                                    <Select
+                                      value={permisosAsignados[p.id_permiso]}
+                                      onChange={(e) => cambiarAlcance(p.id_permiso, e.target.value)}
+                                      disabled={rolSeleccionado.es_sistema}
+                                      sx={{ fontSize: '0.875rem', borderRadius: '8px' }}
+                                    >
+                                      <MenuItem value="GLOBAL">Global</MenuItem>
+                                      <MenuItem value="TALLER">Taller</MenuItem>
+                                      <MenuItem value="ASIGNADO">Asignado a mí</MenuItem>
+                                      <MenuItem value="PROPIO">Creado por mí</MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </AccordionDetails>
+                      </Accordion>
+                    );
+                  })}
                 </Box>
               </Box>
             )}

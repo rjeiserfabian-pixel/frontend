@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppBar, Toolbar, IconButton, Typography, Drawer, 
   List, ListItem, ListItemButton, ListItemIcon, ListItemText, 
-  Avatar, Menu, MenuItem, Box, Divider, useTheme, Collapse, CircularProgress
+  Avatar, Menu, MenuItem, Box, Divider, useTheme, Collapse, CircularProgress,
+  Tooltip
 } from '@mui/material';
 import { 
   Menu as MenuIcon, ChevronLeft, LogOut, CarFront, ChevronDown, ChevronRight, Settings, MapPin
@@ -14,6 +15,7 @@ import { useSucursal } from '../contexts/SucursalContext';
 import { Select, FormControl } from '@mui/material';
 
 const DRAWER_WIDTH = 280;
+const DRAWER_MINI_WIDTH = 80;
 
 // Componente para renderizar iconos dinámicamente
 const DynamicIcon = ({ name, size = 22 }) => {
@@ -45,18 +47,25 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'shoppingcart': Icons.ShoppingCart,
     'arrowrightleft': Icons.ArrowRightLeft,
     'wallet': Icons.Wallet,
+    'building': Icons.Building2,
+    'tag': Icons.Tag,
+    'ruler': Icons.Ruler,
   };
   const IconComponent = iconMapping[name?.toLowerCase()] || Icons.Circle;
   return <IconComponent size={size} />;
 };
 
 export default function DashboardLayout() {
+  // Sidebar inicia ESTIRADO por defecto como se solicitó
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   
   const [menuItems, setMenuItems] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [openModules, setOpenModules] = useState({});
+
+  // Estado para los datos dinámicos de la empresa (logo y razón social)
+  const [empresaData, setEmpresaData] = useState(null);
 
   const { sucursales, activeSucursalId, changeSucursal, loadingContext } = useSucursal();
 
@@ -65,12 +74,18 @@ export default function DashboardLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    const fetchModulos = async () => {
+    const controller = new AbortController(); // AbortController para evitar memory leaks
+
+    const fetchInitialData = async () => {
       try {
-        const response = await api.get('seguridad/modulos/');
-        const modulosDb = response.data.data || [];
-        
-        // Nos aseguramos que Dashboard siempre esté primero por si no está en la DB
+        // Cargamos el menú y los datos de la empresa en paralelo para mayor rendimiento
+        const [modulosRes, empresaRes] = await Promise.all([
+          api.get('seguridad/modulos/', { signal: controller.signal }),
+          api.get('/seguridad/empresa/', { signal: controller.signal }),
+        ]);
+
+        // --- Procesar datos del menú ---
+        const modulosDb = modulosRes.data.data || [];
         const hasDashboard = modulosDb.find(m => m.ruta === '/dashboard' || m.codigo === 'DASHBOARD');
         
         let finalMenu = [];
@@ -83,26 +98,44 @@ export default function DashboardLayout() {
             submodulos: []
           });
         }
-        
         finalMenu = [...finalMenu, ...modulosDb];
         setMenuItems(finalMenu);
-        
-        // Abrir módulos padre por defecto
+
+        // Iniciar con módulos padre cerrados (comprimidos) por defecto
         const initialOpen = {};
         finalMenu.forEach(m => {
           if (m.submodulos && m.submodulos.length > 0) {
-            initialOpen[m.id_modulo] = true;
+            initialOpen[m.id_modulo] = false;
           }
         });
         setOpenModules(initialOpen);
-        
+
+        // --- Procesar datos de la empresa ---
+        const empresaInfo = empresaRes.data.data;
+        if (empresaInfo) {
+          setEmpresaData({
+            razon_social: empresaInfo.razon_social || 'Sistema',
+            logo: empresaInfo.logo
+              ? (empresaInfo.logo.startsWith('http')
+                  ? empresaInfo.logo
+                  : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresaInfo.logo}`)
+              : null,
+          });
+        }
+
       } catch (error) {
-        console.error("Error cargando menú dinámico:", error);
+        if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+          console.error("Error cargando datos iniciales del layout:", error);
+        }
       } finally {
         setLoadingMenu(false);
       }
     };
-    fetchModulos();
+
+    fetchInitialData();
+
+    // Cancelar peticiones si el componente se desmonta (evita memory leaks)
+    return () => controller.abort();
   }, []);
 
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
@@ -115,9 +148,10 @@ export default function DashboardLayout() {
     navigate('/login');
   };
 
-  const toggleModule = (moduleId) => {
+  // useCallback para estabilizar la referencia de la función
+  const toggleModule = useCallback((moduleId) => {
     setOpenModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }));
-  };
+  }, []);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -131,6 +165,7 @@ export default function DashboardLayout() {
     }
     return 'Dashboard';
   };
+
   const getActiveState = () => {
     let globalActiveChildId = null;
     let globalActiveParentId = null;
@@ -167,6 +202,8 @@ export default function DashboardLayout() {
 
   const { globalActiveChildId, globalActiveParentId } = getActiveState();
 
+  // Ancho efectivo del drawer según su estado
+  const drawerWidth = open ? DRAWER_WIDTH : DRAWER_MINI_WIDTH;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'slate.50' }}>
@@ -178,13 +215,14 @@ export default function DashboardLayout() {
           bgcolor: 'white',
           color: 'text.primary',
           boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+          // Transición suave sincronizada con el drawer
           transition: theme.transitions.create(['width', 'margin'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
+          marginLeft: drawerWidth,
+          width: `calc(100% - ${drawerWidth}px)`,
           ...(open && {
-            marginLeft: DRAWER_WIDTH,
-            width: `calc(100% - ${DRAWER_WIDTH}px)`,
             transition: theme.transitions.create(['width', 'margin'], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
@@ -193,6 +231,7 @@ export default function DashboardLayout() {
         }}
       >
         <Toolbar>
+          {/* Botón para expandir el sidebar - siempre visible en barra superior */}
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -301,38 +340,132 @@ export default function DashboardLayout() {
         variant="permanent"
         open={open}
         sx={{
-          width: open ? DRAWER_WIDTH : 0,
+          width: drawerWidth,
           flexShrink: 0,
           whiteSpace: 'nowrap',
           boxSizing: 'border-box',
           '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
+            // El ancho ahora nunca es 0: comprimido usa 80px para seguir mostrando iconos
+            width: drawerWidth,
             transition: theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
-              duration: open ? theme.transitions.duration.enteringScreen : theme.transitions.duration.leavingScreen,
+              duration: open
+                ? theme.transitions.duration.enteringScreen
+                : theme.transitions.duration.leavingScreen,
             }),
             overflowX: 'hidden',
             borderRight: '1px solid',
             borderColor: 'divider',
             bgcolor: '#0f172a', // slate-900
-            color: 'white'
+            color: 'white',
           },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', ...theme.mixins.toolbar }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#60a5fa' }}>
-            <CarFront size={28} />
-            <Typography variant="h6" fontWeight="700" sx={{ color: 'white' }}>
-              TallerApp
+        {/* Encabezado del Sidebar: Logo + Nombre de empresa dinámicos */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: open ? 'space-between' : 'center',
+            padding: open ? '0 16px' : '0',
+            ...theme.mixins.toolbar,
+            transition: theme.transitions.create(['padding', 'justify-content'], {
+              duration: theme.transitions.duration.standard,
+            }),
+          }}
+        >
+          {/* Logo + nombre de empresa (solo visibles cuando está expandido) */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              overflow: 'hidden',
+              opacity: open ? 1 : 0,
+              width: open ? 'auto' : 0,
+              transition: theme.transitions.create(['opacity', 'width'], {
+                duration: theme.transitions.duration.standard,
+              }),
+            }}
+          >
+            {/* Logo de empresa o ícono fallback */}
+            {empresaData?.logo ? (
+              <Box
+                component="img"
+                src={empresaData.logo}
+                alt="Logo empresa"
+                sx={{
+                  width: 36,
+                  height: 36,
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                  flexShrink: 0,
+                  // Pequeño borde/sombra para que el logo destaque sobre el fondo oscuro
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                }}
+              />
+            ) : (
+              <Box sx={{ color: '#60a5fa', flexShrink: 0 }}>
+                <CarFront size={28} />
+              </Box>
+            )}
+            <Typography 
+              variant="subtitle1" 
+              fontWeight="700" 
+              sx={{ 
+                color: 'white', 
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: 'block',
+                maxWidth: '150px' // Evita que choque con el botón de cerrar
+              }}
+            >
+              {empresaData?.razon_social || 'TallerApp'}
             </Typography>
           </Box>
-          <IconButton onClick={() => setOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)' }}>
-            <ChevronLeft />
-          </IconButton>
+
+          {/* Botón cerrar (solo visible cuando está expandido) */}
+          {open && (
+            <IconButton onClick={() => setOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}>
+              <ChevronLeft />
+            </IconButton>
+          )}
+
+          {/* Mini logo centrado cuando está comprimido */}
+          {!open && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {empresaData?.logo ? (
+                <Box
+                  component="img"
+                  src={empresaData.logo}
+                  alt="Logo empresa"
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                  }}
+                />
+              ) : (
+                <Box sx={{ color: '#60a5fa' }}>
+                  <CarFront size={28} />
+                </Box>
+              )}
+            </Box>
+          )}
         </Box>
+
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
         
-        <List sx={{ px: 2, py: 3 }}>
+        <List sx={{ px: open ? 2 : 1, py: 3, transition: 'padding 300ms ease' }}>
           {loadingMenu ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress size={24} sx={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -343,29 +476,56 @@ export default function DashboardLayout() {
             if (hasChildren) {
               const isOpen = openModules[item.id_modulo];
               return (
-                <Box key={item.id_modulo} sx={{ mb: 1 }}>
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      onClick={() => {
-                        if (!open) setOpen(true);
-                        toggleModule(item.id_modulo);
-                      }}
-                      sx={{
-                        minHeight: 48,
-                        justifyContent: open ? 'initial' : 'center',
-                        px: 2.5,
-                        borderRadius: '10px',
-                        color: 'rgba(255,255,255,0.9)',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 0, mr: open ? 2 : 'auto', justifyContent: 'center', color: 'inherit' }}>
-                        <DynamicIcon name={item.icono} />
-                      </ListItemIcon>
-                      <ListItemText primary={item.nombre} sx={{ opacity: open ? 1 : 0, '& .MuiTypography-root': { fontWeight: 600 } }} />
-                      {open && (isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />)}
-                    </ListItemButton>
-                  </ListItem>
+                <Box key={item.id_modulo} sx={{ mb: 0.5 }}>
+                  {/* En modo comprimido, envolverlo en Tooltip para accesibilidad */}
+                  <Tooltip
+                    title={!open ? item.nombre : ''}
+                    placement="right"
+                    arrow
+                  >
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        onClick={() => {
+                          if (!open) {
+                            setOpen(true);
+                          }
+                          toggleModule(item.id_modulo);
+                        }}
+                        sx={{
+                          minHeight: 48,
+                          justifyContent: open ? 'initial' : 'center',
+                          px: open ? 2.5 : 1.5,
+                          borderRadius: '10px',
+                          color: 'rgba(255,255,255,0.9)',
+                          transition: 'all 200ms ease',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.07)' },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: open ? 2 : 'auto',
+                            justifyContent: 'center',
+                            color: 'inherit',
+                          }}
+                        >
+                          {/* Iconos más grandes (24px) cuando está comprimido para mayor presencia visual */}
+                          <DynamicIcon name={item.icono} size={open ? 22 : 24} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.nombre}
+                          sx={{
+                            opacity: open ? 1 : 0,
+                            width: open ? 'auto' : 0,
+                            overflow: 'hidden',
+                            transition: 'opacity 200ms ease',
+                            '& .MuiTypography-root': { fontWeight: 600 },
+                          }}
+                        />
+                        {open && (isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />)}
+                      </ListItemButton>
+                    </ListItem>
+                  </Tooltip>
                   
                   <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding sx={{ mt: 0.5 }}>
@@ -382,13 +542,17 @@ export default function DashboardLayout() {
                                 borderRadius: '10px',
                                 bgcolor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
                                 color: isSelected ? '#60a5fa' : 'rgba(255,255,255,0.6)',
+                                transition: 'all 200ms ease',
                                 '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: 'white' },
                               }}
                             >
                               <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: 'inherit' }}>
                                 <DynamicIcon name={child.icono || 'circle'} size={18} />
                               </ListItemIcon>
-                              <ListItemText primary={child.nombre} sx={{ '& .MuiTypography-root': { fontSize: '0.875rem', fontWeight: isSelected ? 500 : 400 } }} />
+                              <ListItemText
+                                primary={child.nombre}
+                                sx={{ '& .MuiTypography-root': { fontSize: '0.875rem', fontWeight: isSelected ? 500 : 400 } }}
+                              />
                             </ListItemButton>
                           );
                         })}
@@ -400,32 +564,74 @@ export default function DashboardLayout() {
 
             const isSelected = item.id_modulo === globalActiveParentId;
             return (
-              <ListItem key={item.id_modulo} disablePadding sx={{ mb: 1 }}>
-                <ListItemButton
-                  onClick={() => navigate(item.ruta)}
-                  sx={{
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                    borderRadius: '10px',
-                    bgcolor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                    color: isSelected ? '#60a5fa' : 'rgba(255,255,255,0.7)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', color: 'white' },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 0, mr: open ? 2 : 'auto', justifyContent: 'center', color: 'inherit' }}>
-                    <DynamicIcon name={item.icono} />
-                  </ListItemIcon>
-                  <ListItemText primary={item.nombre} sx={{ opacity: open ? 1 : 0, '& .MuiTypography-root': { fontWeight: isSelected ? 600 : 400 } }} />
-                </ListItemButton>
-              </ListItem>
+              <Tooltip
+                key={item.id_modulo}
+                title={!open ? item.nombre : ''}
+                placement="right"
+                arrow
+              >
+                <ListItem disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate(item.ruta)}
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: open ? 'initial' : 'center',
+                      px: open ? 2.5 : 1.5,
+                      borderRadius: '10px',
+                      bgcolor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                      color: isSelected ? '#60a5fa' : 'rgba(255,255,255,0.7)',
+                      transition: 'all 200ms ease',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.07)', color: 'white' },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: open ? 2 : 'auto',
+                        justifyContent: 'center',
+                        color: 'inherit',
+                      }}
+                    >
+                      {/* Iconos más grandes (24px) cuando está comprimido para mayor presencia visual */}
+                      <DynamicIcon name={item.icono} size={open ? 22 : 24} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.nombre}
+                      sx={{
+                        opacity: open ? 1 : 0,
+                        width: open ? 'auto' : 0,
+                        overflow: 'hidden',
+                        transition: 'opacity 200ms ease',
+                        '& .MuiTypography-root': { fontWeight: isSelected ? 600 : 400 },
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </Tooltip>
             );
           })}
         </List>
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, px: 4, py: 3, bgcolor: '#f8fafc', minHeight: '100vh', width: `calc(100% - ${open ? DRAWER_WIDTH : 0}px)` }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          px: 4,
+          py: 3,
+          bgcolor: '#f8fafc',
+          minHeight: '100vh',
+          // El ancho del main se ajusta al drawer correctamente (nunca a 0px)
+          width: `calc(100% - ${drawerWidth}px)`,
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: open
+              ? theme.transitions.duration.enteringScreen
+              : theme.transitions.duration.leavingScreen,
+          }),
+        }}
+      >
         <Toolbar /> {/* Spacer */}
         <Outlet />
       </Box>

@@ -64,7 +64,7 @@ export default function LoginPage() {
       localStorage.setItem('accessToken',  access);
       localStorage.setItem('refreshToken', refresh);
       localStorage.setItem('user',         JSON.stringify(usuario));
-      navigate('/dashboard');
+      window.location.href = '/dashboard';
     } catch (error) {
       if (error.response?.data?.errores?.non_field_errors) {
         setErrorMsg(error.response.data.errores.non_field_errors[0]);

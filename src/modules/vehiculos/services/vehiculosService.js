@@ -24,5 +24,9 @@ export const vehiculoService = {
   buscarPorPlaca: async (placa, signal) => {
     const response = await api.post(`${URL_VEHICULOS}consulta-placa/`, { placa }, { signal });
     return response.data;
+  },
+  vincularCliente: async (vehiculoId, clienteId) => {
+    const response = await api.post(`${URL_VEHICULOS}${vehiculoId}/vincular-cliente/`, { cliente_id: clienteId });
+    return response.data;
   }
 };

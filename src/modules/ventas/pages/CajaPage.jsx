@@ -55,8 +55,9 @@ export const CajaPage = () => {
     try {
       const res = await api.get('/ventas/cajas/');
       const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
-      setCajasDisponibles(data);
-      if (data.length > 0) setCajaSeleccionadaId(data[0].id);
+      const activas = data.filter((c) => c.estado);
+      setCajasDisponibles(activas);
+      if (activas.length > 0) setCajaSeleccionadaId(activas[0].id);
     } catch (error) {
       console.error('Error al cargar cajas:', error);
     }

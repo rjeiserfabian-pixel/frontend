@@ -30,29 +30,6 @@ export const ventasService = {
     return response.data;
   },
 
-  // ==========================================
-  // CAJA / PUNTO DE VENTA
-  // ==========================================
-  aperturarCaja: async (cajaId, saldoInicial) => {
-    const response = await apiClient.post('/sesiones/aperturar/', {
-      caja_id: cajaId,
-      saldo_inicial: saldoInicial
-    });
-    return response.data;
-  },
-
-  cerrarCaja: async (sesionId, saldoReal) => {
-    const response = await apiClient.post(`/sesiones/${sesionId}/cerrar/`, {
-      saldo_cierre_real: saldoReal
-    });
-    return response.data;
-  },
-
-  obtenerReporteCierre: async (sesionId) => {
-    const response = await apiClient.get(`/sesiones/${sesionId}/reporte-cierre/`);
-    return response.data;
-  },
-
   obtenerPreVenta: async (ticketId) => {
     // Idealmente tendríamos un endpoint custom, pero podemos filtrar por ticket o id
     const response = await apiClient.get(`/transacciones/?ticket_kiosko=${ticketId}`);
@@ -92,11 +69,6 @@ export const ventasService = {
 
   getSeriesComprobante: async () => {
     const response = await apiClient.get('/series-comprobante/');
-    return response.data;
-  },
-  
-  getCajas: async () => {
-    const response = await apiClient.get('/cajas/');
     return response.data;
   }
 };

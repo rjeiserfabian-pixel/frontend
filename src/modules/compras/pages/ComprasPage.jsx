@@ -1,30 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TablePagination } from '@mui/material';
-import { Plus, Search, FileText } from 'lucide-react';
+import {
+  Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, CircularProgress, TablePagination, Autocomplete, TextField, MenuItem, IconButton,
+  Dialog, DialogTitle, DialogContent, DialogActions, Divider
+} from '@mui/material';
+import { Plus, FileText, Ban, CreditCard, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
+import { proveedorService } from '../../clientes/services/proveedorService';
+
+const ESTADOS = ['Completada', 'Anulada'];
+const TIPOS_PAGO = ['Contado', 'Credito'];
 
 const ComprasPage = () => {
   const navigate = useNavigate();
   const [compras, setCompras] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+  const [proveedores, setProveedores] = useState([]);
+
   // Paginación
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Filtros
+  const [filtroProveedor, setFiltroProveedor] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroTipoPago, setFiltroTipoPago] = useState('');
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+
+  // Detalle
+  const [detalleOpen, setDetalleOpen] = useState(false);
+  const [detalleLoading, setDetalleLoading] = useState(false);
+  const [compraDetalle, setCompraDetalle] = useState(null);
+  const [cuentaDetalle, setCuentaDetalle] = useState(null);
+
+  useEffect(() => {
+    proveedorService.listar()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.results || data.data || []);
+        setProveedores(list);
+      })
+      .catch((error) => console.error('Error al cargar proveedores', error));
+  }, []);
+
   useEffect(() => {
     fetchCompras();
-  }, [page, rowsPerPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, filtroProveedor, filtroEstado, filtroTipoPago, filtroFechaDesde, filtroFechaHasta]);
 
   const fetchCompras = async () => {
     try {
       setLoading(true);
-      const data = await comprasService.getCompras({ 
-        page: page + 1, 
-        page_size: rowsPerPage 
-      });
+      const params = { page: page + 1, page_size: rowsPerPage };
+      if (filtroProveedor) params.proveedor_id = filtroProveedor.id;
+      if (filtroEstado) params.estado = filtroEstado;
+      if (filtroTipoPago) params.tipo_pago = filtroTipoPago;
+      if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
+      if (filtroFechaHasta) params.fecha_hasta = filtroFechaHasta;
+
+      const data = await comprasService.getCompras(params);
       const list = Array.isArray(data) ? data : (data.results || data.data || []);
       setCompras(list);
       setTotalCount(data.count !== undefined ? data.count : list.length);
@@ -35,14 +72,101 @@ const ComprasPage = () => {
     }
   };
 
+  const cambiarFiltro = (setter) => (valor) => {
+    setPage(0);
+    setter(valor);
+  };
+
+  const limpiarFiltros = () => {
+    setPage(0);
+    setFiltroProveedor(null);
+    setFiltroEstado('');
+    setFiltroTipoPago('');
+    setFiltroFechaDesde('');
+    setFiltroFechaHasta('');
+  };
+
+  const hayFiltrosActivos = !!(filtroProveedor || filtroEstado || filtroTipoPago || filtroFechaDesde || filtroFechaHasta);
+
+  const verDetalle = async (compra) => {
+    setDetalleOpen(true);
+    setDetalleLoading(true);
+    setCompraDetalle(null);
+    setCuentaDetalle(null);
+    try {
+      const data = await comprasService.getCompraById(compra.id);
+      setCompraDetalle(data);
+
+      if (data.tipo_pago === 'Credito') {
+        const cuentasData = await comprasService.getCuentasPorPagar({ compra_id: compra.id });
+        const lista = Array.isArray(cuentasData) ? cuentasData : (cuentasData.results || cuentasData.data || []);
+        setCuentaDetalle(lista[0] || null);
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo cargar el detalle de la compra.', 'error');
+    } finally {
+      setDetalleLoading(false);
+    }
+  };
+
+  const cerrarDetalle = () => {
+    setDetalleOpen(false);
+    setCompraDetalle(null);
+    setCuentaDetalle(null);
+  };
+
+  const handleAnular = async (compra) => {
+    const result = await Swal.fire({
+      title: '¿Anular esta compra?',
+      html: `Se revertirá el stock ingresado y quedará registrado en el kardex.<br/>Comprobante: <b>${compra.tipo_comprobante_nombre || 'Comprobante'} ${compra.serie}-${compra.numero_comprobante}</b>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, anular',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await comprasService.anularCompra(compra.id);
+      Swal.fire({
+        icon: 'success',
+        title: 'Compra anulada',
+        showConfirmButton: false,
+        timer: 1500
+      });
+      fetchCompras();
+    } catch (error) {
+      // El backend envuelve los errores como { success, status_code, mensaje, errores }
+      // (ver apps/seguridad/exceptions.py). El detalle específico viaja en "errores".
+      const data = error.response?.data;
+      let mensaje = 'No se pudo anular la compra.';
+      if (Array.isArray(data?.errores) && data.errores.length > 0) {
+        mensaje = data.errores[0];
+      } else if (typeof data?.errores === 'string') {
+        mensaje = data.errores;
+      } else if (data?.mensaje) {
+        mensaje = data.mensaje;
+      }
+      Swal.fire('No se puede anular', mensaje, 'error');
+    }
+  };
+
+  const verCuentaPorPagar = (compra) => {
+    navigate(`/compras/cuentas-por-pagar/proveedor/${compra.proveedor}`);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 600, color: '#0f172a' }}>
           Listado de Compras
         </Typography>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           startIcon={<Plus size={20} />}
           onClick={() => navigate('/compras/nueva')}
           sx={{
@@ -55,6 +179,71 @@ const ComprasPage = () => {
           Nueva Compra
         </Button>
       </Box>
+
+      <Paper sx={{ p: 2, mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <Autocomplete
+            size="small"
+            sx={{ width: 260 }}
+            options={proveedores}
+            getOptionLabel={(option) => `${option.numero_documento} - ${option.nombre_o_razon_social}`}
+            value={filtroProveedor}
+            onChange={(e, val) => cambiarFiltro(setFiltroProveedor)(val)}
+            renderInput={(params) => <TextField {...params} label="Proveedor" />}
+          />
+          <TextField
+            select
+            size="small"
+            label="Estado"
+            sx={{ width: 160 }}
+            value={filtroEstado}
+            onChange={(e) => cambiarFiltro(setFiltroEstado)(e.target.value)}
+          >
+            <MenuItem value="">Todos</MenuItem>
+            {ESTADOS.map((estado) => (
+              <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            size="small"
+            label="Tipo de Pago"
+            sx={{ width: 160 }}
+            value={filtroTipoPago}
+            onChange={(e) => cambiarFiltro(setFiltroTipoPago)(e.target.value)}
+          >
+            <MenuItem value="">Todos</MenuItem>
+            {TIPOS_PAGO.map((tipo) => (
+              <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            type="date"
+            size="small"
+            label="Desde"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ style: { colorScheme: 'light' } }}
+            sx={{ width: 160 }}
+            value={filtroFechaDesde}
+            onChange={(e) => cambiarFiltro(setFiltroFechaDesde)(e.target.value)}
+          />
+          <TextField
+            type="date"
+            size="small"
+            label="Hasta"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ style: { colorScheme: 'light' } }}
+            sx={{ width: 160 }}
+            value={filtroFechaHasta}
+            onChange={(e) => cambiarFiltro(setFiltroFechaHasta)(e.target.value)}
+          />
+          {hayFiltrosActivos && (
+            <Button size="small" onClick={limpiarFiltros} sx={{ textTransform: 'none' }}>
+              Limpiar filtros
+            </Button>
+          )}
+        </Box>
+      </Paper>
 
       <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
         <TableContainer sx={{ maxHeight: 'calc(100vh - 250px)' }}>
@@ -92,25 +281,37 @@ const ComprasPage = () => {
                     </TableCell>
                     <TableCell>{compra.proveedor_detalle?.nombre_o_razon_social}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={compra.tipo_pago} 
-                        color={compra.tipo_pago === 'Contado' ? 'success' : 'warning'} 
-                        size="small" 
+                      <Chip
+                        label={compra.tipo_pago}
+                        color={compra.tipo_pago === 'Contado' ? 'success' : 'warning'}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell align="right">S/ {parseFloat(compra.total).toFixed(2)}</TableCell>
                     <TableCell align="center">
-                      <Chip 
-                        label={compra.estado} 
-                        color={compra.estado === 'Completada' ? 'primary' : 'error'} 
-                        size="small" 
+                      <Chip
+                        label={compra.estado}
+                        color={compra.estado === 'Completada' ? 'primary' : 'error'}
+                        size="small"
                         variant="outlined"
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <Button size="small" startIcon={<FileText size={16} />}>
-                        Ver
-                      </Button>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
+                        <Button size="small" startIcon={<FileText size={16} />} onClick={() => verDetalle(compra)}>
+                          Ver
+                        </Button>
+                        {compra.tipo_pago === 'Credito' && (
+                          <IconButton size="small" color="warning" title="Ver cuenta por pagar" onClick={() => verCuentaPorPagar(compra)}>
+                            <CreditCard size={16} />
+                          </IconButton>
+                        )}
+                        {compra.estado === 'Completada' && (
+                          <IconButton size="small" color="error" title="Anular compra" onClick={() => handleAnular(compra)}>
+                            <Ban size={16} />
+                          </IconButton>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -132,6 +333,102 @@ const ComprasPage = () => {
           labelRowsPerPage="Filas por página:"
         />
       </Paper>
+
+      {/* Modal Detalle de Compra */}
+      <Dialog open={detalleOpen} onClose={cerrarDetalle} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Detalle de Compra
+          <IconButton size="small" onClick={cerrarDetalle}>
+            <X size={18} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {detalleLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : compraDetalle ? (
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Proveedor</Typography>
+                  <Typography fontWeight="600">{compraDetalle.proveedor_detalle?.nombre_o_razon_social}</Typography>
+                  <Typography variant="caption" color="text.secondary">{compraDetalle.proveedor_detalle?.numero_documento}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="body2" color="text.secondary">Comprobante</Typography>
+                  <Typography fontWeight="600">
+                    {compraDetalle.tipo_comprobante_nombre} {compraDetalle.serie}-{compraDetalle.numero_comprobante}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{compraDetalle.fecha_emision}</Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <Chip label={compraDetalle.tipo_pago} color={compraDetalle.tipo_pago === 'Contado' ? 'success' : 'warning'} size="small" />
+                <Chip label={compraDetalle.estado} color={compraDetalle.estado === 'Completada' ? 'primary' : 'error'} size="small" variant="outlined" />
+                {cuentaDetalle && (
+                  <Chip label={`Cuenta por pagar: ${cuentaDetalle.estado}`} size="small" variant="outlined" />
+                )}
+              </Box>
+
+              <Divider sx={{ mb: 2 }} />
+
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Repuesto</TableCell>
+                      <TableCell align="right">Cant.</TableCell>
+                      <TableCell align="right">P. Unit.</TableCell>
+                      <TableCell align="right">Subtotal</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(compraDetalle.detalles || []).map((det) => (
+                      <TableRow key={det.id}>
+                        <TableCell>
+                          <Typography variant="body2">{det.repuesto_nombre}</Typography>
+                          <Typography variant="caption" color="text.secondary">{det.repuesto_codigo}</Typography>
+                        </TableCell>
+                        <TableCell align="right">{det.cantidad}</TableCell>
+                        <TableCell align="right">S/ {parseFloat(det.precio_unitario).toFixed(2)}</TableCell>
+                        <TableCell align="right">S/ {parseFloat(det.subtotal).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                <Typography variant="body2">Subtotal: S/ {parseFloat(compraDetalle.subtotal).toFixed(2)}</Typography>
+                <Typography variant="body2">IGV: S/ {parseFloat(compraDetalle.igv).toFixed(2)}</Typography>
+                <Typography variant="subtitle1" fontWeight="bold">Total: S/ {parseFloat(compraDetalle.total).toFixed(2)}</Typography>
+              </Box>
+
+              {compraDetalle.observaciones && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="body2" color="text.secondary">Observaciones</Typography>
+                  <Typography variant="body2">{compraDetalle.observaciones}</Typography>
+                </>
+              )}
+            </Box>
+          ) : (
+            <Typography color="text.secondary">No se pudo cargar el detalle.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {compraDetalle?.tipo_pago === 'Credito' && (
+            <Button onClick={() => verCuentaPorPagar(compraDetalle)} sx={{ textTransform: 'none' }}>
+              Ver cuenta por pagar
+            </Button>
+          )}
+          <Button onClick={cerrarDetalle} sx={{ textTransform: 'none' }}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

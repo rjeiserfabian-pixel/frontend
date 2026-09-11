@@ -33,8 +33,13 @@ export const tallerService = {
     return response.data;
   },
 
-  enviarAPos: async (id) => {
-    const response = await api.post(`taller/ordenes/${id}/enviar_a_pos/`);
+  enviarAPos: async (id, sucursalId) => {
+    const response = await api.post(`taller/ordenes/${id}/enviar_a_pos/`, { sucursal_id: sucursalId });
+    return response.data;
+  },
+
+  anularOrden: async (id, motivo) => {
+    const response = await api.post(`taller/ordenes/${id}/anular/`, { motivo });
     return response.data;
   },
 

@@ -217,18 +217,22 @@ export default function MovimientosPage() {
               </IconButton>
             </span>
           </Tooltip>
-          <Button
-            variant="contained" size="small" startIcon={<Plus size={16} />}
-            onClick={() => navigate(`/cajas/movimiento/nuevo?sesion=${id}`)}
-          >
-            Registrar
-          </Button>
-          <Button
-            variant="outlined" color="error" size="small"
-            onClick={() => navigate(`/cajas/cierre/${id}`)}
-          >
-            Cerrar Caja
-          </Button>
+          {resumen?.sesion?.estado === 'ABIERTA' && (
+            <>
+              <Button
+                variant="contained" size="small" startIcon={<Plus size={16} />}
+                onClick={() => navigate(`/cajas/movimiento/nuevo?sesion=${id}`)}
+              >
+                Registrar
+              </Button>
+              <Button
+                variant="outlined" color="error" size="small"
+                onClick={() => navigate(`/cajas/cierre/${id}`)}
+              >
+                Cerrar Caja
+              </Button>
+            </>
+          )}
         </Stack>
       </Box>
 
@@ -370,7 +374,7 @@ export default function MovimientosPage() {
                   </TableCell>
                   <TableCell><EstadoBadge estado={m.estado_movimiento} /></TableCell>
                   <TableCell align="center">
-                    {m.estado_movimiento === 'PENDIENTE' && (
+                    {m.estado_movimiento === 'PENDIENTE' && resumen?.sesion?.estado === 'ABIERTA' && (
                       <Stack direction="row" spacing={1} justifyContent="center">
                         <Tooltip title="Aprobar">
                           <IconButton size="small" color="success" onClick={() => handleAprobar(m.id)}>

@@ -2,7 +2,7 @@
  * ReporteClientesPage.jsx
  * Reporte de clientes con totales de compra y saldos pendientes.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Users, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
@@ -16,16 +16,20 @@ function useReporteClientes() {
   const [result, setResult] = useState({ data: [], total: 0, total_pages: 0 });
   const [loading, setLoading] = useState(false);
   const [buscado, setBuscado] = useState(false);
+  const [error, setError] = useState(null);
 
   const buscar = useCallback(async (page = 1) => {
     setLoading(true);
     setBuscado(true);
+    setError(null);
     try {
       const res = await getReporteClientes({ ...filtros, page });
       setResult(res.data);
       setFiltros(f => ({ ...f, page }));
     } catch (err) {
       console.error('Error reporte clientes:', err);
+      setResult({ data: [], total: 0, total_pages: 0 });
+      setError(err.response?.data?.errores?.[0] || err.response?.data?.mensaje || 'No se pudo cargar el reporte de clientes.');
     } finally {
       setLoading(false);
     }
@@ -33,11 +37,11 @@ function useReporteClientes() {
 
   const exportar = useCallback(async (formato) => exportarClientes(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, result, loading, buscado, buscar, exportar };
+  return { filtros, setFiltros, result, loading, buscado, error, buscar, exportar };
 }
 
 export default function ReporteClientesPage() {
-  const { filtros, setFiltros, result, loading, buscado, buscar, exportar } = useReporteClientes();
+  const { filtros, setFiltros, result, loading, buscado, error, buscar, exportar } = useReporteClientes();
 
   return (
     <ReporteLayout
@@ -81,9 +85,12 @@ export default function ReporteClientesPage() {
         </div>
       }
     >
+      {error && (
+        <div className="empty-state" style={{ color: '#b91c1c' }}><p>{error}</p></div>
+      )}
       {!buscado ? (
         <div className="empty-state"><Users size={40} color="#cbd5e1" /><p>Aplica filtros y presiona Buscar.</p></div>
-      ) : result.data.length === 0 && !loading ? (
+      ) : error ? null : result.data.length === 0 && !loading ? (
         <div className="empty-state"><p>No se encontraron clientes con esos filtros.</p></div>
       ) : (
         <>

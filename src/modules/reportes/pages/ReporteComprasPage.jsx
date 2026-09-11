@@ -19,6 +19,7 @@ function useReporteCompras() {
   const [result, setResult] = useState({ data: [], total: 0, total_pages: 0, totales: {} });
   const [loading, setLoading] = useState(false);
   const [buscado, setBuscado] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getFiltrosAuxiliares()
@@ -29,12 +30,15 @@ function useReporteCompras() {
   const buscar = useCallback(async (page = 1) => {
     setLoading(true);
     setBuscado(true);
+    setError(null);
     try {
       const res = await getReporteCompras({ ...filtros, page });
       setResult(res.data);
       setFiltros(f => ({ ...f, page }));
     } catch (err) {
       console.error('Error reporte compras:', err);
+      setResult({ data: [], total: 0, total_pages: 0, totales: {} });
+      setError(err.response?.data?.errores?.[0] || err.response?.data?.mensaje || 'No se pudo cargar el reporte de compras.');
     } finally {
       setLoading(false);
     }
@@ -42,11 +46,11 @@ function useReporteCompras() {
 
   const exportar = useCallback(async (formato) => exportarCompras(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, proveedores, result, loading, buscado, buscar, exportar };
+  return { filtros, setFiltros, proveedores, result, loading, buscado, error, buscar, exportar };
 }
 
 export default function ReporteComprasPage() {
-  const { filtros, setFiltros, proveedores, result, loading, buscado, buscar, exportar } = useReporteCompras();
+  const { filtros, setFiltros, proveedores, result, loading, buscado, error, buscar, exportar } = useReporteCompras();
 
   const estadoPagoBadge = (estado) => {
     const map = { 'Pagada': 'badge-green', 'Parcial': 'badge-yellow', 'Pendiente': 'badge-red' };
@@ -127,9 +131,12 @@ export default function ReporteComprasPage() {
         </div>
       )}
 
+      {error && (
+        <div className="empty-state" style={{ color: '#b91c1c' }}><p>{error}</p></div>
+      )}
       {!buscado ? (
         <div className="empty-state"><Truck size={40} color="#cbd5e1" /><p>Aplica filtros y presiona Buscar.</p></div>
-      ) : result.data.length === 0 && !loading ? (
+      ) : error ? null : result.data.length === 0 && !loading ? (
         <div className="empty-state"><p>No hay compras para los filtros seleccionados.</p></div>
       ) : (
         <>

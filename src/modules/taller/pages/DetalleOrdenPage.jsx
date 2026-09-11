@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Box, Typography, Button, Paper, Grid, Divider, CircularProgress,
   Table, TableBody, TableCell, TableHead, TableRow, IconButton,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions, Chip,
-  Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup
+  Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup, Alert
 } from '@mui/material';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
+import { useSucursal } from '../../../shared/contexts/SucursalContext';
 
 const PASOS_ORDEN = [
   'RECEPCIONADO',
@@ -22,6 +23,7 @@ const PASOS_ORDEN = [
 export default function DetalleOrdenPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { activeSucursalId } = useSucursal();
   const [orden, setOrden] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -220,13 +222,52 @@ export default function DetalleOrdenPage() {
 
   const handleEnviarAPos = async () => {
     try {
-      const data = await tallerService.enviarAPos(id);
+      const data = await tallerService.enviarAPos(id, activeSucursalId);
       // Redirigir al POS (Punto de Venta) con el ticket generado
       navigate(`/ventas/pos`, { state: { autoOpenVentaId: data.venta_id } });
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Error al enviar al Punto de Venta");
+      const data = err.response?.data;
+      const mensaje = data?.error || (Array.isArray(data?.errores) && data.errores[0]) || data?.mensaje || "Error al enviar al Punto de Venta";
+      alert(mensaje);
     }
+  };
+
+  const handleAnularOrden = async () => {
+    const { value: motivo } = await Swal.fire({
+      title: 'Anular Orden de Trabajo',
+      html: 'Esta acción liberará las reservas de stock de los repuestos aprobados aún no instalados.<br/>Ingresa el motivo de la anulación:',
+      input: 'textarea',
+      inputPlaceholder: 'Motivo de la anulación...',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Anular Orden',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) return 'Debes indicar un motivo.';
+      }
+    });
+
+    if (!motivo) return;
+
+    try {
+      await tallerService.anularOrden(id, motivo);
+      Swal.fire({ icon: 'success', title: 'Orden anulada', showConfirmButton: false, timer: 1500 });
+      fetchOrden();
+    } catch (err) {
+      const data = err.response?.data;
+      const mensaje = (Array.isArray(data?.errores) && data.errores[0]) || data?.error || data?.mensaje || 'No se pudo anular la orden.';
+      Swal.fire('No se puede anular', mensaje, 'error');
+    }
+  };
+
+  const handleEnviarWhatsapp = () => {
+    const telefono = orden?.cliente_detalle?.telefono;
+    if (!telefono) return;
+    const numero = telefono.replace(/\D/g, '');
+    const mensaje = `Hola ${orden.cliente_detalle?.nombres || ''}, te escribimos sobre tu Orden de Trabajo OT-${orden.numero}. Cualquier consulta, quedamos atentos.`;
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
 
@@ -284,9 +325,13 @@ export default function DetalleOrdenPage() {
     </Box>
   );
 
-  const activeStep = PASOS_ORDEN.indexOf(orden.estado);
+  const estaCancelada = orden.estado === 'CANCELADO';
+  const activeStep = orden.estado === 'FACTURADO' ? PASOS_ORDEN.length : PASOS_ORDEN.indexOf(orden.estado);
   const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
   const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
+  const motivoCancelacion = estaCancelada
+    ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')?.observaciones
+    : null;
 
   return (
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
@@ -312,13 +357,40 @@ export default function DetalleOrdenPage() {
             <Button variant="outlined" color="inherit" onClick={handleImprimirPDF} startIcon={<Printer size={18} />} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
               Imprimir
             </Button>
-            <Button variant="contained" color="success" startIcon={<MessageSquare size={18} />} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<MessageSquare size={18} />}
+              onClick={handleEnviarWhatsapp}
+              disabled={!orden.cliente_detalle?.telefono}
+              title={!orden.cliente_detalle?.telefono ? 'El cliente no tiene teléfono registrado' : 'Enviar por WhatsApp'}
+              sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+            >
               WhatsApp
             </Button>
+            {!estaCancelada && orden.estado !== 'FACTURADO' && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<Ban size={18} />}
+                onClick={handleAnularOrden}
+                sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+              >
+                Anular
+              </Button>
+            )}
           </Box>
         </Box>
 
         <Box sx={{ width: '100%', px: 2 }}>
+          {estaCancelada ? (
+            <Alert severity="error" sx={{ borderRadius: '12px' }}>
+              <Typography fontWeight="700">Orden Cancelada</Typography>
+              <Typography variant="body2">
+                {motivoCancelacion || 'Sin motivo registrado.'}
+              </Typography>
+            </Alert>
+          ) : (
           <Stepper activeStep={activeStep} alternativeLabel>
             {PASOS_ORDEN.map((label, index) => {
               let labelDate = null;
@@ -362,6 +434,7 @@ export default function DetalleOrdenPage() {
               );
             })}
           </Stepper>
+          )}
         </Box>
       </Paper>
 

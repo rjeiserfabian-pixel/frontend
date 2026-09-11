@@ -14,6 +14,7 @@ function useReporteProductos() {
   const [result, setResult] = useState({ data: [], total: 0, total_pages: 0 });
   const [loading, setLoading] = useState(false);
   const [buscado, setBuscado] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getFiltrosAuxiliares()
@@ -24,12 +25,15 @@ function useReporteProductos() {
   const buscar = useCallback(async (page = 1) => {
     setLoading(true);
     setBuscado(true);
+    setError(null);
     try {
       const res = await getReporteProductos({ ...filtros, page });
       setResult(res.data);
       setFiltros(f => ({ ...f, page }));
     } catch (err) {
       console.error('Error reporte productos:', err);
+      setResult({ data: [], total: 0, total_pages: 0 });
+      setError(err.response?.data?.errores?.[0] || err.response?.data?.mensaje || 'No se pudo cargar el reporte de productos.');
     } finally {
       setLoading(false);
     }
@@ -37,11 +41,11 @@ function useReporteProductos() {
 
   const exportar = useCallback(async (formato) => exportarProductos(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, auxiliares, result, loading, buscado, buscar, exportar };
+  return { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar };
 }
 
 export default function ReporteProductosPage() {
-  const { filtros, setFiltros, auxiliares, result, loading, buscado, buscar, exportar } = useReporteProductos();
+  const { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar } = useReporteProductos();
 
   return (
     <ReporteLayout
@@ -92,9 +96,12 @@ export default function ReporteProductosPage() {
         </div>
       }
     >
+      {error && (
+        <div className="empty-state" style={{ color: '#b91c1c' }}><p>{error}</p></div>
+      )}
       {!buscado ? (
         <div className="empty-state"><Package size={40} color="#cbd5e1" /><p>Aplica filtros y presiona Buscar.</p></div>
-      ) : result.data.length === 0 && !loading ? (
+      ) : error ? null : result.data.length === 0 && !loading ? (
         <div className="empty-state"><p>No se encontraron productos.</p></div>
       ) : (
         <>

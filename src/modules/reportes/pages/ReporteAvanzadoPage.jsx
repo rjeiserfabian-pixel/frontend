@@ -28,6 +28,7 @@ function useReporteAvanzado() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [buscado, setBuscado] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getFiltrosAuxiliares()
@@ -38,12 +39,15 @@ function useReporteAvanzado() {
   const buscar = useCallback(async (page = 1) => {
     setLoading(true);
     setBuscado(true);
+    setError(null);
     try {
       const res = await getReporteAvanzado({ ...filtros, page });
       setResult(res.data);
       setFiltros(f => ({ ...f, page }));
     } catch (err) {
       console.error('Error reporte avanzado:', err);
+      setResult(null);
+      setError(err.response?.data?.errores?.[0] || err.response?.data?.mensaje || 'No se pudo cargar el reporte.');
     } finally {
       setLoading(false);
     }
@@ -51,7 +55,7 @@ function useReporteAvanzado() {
 
   const exportar = useCallback(async (formato) => exportarAvanzado(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, sucursales, result, loading, buscado, buscar, exportar };
+  return { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar };
 }
 
 // ── Renderizadores por tipo de reporte ───────────────────────────────────────
@@ -107,7 +111,7 @@ function RenderTabla({ data, columns, filtros, total, onPage }) {
 }
 
 export default function ReporteAvanzadoPage() {
-  const { filtros, setFiltros, sucursales, result, loading, buscado, buscar, exportar } = useReporteAvanzado();
+  const { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar } = useReporteAvanzado();
 
   const renderContenido = () => {
     if (!result) return null;
@@ -121,7 +125,9 @@ export default function ReporteAvanzadoPage() {
         { key: 'cantidad', label: 'N° Ventas' },
         { key: 'total', label: 'Total S/', render: v => `S/ ${Number(v).toFixed(2)}` },
       ];
-      return <RenderTabla data={result.data} columns={cols} filtros={filtros} total={result.data?.length} onPage={buscar} />;
+      // Este sub-reporte no pagina en el backend: es una tabla acotada por
+      // el número de sucursales, siempre trae el listado completo.
+      return <RenderTabla data={result.data} columns={cols} filtros={filtros} />;
     }
 
     if (tipo === 'ventas_detalladas') {
@@ -220,12 +226,15 @@ export default function ReporteAvanzadoPage() {
         </div>
       }
     >
+      {error && (
+        <div className="empty-state" style={{ color: '#b91c1c' }}><p>{error}</p></div>
+      )}
       {!buscado ? (
         <div className="empty-state">
           <BarChart2 size={40} color="#cbd5e1" />
           <p>Selecciona el tipo de reporte, aplica el rango de fechas y presiona Generar.</p>
         </div>
-      ) : renderContenido()}
+      ) : error ? null : renderContenido()}
     </ReporteLayout>
   );
 }

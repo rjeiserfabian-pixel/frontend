@@ -123,6 +123,7 @@ export default function DashboardCajasPage() {
   const [error, setError]     = useState(null);
 
   const cargar = useCallback(async () => {
+    if (!activeSucursalId) return;
     setLoading(true);
     setError(null);
     try {
@@ -172,13 +173,6 @@ export default function DashboardCajasPage() {
             onClick={() => navigate('/cajas/transferencias')}
           >
             Transferencias
-          </Button>
-          <Button
-            variant="contained" size="small"
-            startIcon={<Plus size={16} />}
-            onClick={() => navigate('/cajas/apertura')}
-          >
-            Nueva Caja
           </Button>
         </Stack>
       </Box>

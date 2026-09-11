@@ -23,6 +23,7 @@ function useReporteVentas() {
   const [result, setResult] = useState({ data: [], total: 0, total_pages: 0, totales: {} });
   const [loading, setLoading] = useState(false);
   const [buscado, setBuscado] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getFiltrosAuxiliares()
@@ -33,12 +34,15 @@ function useReporteVentas() {
   const buscar = useCallback(async (page = 1) => {
     setLoading(true);
     setBuscado(true);
+    setError(null);
     try {
       const res = await getReporteVentas({ ...filtros, page });
       setResult(res.data);
       setFiltros(f => ({ ...f, page }));
     } catch (err) {
       console.error('Error reporte ventas:', err);
+      setResult({ data: [], total: 0, total_pages: 0, totales: {} });
+      setError(err.response?.data?.errores?.[0] || err.response?.data?.mensaje || 'No se pudo cargar el reporte de ventas.');
     } finally {
       setLoading(false);
     }
@@ -47,12 +51,12 @@ function useReporteVentas() {
   const exportar = useCallback(async (formato) =>
     exportarVentas(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, auxiliares, result, loading, buscado, buscar, exportar };
+  return { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar };
 }
 
 // ── Componente ───────────────────────────────────────────────────────────────
 export default function ReporteVentasPage() {
-  const { filtros, setFiltros, auxiliares, result, loading, buscado, buscar, exportar } = useReporteVentas();
+  const { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar } = useReporteVentas();
 
   const estadoBadge = (estado) => {
     const map = { PAGADA: 'badge-green', AL_CREDITO: 'badge-blue', ANULADA: 'badge-red', PENDIENTE_PAGO: 'badge-yellow' };
@@ -133,12 +137,15 @@ export default function ReporteVentasPage() {
         </div>
       )}
 
+      {error && (
+        <div className="empty-state" style={{ color: '#b91c1c' }}><p>{error}</p></div>
+      )}
       {!buscado ? (
         <div className="empty-state">
           <ShoppingCart size={40} color="#cbd5e1" />
           <p>Aplica los filtros y presiona Buscar para ver el reporte.</p>
         </div>
-      ) : result.data.length === 0 && !loading ? (
+      ) : error ? null : result.data.length === 0 && !loading ? (
         <div className="empty-state"><p>No hay ventas para los filtros seleccionados.</p></div>
       ) : (
         <>

@@ -68,6 +68,11 @@ export const comprasService = {
     return response.data;
   },
 
+  anularCompra: async (id) => {
+    const response = await apiClient.post(`/compras/${id}/anular/`);
+    return response.data;
+  },
+
   // Cuentas por Pagar
   getCuentasPorPagar: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();

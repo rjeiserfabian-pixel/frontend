@@ -13,16 +13,20 @@ function useReporteVehiculos() {
   const [result, setResult] = useState({ data: [], total: 0, total_pages: 0 });
   const [loading, setLoading] = useState(false);
   const [buscado, setBuscado] = useState(false);
+  const [error, setError] = useState(null);
 
   const buscar = useCallback(async (page = 1) => {
     setLoading(true);
     setBuscado(true);
+    setError(null);
     try {
       const res = await getReporteVehiculos({ ...filtros, page });
       setResult(res.data);
       setFiltros(f => ({ ...f, page }));
     } catch (err) {
       console.error('Error reporte vehículos:', err);
+      setResult({ data: [], total: 0, total_pages: 0 });
+      setError(err.response?.data?.errores?.[0] || err.response?.data?.mensaje || 'No se pudo cargar el reporte de vehículos.');
     } finally {
       setLoading(false);
     }
@@ -30,11 +34,11 @@ function useReporteVehiculos() {
 
   const exportar = useCallback(async (formato) => exportarVehiculos(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, result, loading, buscado, buscar, exportar };
+  return { filtros, setFiltros, result, loading, buscado, error, buscar, exportar };
 }
 
 export default function ReporteVehiculosPage() {
-  const { filtros, setFiltros, result, loading, buscado, buscar, exportar } = useReporteVehiculos();
+  const { filtros, setFiltros, result, loading, buscado, error, buscar, exportar } = useReporteVehiculos();
 
   return (
     <ReporteLayout
@@ -68,12 +72,15 @@ export default function ReporteVehiculosPage() {
         </div>
       }
     >
+      {error && (
+        <div className="empty-state" style={{ color: '#b91c1c' }}><p>{error}</p></div>
+      )}
       {!buscado ? (
         <div className="empty-state">
           <Car size={40} color="#cbd5e1" />
           <p>Ingresa una placa o presiona Buscar para ver todos los vehículos.</p>
         </div>
-      ) : result.data.length === 0 && !loading ? (
+      ) : error ? null : result.data.length === 0 && !loading ? (
         <div className="empty-state"><p>No se encontraron vehículos con esos criterios.</p></div>
       ) : (
         <>

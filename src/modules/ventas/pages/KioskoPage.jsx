@@ -145,14 +145,23 @@ export const KioskoPage = () => {
       if (data) { setCliente(data); return; }
       const res = await clienteService.consultarDni(dni);
       const ext = res && res.data ? res.data : res;
-      if (ext && ext.nombres) {
-        setCliente({ nombres: ext.nombres, apellidos: ((ext.apellido_paterno || "") + " " + (ext.apellido_materno || "")).trim(), dni: ext.numeroDocumento || ext.numero_documento || dni });
-      } else {
-        Swal.fire({ icon: "error", title: "No encontrado", text: "Cliente no encontrado", background: "#1e293b", color: "#fff" });
-        setCliente(null);
-      }
+      // Si no hay datos (ni local ni en la API externa), o si la API solo trajo
+      // nombre/apellido parcial, se arma un cliente "borrador" (sin id) editable
+      // para que se pueda completar/registrar ahí mismo en vez de bloquear el flujo.
+      setCliente({
+        dni: (ext && (ext.numeroDocumento || ext.numero_documento)) || dni,
+        nombres: (ext && ext.nombres) || "",
+        apellidos: ext ? ((ext.apellido_paterno || "") + " " + (ext.apellido_materno || "")).trim() : "",
+        telefono: "",
+        direccion: (ext && ext.direccion) || "",
+        email: "",
+      });
     } catch (e) { console.error(e); Swal.fire({ icon: "error", title: "Error", text: "Error al buscar cliente.", background: "#1e293b", color: "#fff" }); }
     finally { setLoading(false); }
+  };
+
+  const actualizarCampoCliente = (campo, valor) => {
+    setCliente(prev => ({ ...(prev || {}), [campo]: valor }));
   };
 
   const onKeyPressPlaca = k => { if (placa.length < 7) setPlaca(p => p + k); };
@@ -168,13 +177,15 @@ export const KioskoPage = () => {
       const local = lista.find(v => (v.placa || "").toUpperCase() === placa.toUpperCase());
       if (local) { setVehiculo(local); return; }
       const data = await vehiculoService.buscarPorPlaca(placa);
-      if (data) { setVehiculo(data.data || data); }
-      else { Swal.fire({ icon: "error", title: "No encontrado", text: "Vehiculo no encontrado", background: "#1e293b", color: "#fff" }); setVehiculo(null); }
+      if (data && (data.data || data)) { setVehiculo(data.data || data); }
+      else { setVehiculo({ placa, marca: "", modelo: "" }); }
     } catch (e) {
+      // Placa no encontrada ni localmente ni en la API externa: en vez de
+      // bloquear el flujo, se deja continuar con un vehiculo "borrador" que
+      // solo pide marca y modelo (lo minimo para filtrar repuestos compatibles),
+      // sin volver tedioso un servicio pensado para ser rapido.
       console.error(e);
-      const msg = (e.response && e.response.data && e.response.data.error) || "No se pudo encontrar informacion de esta placa.";
-      Swal.fire({ icon: "warning", title: "No encontrado", text: msg, background: "#1e293b", color: "#fff" });
-      setVehiculo(null);
+      setVehiculo({ placa, marca: "", modelo: "" });
     } finally { setLoading(false); }
   };
 
@@ -202,32 +213,71 @@ export const KioskoPage = () => {
   const generarTicket = async () => {
     try {
       Swal.fire({ title: "Generando Ticket...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      
+
+      // 1. Resolver cliente (crear si es nuevo/borrador, es decir sin id)
       let finalClienteId = cliente ? cliente.id : null;
       if (!finalClienteId && cliente && cliente.dni) {
-        try {
-          const nuevo = { dni: cliente.dni, nombres: cliente.nombres, apellidos: cliente.apellidos || "-", direccion: "", telefono: "", email: "" };
-          const resCli = await clienteService.crear(nuevo);
-          finalClienteId = resCli.id;
-        } catch (errCli) {
-          console.error("Error al guardar cliente nuevo", errCli);
+        const nuevo = {
+          dni: cliente.dni,
+          nombres: cliente.nombres,
+          apellidos: cliente.apellidos || "-",
+          direccion: cliente.direccion || "",
+          telefono: cliente.telefono || "",
+          email: cliente.email || "",
+        };
+        const resCli = await clienteService.crear(nuevo);
+        finalClienteId = resCli.id;
+      }
+      if (!finalClienteId) {
+        throw new Error("No se pudo identificar al cliente.");
+      }
+
+      // 2. Resolver vehículo: si ya existe, vincular el cliente actual si aún no
+      // lo estaba (relación muchos-a-muchos: un vehículo puede tener varios
+      // clientes con el tiempo); si es nuevo, crearlo ya vinculado.
+      let finalVehiculoId = null;
+      if (vehiculo) {
+        if (vehiculo.id) {
+          finalVehiculoId = vehiculo.id;
+          const yaVinculado = Array.isArray(vehiculo.clientes) && vehiculo.clientes.includes(finalClienteId);
+          if (!yaVinculado) {
+            await vehiculoService.vincularCliente(vehiculo.id, finalClienteId);
+          }
+        } else {
+          const nuevoVehiculo = {
+            placa: vehiculo.placa || placa,
+            marca: vehiculo.marca || "",
+            modelo: vehiculo.modelo || "",
+            clase: vehiculo.clase || null,
+            tipo: vehiculo.tipo || null,
+            uso: vehiculo.uso || null,
+            anio_fabricacion: vehiculo.anio_fabricacion || vehiculo.anio || null,
+            numero_asientos: vehiculo.numero_asientos || null,
+            numero_motor: vehiculo.numero_motor || null,
+            numero_serie: vehiculo.numero_serie || null,
+            color: vehiculo.color || null,
+            kilometraje_actual: kilometraje ? parseInt(kilometraje, 10) : null,
+            clientes: [finalClienteId],
+          };
+          const resVeh = await vehiculoService.createVehiculo(nuevoVehiculo);
+          finalVehiculoId = resVeh.id;
         }
       }
 
       const payload = {
         cliente_id: finalClienteId,
-        vehiculo_id: vehiculo ? (vehiculo.id || null) : null,
+        vehiculo_id: finalVehiculoId,
         sucursal_id: 1,
         kilometraje: kilometraje ? parseInt(kilometraje, 10) : null,
         detalles: carrito.map(c => ({ repuesto_id: c.id, cantidad: parseFloat(c.cantidad || 1), precio_unitario: parseFloat(c.precio_lista || c.precio || 0) }))
       };
       await ventasService.generarTicket(payload);
       Swal.close();
-      
+
       setTimeout(() => { handlePrint(); }, 100);
     } catch (e) {
       console.error(e);
-      Swal.fire({ icon: "error", title: "Error", text: "Hubo un error al generar el ticket.", background: "#1e293b", color: "#fff" });
+      Swal.fire({ icon: "error", title: "Error", text: "Hubo un error al generar el ticket. Por favor, avisa al personal.", background: "#1e293b", color: "#fff" });
     }
   };
 
@@ -287,7 +337,7 @@ export const KioskoPage = () => {
                 </div>
                 <div className="w-full xl:w-1/2 flex flex-col">
                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white"><User className="text-[#e50914]" size={20}/> Datos encontrados</h3>
-                  {cliente ? (
+                  {cliente && cliente.id ? (
                     <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center">
                       <div className="w-24 h-24 bg-[#e50914] rounded-full flex items-center justify-center mb-6"><User size={48} className="text-white" /></div>
                       <div className="w-full grid grid-cols-[100px_1fr] gap-y-4 text-left border border-slate-800 p-6 rounded-2xl bg-[#0b0f19]">
@@ -296,6 +346,40 @@ export const KioskoPage = () => {
                         <span className="text-slate-500 font-medium">DNI:</span><span className="font-bold text-white">{cliente.dni}</span>
                       </div>
                       <button onClick={handleNext} className="mt-8 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all">Siguiente <ArrowRight size={24} /></button>
+                    </div>
+                  ) : cliente ? (
+                    <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center">
+                      <div className="w-16 h-16 bg-[#e50914] rounded-full flex items-center justify-center mb-4"><User size={32} className="text-white" /></div>
+                      <p className="text-slate-400 text-sm mb-4 text-center">No encontramos este DNI registrado. Completa los datos para registrar al cliente:</p>
+                      <div className="w-full flex flex-col gap-3 text-left">
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">DNI</label>
+                          <input type="text" readOnly value={cliente.dni || dni} className="w-full bg-[#0b0f19] border border-slate-700 text-white py-2 px-4 rounded-lg font-bold" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Nombres <span className="text-[#e50914]">*</span></label>
+                          <input type="text" value={cliente.nombres} onChange={e => actualizarCampoCliente('nombres', e.target.value)} placeholder="Nombres" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Apellidos <span className="text-[#e50914]">*</span></label>
+                          <input type="text" value={cliente.apellidos} onChange={e => actualizarCampoCliente('apellidos', e.target.value)} placeholder="Apellidos" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Teléfono</label>
+                          <input type="text" value={cliente.telefono} onChange={e => actualizarCampoCliente('telefono', e.target.value)} placeholder="Teléfono (opcional)" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Dirección</label>
+                          <input type="text" value={cliente.direccion} onChange={e => actualizarCampoCliente('direccion', e.target.value)} placeholder="Dirección (opcional)" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleNext}
+                        disabled={!cliente.nombres?.trim() || !cliente.apellidos?.trim()}
+                        className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
+                      >
+                        Siguiente <ArrowRight size={24} />
+                      </button>
                     </div>
                   ) : (
                     <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-8 rounded-3xl flex flex-col items-center justify-center text-center h-[350px]">
@@ -327,7 +411,7 @@ export const KioskoPage = () => {
                 </div>
                 <div className="w-full xl:w-1/2 flex flex-col">
                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white"><Car className="text-[#e50914]" size={20}/> Datos del vehiculo</h3>
-                  {vehiculo ? (
+                  {vehiculo && vehiculo.marca ? (
                     <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center">
                       <div className="w-24 h-24 bg-[#e50914] rounded-full flex items-center justify-center mb-6"><Car size={48} className="text-white" /></div>
                       <div className="w-full grid grid-cols-2 gap-4 text-left border border-slate-800 p-6 rounded-2xl bg-[#0b0f19] text-sm overflow-y-auto max-h-[260px]">
@@ -367,6 +451,46 @@ export const KioskoPage = () => {
                       <button
                         onClick={handleNext}
                         disabled={!kilometraje}
+                        className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
+                      >
+                        Buscar Repuestos <ArrowRight size={24} />
+                      </button>
+                    </div>
+                  ) : vehiculo ? (
+                    <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center">
+                      <div className="w-16 h-16 bg-[#e50914] rounded-full flex items-center justify-center mb-4"><Car size={32} className="text-white" /></div>
+                      <p className="text-slate-400 text-sm mb-4 text-center">No encontramos esta placa registrada. Ingresa marca y modelo para poder mostrarte los repuestos compatibles:</p>
+                      <div className="w-full flex flex-col gap-3 text-left">
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Placa</label>
+                          <input type="text" readOnly value={vehiculo.placa || placa} className="w-full bg-[#0b0f19] border border-slate-700 text-white py-2 px-4 rounded-lg font-bold uppercase" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Marca <span className="text-[#e50914]">*</span></label>
+                          <input type="text" value={vehiculo.marca} onChange={e => setVehiculo(prev => ({ ...prev, marca: e.target.value }))} placeholder="Ej: Toyota" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-medium mb-1">Modelo <span className="text-[#e50914]">*</span></label>
+                          <input type="text" value={vehiculo.modelo} onChange={e => setVehiculo(prev => ({ ...prev, modelo: e.target.value }))} placeholder="Ej: Yaris" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-slate-400 text-xs font-medium mb-1"><span className="text-[#e50914] font-bold">*</span> Kilometraje actual</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              value={kilometraje}
+                              onChange={e => setKilometraje(e.target.value.replace(/[^0-9]/g, ""))}
+                              placeholder="Ej: 35000"
+                              className="flex-1 bg-[#0b0f19] border border-slate-700 text-white font-mono py-2 px-4 rounded-lg focus:outline-none focus:border-[#e50914] placeholder-slate-600"
+                            />
+                            <span className="flex items-center text-slate-400 font-medium px-2 text-sm">km</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleNext}
+                        disabled={!vehiculo.marca?.trim() || !vehiculo.modelo?.trim() || !kilometraje}
                         className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
                       >
                         Buscar Repuestos <ArrowRight size={24} />
