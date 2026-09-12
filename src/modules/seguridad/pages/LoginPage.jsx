@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../core/api/axios';
+import { authStorage } from '../../../core/auth/authStorage';
 import {
   Users,
   ClipboardList,
@@ -43,8 +44,13 @@ const features = [
 ───────────────────────────────────────────── */
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg]         = useState('');
+  const [errorMsg, setErrorMsg] = useState(
+    location.state?.idleTimeout
+      ? 'Tu sesión se cerró por inactividad. Vuelve a iniciar sesión.'
+      : ''
+  );
 
   const {
     register,
@@ -61,9 +67,7 @@ export default function LoginPage() {
         password: data.password,
       });
       const { access, refresh, usuario } = res.data.data;
-      localStorage.setItem('accessToken',  access);
-      localStorage.setItem('refreshToken', refresh);
-      localStorage.setItem('user',         JSON.stringify(usuario));
+      authStorage.setSession({ access, refresh, user: usuario });
       window.location.href = '/dashboard';
     } catch (error) {
       if (error.response?.data?.errores?.non_field_errors) {

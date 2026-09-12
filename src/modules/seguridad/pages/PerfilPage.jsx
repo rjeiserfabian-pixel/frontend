@@ -5,6 +5,7 @@ import {
 import { Save, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
+import { authStorage } from '../../../core/auth/authStorage';
 
 export const PerfilPage = () => {
   const [loading, setLoading] = useState(true);
@@ -106,14 +107,14 @@ export const PerfilPage = () => {
       const resData = res.data.data;
       
       // Update local storage user data
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const userData = authStorage.getUser();
       userData.nombre = resData.nombres;
       userData.apellidos = resData.apellidos;
       userData.email = resData.email;
       if (resData.avatar_url) {
         userData.avatar_url = resData.avatar_url;
       }
-      localStorage.setItem('user', JSON.stringify(userData));
+      authStorage.setUser(userData);
 
       Swal.fire('Éxito', 'Perfil actualizado correctamente.', 'success');
       

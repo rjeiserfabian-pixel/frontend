@@ -1,7 +1,8 @@
 import { Users, ShieldAlert, Activity, TrendingUp } from 'lucide-react';
+import { authStorage } from '../../../core/auth/authStorage';
 
 export default function DashboardPage() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = authStorage.getUser();
 
   const stats = [
     { title: 'Usuarios Activos', value: '12', icon: <Users size={24} />, isPrimary: true },

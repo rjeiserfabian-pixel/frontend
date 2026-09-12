@@ -11,11 +11,14 @@ import {
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import api from '../../core/api/axios';
+import { authStorage } from '../../core/auth/authStorage';
 import { useSucursal } from '../contexts/SucursalContext';
+import { useIdleLogout } from '../hooks/useIdleLogout';
 import { Select, FormControl } from '@mui/material';
 
 const DRAWER_WIDTH = 280;
 const DRAWER_MINI_WIDTH = 80;
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // Cierra sesión tras 15 min sin actividad
 
 // Componente para renderizar iconos dinámicamente
 const DynamicIcon = ({ name, size = 22 }) => {
@@ -141,19 +144,19 @@ export default function DashboardLayout() {
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+  const handleLogout = useCallback((idle = false) => {
+    authStorage.clear();
+    navigate('/login', idle ? { state: { idleTimeout: true } } : undefined);
+  }, [navigate]);
+
+  useIdleLogout(IDLE_TIMEOUT_MS, () => handleLogout(true));
 
   // useCallback para estabilizar la referencia de la función
   const toggleModule = useCallback((moduleId) => {
     setOpenModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }));
   }, []);
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = authStorage.getUser();
 
   const getCurrentTitle = () => {
     for (const item of menuItems) {
@@ -326,7 +329,7 @@ export default function DashboardLayout() {
                 <ListItemIcon><Settings size={20} /></ListItemIcon>
                 Configuración
               </MenuItem>
-              <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: 'error.main' }}>
+              <MenuItem onClick={() => handleLogout()} sx={{ py: 1.5, color: 'error.main' }}>
                 <ListItemIcon><LogOut size={20} color={theme.palette.error.main} /></ListItemIcon>
                 Cerrar Sesión
               </MenuItem>

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authStorage } from '../../../core/auth/authStorage';
 
 // Usar variable de entorno si existe, de lo contrario localhost para dev local
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -11,9 +12,9 @@ const apiClient = axios.create({
   },
 });
 
-// Interceptor para inyectar token de SimpleJWT si está en localStorage
+// Interceptor para inyectar token de SimpleJWT
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = authStorage.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

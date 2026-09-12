@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../../core/api/axios';
+import { authStorage } from '../../core/auth/authStorage';
 
 const SucursalContext = createContext();
 
@@ -12,7 +13,7 @@ export const SucursalProvider = ({ children }) => {
 
   useEffect(() => {
     // Solo intentar cargar si hay token de acceso (el usuario ha iniciado sesión)
-    const token = localStorage.getItem('accessToken');
+    const token = authStorage.getAccessToken();
     if (!token) {
       setLoadingContext(false);
       return;

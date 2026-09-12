@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authStorage } from '../../../core/auth/authStorage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -11,7 +12,7 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = authStorage.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,7 +28,7 @@ const cuentasApiClient = axios.create({
   },
 });
 cuentasApiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = authStorage.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -42,7 +43,7 @@ const pagosApiClient = axios.create({
   },
 });
 pagosApiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = authStorage.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

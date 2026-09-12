@@ -217,9 +217,15 @@ export default function NuevaOrdenPage() {
                     onOpen={() => {
                       if (clientes.length === 0) fetchClientes('');
                     }}
-                    onInputChange={(e, newInputValue) => {
+                    onInputChange={(e, newInputValue, reason) => {
                       setClienteBusqueda(newInputValue);
-                      fetchClientes(newInputValue);
+                      // 'reset' ocurre cuando MUI sincroniza el texto tras una selección
+                      // (o al recalcular el value); si volvemos a buscar en ese momento con
+                      // el label completo, el backend no lo encuentra, la lista se vacía,
+                      // el value pasa a null, MUI vuelve a resetear el input... y entra en loop.
+                      if (reason === 'input' || reason === 'clear') {
+                        fetchClientes(newInputValue);
+                      }
                     }}
                     getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
                     onChange={(e, val) => {
@@ -261,9 +267,11 @@ export default function NuevaOrdenPage() {
                     onOpen={() => {
                       if (vehiculos.length === 0) fetchVehiculos('');
                     }}
-                    onInputChange={(e, newInputValue) => {
+                    onInputChange={(e, newInputValue, reason) => {
                       setVehiculoBusqueda(newInputValue);
-                      fetchVehiculos(newInputValue);
+                      if (reason === 'input' || reason === 'clear') {
+                        fetchVehiculos(newInputValue);
+                      }
                     }}
                     getOptionLabel={(option) => `${option.placa} - ${option.marca} ${option.modelo}`}
                     onChange={(e, val) => {

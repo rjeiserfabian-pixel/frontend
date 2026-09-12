@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authStorage } from '../auth/authStorage';
 
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/', // Cambiar en producción con variable de entorno
@@ -10,7 +11,7 @@ const api = axios.create({
 // Interceptor para agregar el token a todas las peticiones
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = authStorage.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,7 +28,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = authStorage.getRefreshToken();
         if (!refreshToken) throw new Error('No refresh token');
 
         // Intenta renovar el access token
@@ -36,15 +37,14 @@ api.interceptors.response.use(
         });
 
         const newAccessToken = res.data.access;
-        localStorage.setItem('accessToken', newAccessToken);
+        authStorage.setAccessToken(newAccessToken);
 
         // Reintenta la petición original con el nuevo token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axios(originalRequest);
       } catch (refreshError) {
         // Si el refresh token falló o expiró, forzar logout
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        authStorage.clear();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
