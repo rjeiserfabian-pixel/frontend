@@ -5,11 +5,12 @@ import {
   TableContainer, TableHead, TableRow, Chip, IconButton, 
   CircularProgress, Grid, TextField, MenuItem, Select, InputLabel, 
   FormControl, Divider, Tabs, Tab, Autocomplete, InputAdornment,
-  Dialog, DialogTitle, DialogContent, DialogActions, TablePagination
+  Dialog, DialogContent, DialogActions, TablePagination
 } from '@mui/material';
-import { 
+import {
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
-  CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer, Eye
+  CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer, Eye,
+  Package, Receipt, Wallet, Coins
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ventasService } from './../../ventas/services/ventasApi';
@@ -65,6 +66,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
     switch(estado) {
       case 'PRE_VENTA': return <Chip label="Pendiente" color="warning" size="small" />;
       case 'PAGADA': return <Chip label="Completado" color="success" size="small" />;
+      case 'AL_CREDITO': return <Chip label="Crédito" color="info" size="small" />;
       case 'CANCELADA': return <Chip label="Cancelado" color="error" size="small" />;
       default: return <Chip label={estado} color="default" size="small" />;
     }
@@ -151,7 +153,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                           >
                             <Eye size={20} />
                           </IconButton>
-                          {(venta.estado === 'PAGADA' || venta.estado === 'COMPLETADA') ? (
+                          {(venta.estado === 'PAGADA' || venta.estado === 'COMPLETADA' || venta.estado === 'AL_CREDITO') ? (
                             <IconButton
                               title="Reimprimir comprobante"
                               sx={{ color: '#7c3aed' }}
@@ -189,85 +191,205 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
       </Paper>
 
       {/* MODAL PARA VER DETALLES */}
-      <Dialog open={Boolean(selectedSaleDetails)} onClose={() => setSelectedSaleDetails(null)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FileText size={20} />
-          Detalles de la Venta #{selectedSaleDetails?.id}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
+      <Dialog
+        open={Boolean(selectedSaleDetails)}
+        onClose={() => setSelectedSaleDetails(null)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+      >
+        <Box sx={{
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          color: 'white', px: 3, py: 2.5,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ p: 1.2, bgcolor: 'rgba(255,255,255,0.18)', borderRadius: 2, display: 'flex' }}>
+              <Receipt size={22} />
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
+                Venta #{selectedSaleDetails?.id}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                {selectedSaleDetails?.tipo_comprobante_nombre || 'Comprobante'} {selectedSaleDetails?.serie_correlativo || ''}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton onClick={() => setSelectedSaleDetails(null)} sx={{ color: 'white' }}>
+            <X size={20} />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
+          {/* CLIENTE Y VENTA */}
+          <Grid container spacing={2} sx={{ mb: 2.5 }}>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="primary" gutterBottom>Datos del Cliente</Typography>
-              <Typography variant="body2"><strong>Nombres:</strong> {selectedSaleDetails?.cliente_nombre || 'General'} {selectedSaleDetails?.cliente_apellidos && selectedSaleDetails.cliente_apellidos !== '-' ? selectedSaleDetails.cliente_apellidos : ''}</Typography>
-              <Typography variant="body2"><strong>DNI/RUC:</strong> {selectedSaleDetails?.cliente_dni || '-'}</Typography>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+                <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
+                  <User size={15} /> Cliente
+                </Typography>
+                <Typography variant="body1" fontWeight={700} sx={{ mt: 0.5 }}>
+                  {selectedSaleDetails?.cliente_nombre || 'General'} {selectedSaleDetails?.cliente_apellidos && selectedSaleDetails.cliente_apellidos !== '-' ? selectedSaleDetails.cliente_apellidos : ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  DNI/RUC: {selectedSaleDetails?.cliente_dni || '-'}
+                </Typography>
+              </Paper>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle2" color="primary" gutterBottom>Datos de la Venta</Typography>
-              <Typography variant="body2"><strong>Estado:</strong> {selectedSaleDetails?.estado}</Typography>
-              <Typography variant="body2"><strong>Fecha:</strong> {formatearFecha(selectedSaleDetails?.creado_en)}</Typography>
-              <Typography variant="body2"><strong>Comprobante:</strong> {selectedSaleDetails?.tipo_comprobante_nombre || '-'} {selectedSaleDetails?.serie_correlativo || ''}</Typography>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
+                    <Calendar size={15} /> Venta
+                  </Typography>
+                  {getStatusChip(selectedSaleDetails?.estado)}
+                </Box>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>{formatearFecha(selectedSaleDetails?.creado_en)}</Typography>
+              </Paper>
             </Grid>
           </Grid>
-          <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>Ítems Comprados</Typography>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Producto</strong></TableCell>
-                <TableCell align="center"><strong>Cant.</strong></TableCell>
-                <TableCell align="right"><strong>P. Unit.</strong></TableCell>
-                <TableCell align="right"><strong>Subtotal</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {selectedSaleDetails?.detalles && selectedSaleDetails.detalles.length > 0 ? (
-                selectedSaleDetails.detalles.map((item, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell>{item.descripcion_servicio || item.repuesto_nombre || `Producto ${item.repuesto || 'Adicional'}`}</TableCell>
-                    <TableCell align="center">{item.cantidad}</TableCell>
-                    <TableCell align="right">S/ {parseFloat(item.precio_unitario || 0).toFixed(2)}</TableCell>
-                    <TableCell align="right">S/ {(parseFloat(item.precio_unitario || 0) * item.cantidad).toFixed(2)}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 2 }}>No hay detalles disponibles para esta venta.</TableCell>
+
+          {/* ITEMS */}
+          <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden', mb: 2.5, bgcolor: 'white' }}>
+            <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+              <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
+                <Package size={15} /> Ítems Comprados
+              </Typography>
+            </Box>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#f1f5f9' }}>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Producto</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Cant.</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>U.M.</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>P. Unit.</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Subtotal</TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle2" color="primary" gutterBottom>Pagos y Totales</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={7}>
-                {selectedSaleDetails?.estado === 'AL_CREDITO' ? (
-                   <Typography variant="body2"><strong>Condición de Pago:</strong> Crédito</Typography>
+              </TableHead>
+              <TableBody>
+                {selectedSaleDetails?.detalles && selectedSaleDetails.detalles.length > 0 ? (
+                  selectedSaleDetails.detalles.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell sx={{ fontSize: '0.9rem' }}>{item.descripcion_servicio || item.repuesto_nombre || `Producto ${item.repuesto || 'Adicional'}`}</TableCell>
+                      <TableCell align="center" sx={{ fontSize: '0.9rem' }}>{item.cantidad}</TableCell>
+                      <TableCell align="center" sx={{ fontSize: '0.9rem' }}>{!item.descripcion_servicio ? (item.repuesto_unidad_medida || 'NIU') : 'ZZ'}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '0.9rem' }}>S/ {parseFloat(item.precio_unitario || 0).toFixed(2)}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>S/ {(parseFloat(item.precio_unitario || 0) * item.cantidad).toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))
                 ) : (
-                  <Box>
-                    <Typography variant="body2" sx={{ mb: 0.5 }}><strong>Condición de Pago:</strong> Contado</Typography>
-                    {selectedSaleDetails?.pagos && selectedSaleDetails.pagos.length > 0 && (
-                      <Box sx={{ pl: 1 }}>
-                        {selectedSaleDetails.pagos.map((p, i) => (
-                          <Typography key={i} variant="caption" display="block" color="textSecondary">
-                            • {p.metodo_pago}: S/ {parseFloat(p.monto).toFixed(2)} {p.referencia ? `(Ref: ${p.referencia})` : ''}
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 2 }}>No hay detalles disponibles para esta venta.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Paper>
+
+          {/* PAGOS Y TOTALES */}
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, bgcolor: 'white' }}>
+            <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5, mb: 1 }}>
+              <Wallet size={15} /> Pagos y Totales
+            </Typography>
+            {(() => {
+              // La venta se contabiliza siempre en soles; si se cobró en otra
+              // moneda (USD/EUR), mostramos también el equivalente usando el
+              // TC guardado en la propia venta, igual que en el comprobante impreso.
+              const esMonedaExtranjera = selectedSaleDetails?.moneda && selectedSaleDetails.moneda !== 'PEN';
+              const simboloDetalle = selectedSaleDetails?.moneda === 'EUR' ? '€' : '$';
+              const tcDetalle = parseFloat(selectedSaleDetails?.tipo_cambio) || 1;
+              const montoRecibido = parseFloat(selectedSaleDetails?.monto_recibido || 0);
+              const vuelto = parseFloat(selectedSaleDetails?.vuelto || 0);
+              const totalVenta = parseFloat(selectedSaleDetails?.total || 0);
+              const esCredito = selectedSaleDetails?.estado === 'AL_CREDITO';
+              return (
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={7}>
+                    <Chip
+                      size="small"
+                      icon={esCredito ? <CreditCard size={14} /> : <Banknote size={14} />}
+                      label={esCredito ? 'Venta al Crédito' : 'Venta al Contado'}
+                      color={esCredito ? 'info' : 'default'}
+                      sx={{ fontWeight: 600, mb: 1.5 }}
+                    />
+                    {!esCredito && (
+                      <Box>
+                        {esMonedaExtranjera && (
+                          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1, color: 'text.secondary' }}>
+                            <Coins size={14} /> Cobrado en {selectedSaleDetails.moneda} · TC {tcDetalle.toFixed(4)}
                           </Typography>
-                        ))}
+                        )}
+                        {selectedSaleDetails?.pagos && selectedSaleDetails.pagos.length > 0 && (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                            {selectedSaleDetails.pagos.map((p, i) => {
+                              const montoPago = parseFloat(p.monto) || 0;
+                              return (
+                                <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1px dashed #e2e8f0', pb: 0.75 }}>
+                                  <Box>
+                                    <Typography variant="body2" fontWeight={600}>{p.metodo_pago}</Typography>
+                                    {p.referencia && (
+                                      <Typography variant="caption" color="text.secondary">Ref: {p.referencia}</Typography>
+                                    )}
+                                  </Box>
+                                  <Box sx={{ textAlign: 'right' }}>
+                                    <Typography variant="body2" fontWeight={700}>S/ {montoPago.toFixed(2)}</Typography>
+                                    {esMonedaExtranjera && (
+                                      <Typography variant="caption" color="text.secondary" display="block">
+                                        ≈ {simboloDetalle} {(montoPago / tcDetalle).toFixed(2)}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        )}
                       </Box>
                     )}
-                  </Box>
-                )}
-              </Grid>
-              <Grid item xs={12} sm={5} sx={{ textAlign: 'right' }}>
-                <Typography variant="body2"><strong>Monto Recibido:</strong> S/ {parseFloat(selectedSaleDetails?.monto_recibido || 0).toFixed(2)}</Typography>
-                <Typography variant="body2"><strong>Vuelto:</strong> S/ {parseFloat(selectedSaleDetails?.vuelto || 0).toFixed(2)}</Typography>
-                <Typography variant="h6" fontWeight="bold" sx={{ mt: 1, color: 'primary.main' }}>
-                  Total: S/ {parseFloat(selectedSaleDetails?.total || 0).toFixed(2)}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={5}>
+                    <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2.5, p: 2 }}>
+                      {!esCredito && (
+                        <>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="body2" color="text.secondary">Recibido</Typography>
+                            <Typography variant="body2" fontWeight={600}>S/ {montoRecibido.toFixed(2)}</Typography>
+                          </Box>
+                          {esMonedaExtranjera && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary">Recibido en {simboloDetalle}</Typography>
+                              <Typography variant="caption" color="text.secondary">{simboloDetalle} {(montoRecibido / tcDetalle).toFixed(2)}</Typography>
+                            </Box>
+                          )}
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: esMonedaExtranjera ? 0.5 : 1.5 }}>
+                            <Typography variant="body2" color="text.secondary">Vuelto</Typography>
+                            <Typography variant="body2" fontWeight={600}>S/ {vuelto.toFixed(2)}</Typography>
+                          </Box>
+                          {esMonedaExtranjera && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                              <Typography variant="caption" color="text.secondary">Total en {simboloDetalle}</Typography>
+                              <Typography variant="caption" color="text.secondary">{simboloDetalle} {(totalVenta / tcDetalle).toFixed(2)}</Typography>
+                            </Box>
+                          )}
+                          <Divider sx={{ mb: 1.5, borderColor: '#bfdbfe' }} />
+                        </>
+                      )}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body1" fontWeight={700}>TOTAL</Typography>
+                        <Typography variant="h5" fontWeight={800} color="primary.main">
+                          S/ {totalVenta.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                </Grid>
+              );
+            })()}
+          </Paper>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSelectedSaleDetails(null)} color="primary">
+        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
+          <Button onClick={() => setSelectedSaleDetails(null)} variant="outlined" color="primary" sx={{ borderRadius: 2, fontWeight: 700 }}>
             Cerrar
           </Button>
         </DialogActions>
@@ -599,11 +721,21 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const { activeSucursalId } = useSucursal();
   const [condicionPago, setCondicionPago] = useState('CONTADO');
+  // El vencimiento del crédito no puede ser hoy (ver validación al confirmar),
+  // así que el valor por defecto ya nace en mañana para no forzar al cajero
+  // a corregirlo a mano en cada venta al crédito.
   const [fechaLimite, setFechaLimite] = useState(() => {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    d.setDate(d.getDate() + 1);
     return d.toISOString().split('T')[0];
   });
+  const fechaMinimaCredito = (() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  })();
   const [procesando, setProcesando] = useState(false);
   const [carrito, setCarrito] = useState(() => {
     if (initialOrder && initialOrder.detalles) {
@@ -639,6 +771,15 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const total = carrito.reduce((sum, item) => sum + ((parseFloat(item.precio_venta) || 0) * item.cantidad), 0);
   const totalSinDescuento = carrito.reduce((sum, item) => sum + ((parseFloat(item.precio_lista) || parseFloat(item.precio_venta) || 0) * item.cantidad), 0);
   const totalDescuentos = totalSinDescuento - total;
+
+  // El total y los precios del carrito viven SIEMPRE en soles (es la moneda
+  // contable/tributaria del sistema). El dólar es solo una facilidad de cobro:
+  // "tc" convierte lo que el cajero recibe/tipea en la moneda elegida hacia
+  // soles para el registro contable, y "totalEnMoneda" es el equivalente en
+  // esa moneda solo para referencia del cajero y del cliente.
+  const tc = moneda === 'PEN' ? 1 : (parseFloat(tipoCambio) || 1);
+  const simboloMoneda = moneda === 'PEN' ? 'S/' : (moneda === 'EUR' ? '€' : '$');
+  const totalEnMoneda = moneda === 'PEN' ? total : total / tc;
 
   useEffect(() => {
     const fetchDatosInit = async () => {
@@ -698,20 +839,32 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
 
   useEffect(() => {
     if (pagos.length === 1 && total > 0) {
-      setPagos(prev => [{ ...prev[0], monto: total }]);
+      // Redondeamos hacia ARRIBA al centavo: si redondeáramos al más cercano,
+      // 70 / 3.373 = 20.753 → "20.75", y 20.75 × 3.373 = 69.99 (menos que el
+      // total). Redondear hacia arriba garantiza que el monto sugerido
+      // siempre alcance para cubrir el total exacto en soles.
+      const montoSugerido = Math.ceil(totalEnMoneda * 100) / 100;
+      setPagos(prev => [{ ...prev[0], monto: montoSugerido.toFixed(2) }]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total]);
+  }, [total, moneda, tipoCambio]);
+
+  const tcObtenidoRef = React.useRef(false);
 
   useEffect(() => {
     const fetchTC = async () => {
       if (moneda !== 'PEN') {
+        // El tipo de cambio SUNAT no cambia dentro del mismo día: si ya lo
+        // obtuvimos una vez en esta sesión de POS, no repetimos la petición
+        // cada vez que el usuario alterna entre soles y dólares.
+        if (tcObtenidoRef.current) return;
         setCargandoTC(true);
         try {
           const api = (await import('../../../core/api/axios')).default;
           const res = await api.get('/ventas/tipo-cambio/');
           if (res.data && res.data.venta) {
             setTipoCambio(parseFloat(res.data.venta));
+            tcObtenidoRef.current = true;
           }
         } catch (error) {
           console.error("Error al obtener TC", error);
@@ -928,11 +1081,8 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       return;
     }
 
-    // Verificar que haya una sesión de caja abierta
-    const sesionStr = localStorage.getItem('sesion_caja_activa');
-    const sesionActiva = sesionStr ? JSON.parse(sesionStr) : null;
-    if (!sesionActiva?.id) {
-      Swal.fire('Caja Cerrada', 'Debe aperturar su caja en "Gestión de Caja" antes de procesar una venta.', 'warning');
+    if (condicionPago === 'CREDITO' && (!fechaLimite || fechaLimite < fechaMinimaCredito)) {
+      Swal.fire('Atención', 'La fecha de vencimiento del crédito no puede ser hoy: debe ser al menos mañana.', 'warning');
       return;
     }
 
@@ -941,22 +1091,37 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       let vuelto = 0;
 
       if (condicionPago === 'CONTADO') {
-        const sumPagos = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
-        if (sumPagos < total - 0.01) {
-          Swal.fire('Atención', `El monto pagado (S/ ${sumPagos.toFixed(2)}) es menor al total de la venta (S/ ${total.toFixed(2)}).`, 'warning');
+        // pago.monto está tipeado en la moneda elegida (moneda). El sistema
+        // contabiliza siempre en soles, así que aquí se convierte con "tc"
+        // antes de comparar contra el total y de calcular vuelto/monto recibido.
+        const sumPagosMoneda = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
+        const sumPagosSoles = sumPagosMoneda * tc;
+        // Al pagar en moneda extranjera, el cajero solo puede tipear centavos
+        // de esa moneda (2 decimales), lo que introduce hasta medio centavo de
+        // esa moneda de margen de redondeo al convertir a soles (medio
+        // centavo × TC). Con soles puros basta 1 céntimo de tolerancia.
+        const tolerancia = 0.01 + (moneda !== 'PEN' ? tc * 0.005 : 0);
+        if (sumPagosSoles < total - tolerancia) {
+          const detalleMoneda = moneda !== 'PEN' ? ` (${simboloMoneda} ${sumPagosMoneda.toFixed(2)} al TC ${tc})` : '';
+          Swal.fire('Atención', `El monto pagado (S/ ${sumPagosSoles.toFixed(2)}${detalleMoneda}) es menor al total de la venta (S/ ${total.toFixed(2)}).`, 'warning');
           return;
         }
 
-        montoRecibido = sumPagos;
-        vuelto = Math.max(0, sumPagos - total);
+        // monto_recibido queda igual a la suma real de los pagos (para que
+        // cuadre centavo a centavo con lo que se registra en caja). Si por
+        // redondeo de moneda queda un céntimo por debajo del total, se
+        // tolera: es un artefacto de conversión, no una deuda real.
+        montoRecibido = sumPagosSoles;
+        vuelto = Math.max(0, sumPagosSoles - total);
 
         if (vuelto > 0) {
-          let vueltoRestante = vuelto;
+          // El vuelto se descuenta en la misma moneda en la que se tipeó cada pago.
+          let vueltoRestanteMoneda = vuelto / tc;
           pagosFinales = pagos.map(p => {
             const montoOriginal = parseFloat(p.monto) || 0;
-            if (vueltoRestante > 0 && montoOriginal > 0) {
-              const restar = Math.min(montoOriginal, vueltoRestante);
-              vueltoRestante -= restar;
+            if (vueltoRestanteMoneda > 0 && montoOriginal > 0) {
+              const restar = Math.min(montoOriginal, vueltoRestanteMoneda);
+              vueltoRestanteMoneda -= restar;
               return { ...p, monto: (montoOriginal - restar).toFixed(2) };
             }
             return { ...p };
@@ -1008,13 +1173,14 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
         condicion_pago: condicionPago,
         fecha_limite: condicionPago === 'CREDITO' ? fechaLimite : null,
         almacen_origen_id: almacenOrigenId || null,
-        sesion_caja_id: sesionActiva.id,
         detalles: carrito.map(item => ({
           repuesto_id: item.id,
           cantidad: item.cantidad,
           precio_venta: parseFloat(item.precio_venta) || 0
         })),
-        pagos: pagosFinales,
+        // pagosFinales.monto está en la moneda elegida (moneda); se convierte
+        // a soles con "tc" porque la caja y la contabilidad siempre son en soles.
+        pagos: pagosFinales.map(p => ({ ...p, monto: (parseFloat(p.monto) * tc).toFixed(2) })),
           monto_recibido: montoRecibido,
           vuelto: vuelto,
         moneda: moneda,
@@ -1024,9 +1190,9 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       console.log('Enviando venta con payload:', payloadVenta);
 
       // Conexión real al backend
-      await api.post('/ventas/transacciones/directa/', payloadVenta);
-      
-      Swal.fire('Venta Directa Procesada', 'La venta se ha registrado exitosamente en la base de datos.', 'success').then(() => onComplete());
+      const resVenta = await api.post('/ventas/transacciones/directa/', payloadVenta);
+
+      Swal.fire('Venta Directa Procesada', 'La venta se ha registrado exitosamente en la base de datos.', 'success').then(() => onComplete(resVenta.data));
     } catch (error) {
       console.error(error);
       const backendError = error.response?.data?.error;
@@ -1164,7 +1330,12 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-              <Tabs value={condicionPago} onChange={(e, v) => setCondicionPago(v)}>
+              <Tabs value={condicionPago} onChange={(e, v) => {
+                // Los créditos se cobran en cuotas: se registran siempre en
+                // soles para no arrastrar riesgo cambiario a la deuda del cliente.
+                if (v === 'CREDITO') setMoneda('PEN');
+                setCondicionPago(v);
+              }}>
                 <Tab label="Al Contado" value="CONTADO" />
                 <Tab label="Al Crédito" value="CREDITO" />
               </Tabs>
@@ -1172,17 +1343,19 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             {condicionPago === 'CREDITO' ? (
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <TextField 
-                    type="date" 
-                    label="Fecha Límite" 
-                    InputLabelProps={{ shrink: true }} 
-                    fullWidth 
-                    size="small" 
+                  <TextField
+                    type="date"
+                    label="Fecha Límite"
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    size="small"
                     value={fechaLimite}
                     onChange={(e) => setFechaLimite(e.target.value)}
+                    inputProps={{ min: fechaMinimaCredito }}
+                    helperText="No puede ser hoy: debe ser al menos mañana"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}><TextField label="Monto a Crédito" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
+                <Grid item xs={12} sm={6}><TextField label="Monto a Crédito (S/)" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
               </Grid>
             ) : (
               <Box>
@@ -1192,8 +1365,8 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                     <Box key={pago.id} sx={{ mb: 2 }}>
                       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: requiereReferencia ? 1 : 0 }}>
                         <FormControl sx={{ flexGrow: 1 }} size="small">
-                          <Select 
-                            value={pago.metodo_id || ''} 
+                          <Select
+                            value={pago.metodo_id || ''}
                             onChange={(e) => {
                               const newPagos = [...pagos];
                               newPagos[index].metodo_id = e.target.value;
@@ -1205,18 +1378,21 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                             ))}
                           </Select>
                         </FormControl>
-                        <TextField 
-                          size="small" 
-                          value={pago.monto} 
+                        <TextField
+                          size="small"
+                          value={pago.monto}
                           onChange={(e) => {
                             const newPagos = [...pagos];
                             newPagos[index].monto = e.target.value;
                             setPagos(newPagos);
                           }}
-                          sx={{ width: 120 }} 
-                          inputProps={{ style: { textAlign: 'right' }, type: 'number', step: '0.01' }} 
+                          sx={{ width: 130 }}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">{simboloMoneda}</InputAdornment>
+                          }}
+                          inputProps={{ style: { textAlign: 'right' }, type: 'number', step: '0.01' }}
                         />
-                        <IconButton 
+                        <IconButton
                           color="error"
                           onClick={() => {
                             if (pagos.length > 1) {
@@ -1230,26 +1406,26 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                       </Box>
                       {requiereReferencia && (
                         <Box sx={{ mb: 1 }}>
-                          <TextField 
-                            size="small" 
-                            fullWidth 
-                            label="Número de Referencia" 
-                            value={pago.referencia} 
+                          <TextField
+                            size="small"
+                            fullWidth
+                            label="Número de Referencia"
+                            value={pago.referencia}
                             onChange={(e) => {
                               const newPagos = [...pagos];
                               newPagos[index].referencia = e.target.value;
                               setPagos(newPagos);
-                            }} 
+                            }}
                           />
                         </Box>
                       )}
                     </Box>
                   );
                 })}
-                <Button 
-                  variant="outlined" 
-                  size="small" 
-                  fullWidth 
+                <Button
+                  variant="outlined"
+                  size="small"
+                  fullWidth
                   sx={{ borderStyle: 'dashed' }}
                   onClick={() => {
                     setPagos([...pagos, { id: Date.now(), metodo_id: metodosPago[0]?.id || '', monto: 0, referencia: '' }]);
@@ -1258,12 +1434,15 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                   + Agregar método
                 </Button>
                 {(() => {
+                  // pago.monto está en la moneda elegida (S/, $ o €); se compara
+                  // contra el total en esa misma moneda (totalEnMoneda), no
+                  // contra el total en soles.
                   const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
-                  if (sumP > total) {
+                  if (sumP > totalEnMoneda) {
                     return (
                       <Box sx={{ mt: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1, display: 'flex', justifyContent: 'space-between', border: '1px solid #c8e6c9' }}>
                         <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
-                        <Typography variant="subtitle1" color="success.main" fontWeight="bold">S/ {(sumP - total).toFixed(2)}</Typography>
+                        <Typography variant="subtitle1" color="success.main" fontWeight="bold">{simboloMoneda} {(sumP - totalEnMoneda).toFixed(2)}</Typography>
                       </Box>
                     );
                   }
@@ -1283,10 +1462,10 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                  <FormControl size="small" sx={{ flex: 1, minWidth: 150 }}>
+                  <FormControl size="small" sx={{ flex: 1, minWidth: 150 }} disabled={condicionPago === 'CREDITO'}>
                     <InputLabel>Moneda</InputLabel>
-                    <Select 
-                      value={moneda} 
+                    <Select
+                      value={moneda}
                       label="Moneda"
                       onChange={e => setMoneda(e.target.value)}
                     >
@@ -1294,13 +1473,20 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                       <MenuItem value="USD">Dólares ($)</MenuItem>
                       <MenuItem value="EUR">Euros (€)</MenuItem>
                     </Select>
+                    {condicionPago === 'CREDITO' && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                        Los créditos se registran siempre en soles
+                      </Typography>
+                    )}
                   </FormControl>
                   <TextField 
                     size="small" 
+                    type="number"
                     label="Tipo de Cambio (TC)" 
-                    value={tipoCambio.toFixed(4)}
+                    value={tipoCambio}
                     disabled={moneda === 'PEN'}
-                    onChange={e => setTipoCambio(parseFloat(e.target.value) || 0)}
+                    onChange={e => setTipoCambio(e.target.value === '' ? '' : e.target.value)}
+                    inputProps={{ step: "0.0001", min: "0" }}
                     sx={{ width: 150 }}
                     InputProps={{
                       endAdornment: cargandoTC ? (
@@ -1464,11 +1650,17 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                   <Typography variant="body2" color="error">S/ {totalDescuentos > 0 ? totalDescuentos.toFixed(2) : '0.00'}</Typography>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: moneda === 'PEN' ? 3 : 0.5 }}>
                   <Typography variant="h6" fontWeight="bold">TOTAL A COBRAR</Typography>
                   <Typography variant="h5" fontWeight="bold" color="primary">S/ {total.toFixed(2)}</Typography>
                 </Box>
-                
+                {moneda !== 'PEN' && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="caption" color="textSecondary">Equivalente (TC {Number(tipoCambio || 0).toFixed(4)})</Typography>
+                    <Typography variant="body1" fontWeight="bold" color="textSecondary">{simboloMoneda} {totalEnMoneda.toFixed(2)}</Typography>
+                  </Box>
+                )}
+
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button variant="outlined" color="inherit" fullWidth size="large" onClick={onBack}>Cancelar</Button>
                   <Button variant="contained" color="primary" fullWidth size="large" onClick={handleConfirm} disabled={procesando || carrito.length === 0}>
@@ -1555,7 +1747,7 @@ export const POSPage = () => {
     return (
       <PosDirectSale 
         onBack={() => setIsDirectSale(false)} 
-        onComplete={handleComplete} 
+        onComplete={handleCompleteWithPrint}
       />
     );
   }
@@ -1565,7 +1757,7 @@ export const POSPage = () => {
       <PosDirectSale 
         initialOrder={selectedOrder}
         onBack={() => setSelectedOrder(null)} 
-        onComplete={handleComplete} 
+        onComplete={handleCompleteWithPrint}
       />
     );
   }

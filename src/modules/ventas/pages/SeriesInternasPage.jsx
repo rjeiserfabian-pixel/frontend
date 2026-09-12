@@ -5,7 +5,15 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, 
   TextField, Button, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
-import api from '../../../core/api/axios'; 
+import api from '../../../core/api/axios';
+
+const TIPOS_DOCUMENTO = {
+  RECIBO_INGRESO: 'Recibo de Ingreso',
+  CREDITO: 'Código de Crédito',
+  GUIA_REMISION: 'Guía de Remisión',
+  PROFORMA: 'Proforma / Cotización',
+  TRASLADO: 'Nota de Traslado',
+};
 
 const SeriesInternasPage = () => {
   const [series, setSeries] = useState([]);
@@ -122,7 +130,7 @@ const SeriesInternasPage = () => {
             <Settings className="text-blue-600" size={32} />
             Configuración de Series Internas
           </h1>
-          <p className="text-slate-500 mt-1">Administra los correlativos internos para Recibos y Créditos.</p>
+          <p className="text-slate-500 mt-1">Administra los correlativos internos para Recibos, Créditos, Guías de Remisión, Proformas y Notas de Traslado.</p>
         </div>
       </div>
 
@@ -161,9 +169,7 @@ const SeriesInternasPage = () => {
                   <tr key={serie.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">{serie.sucursal_nombre}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
-                      {serie.tipo_documento === 'RECIBO_INGRESO' ? 'Recibo de Ingreso' : 
-                       serie.tipo_documento === 'GUIA_REMISION' ? 'Guía de Remisión' :
-                       'Código de Crédito'}
+                      {TIPOS_DOCUMENTO[serie.tipo_documento] || serie.tipo_documento}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{serie.prefijo}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{serie.correlativo_actual}</td>
@@ -224,6 +230,8 @@ const SeriesInternasPage = () => {
               <MenuItem value="RECIBO_INGRESO">Recibo de Ingreso (RI)</MenuItem>
               <MenuItem value="CREDITO">Código de Crédito (CRED)</MenuItem>
               <MenuItem value="GUIA_REMISION">Guía de Remisión (GR)</MenuItem>
+              <MenuItem value="PROFORMA">Proforma / Cotización (COT)</MenuItem>
+              <MenuItem value="TRASLADO">Nota de Traslado (TR)</MenuItem>
             </Select>
           </FormControl>
 

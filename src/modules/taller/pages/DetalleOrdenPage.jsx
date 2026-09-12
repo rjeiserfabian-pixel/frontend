@@ -171,7 +171,10 @@ export default function DetalleOrdenPage() {
 
   const handleImprimirPDF = async () => {
     try {
-      const res = await api.get(`taller/ordenes/${id}/generar_pdf/`, { responseType: 'blob' });
+      const res = await api.get(`taller/ordenes/${id}/generar_pdf/`, {
+        responseType: 'blob',
+        params: activeSucursalId ? { sucursal_id: activeSucursalId } : {}
+      });
       const blob = new Blob([res.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');

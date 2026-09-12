@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Chip, CircularProgress, TablePagination, Autocomplete, TextField, MenuItem, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions, Divider
+  Dialog, DialogContent, DialogActions, Divider, Grid
 } from '@mui/material';
-import { Plus, FileText, Ban, CreditCard, X } from 'lucide-react';
+import { Plus, FileText, Ban, CreditCard, X, Receipt, Package, Wallet, Truck, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
@@ -335,98 +335,164 @@ const ComprasPage = () => {
       </Paper>
 
       {/* Modal Detalle de Compra */}
-      <Dialog open={detalleOpen} onClose={cerrarDetalle} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Detalle de Compra
-          <IconButton size="small" onClick={cerrarDetalle}>
-            <X size={18} />
+      <Dialog
+        open={detalleOpen}
+        onClose={cerrarDetalle}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+      >
+        <Box sx={{
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          color: 'white', px: 3, py: 2.5,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ p: 1.2, bgcolor: 'rgba(255,255,255,0.18)', borderRadius: 2, display: 'flex' }}>
+              <Receipt size={22} />
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
+                Compra {compraDetalle ? `#${compraDetalle.id}` : ''}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                {compraDetalle ? `${compraDetalle.tipo_comprobante_nombre || 'Comprobante'} ${compraDetalle.serie}-${compraDetalle.numero_comprobante}` : 'Detalle de compra'}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton onClick={cerrarDetalle} sx={{ color: 'white' }}>
+            <X size={20} />
           </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
+        </Box>
+
+        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
           {detalleLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
             </Box>
           ) : compraDetalle ? (
             <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Proveedor</Typography>
-                  <Typography fontWeight="600">{compraDetalle.proveedor_detalle?.nombre_o_razon_social}</Typography>
-                  <Typography variant="caption" color="text.secondary">{compraDetalle.proveedor_detalle?.numero_documento}</Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="body2" color="text.secondary">Comprobante</Typography>
-                  <Typography fontWeight="600">
-                    {compraDetalle.tipo_comprobante_nombre} {compraDetalle.serie}-{compraDetalle.numero_comprobante}
+              {/* PROVEEDOR Y COMPRA */}
+              <Grid container spacing={2} sx={{ mb: 2.5 }}>
+                <Grid item xs={12} sm={6}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+                    <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
+                      <Truck size={15} /> Proveedor
+                    </Typography>
+                    <Typography variant="body1" fontWeight={700} sx={{ mt: 0.5 }}>
+                      {compraDetalle.proveedor_detalle?.nombre_o_razon_social}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {compraDetalle.proveedor_detalle?.numero_documento}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
+                        <CalendarDays size={15} /> Compra
+                      </Typography>
+                      <Chip label={compraDetalle.estado} color={compraDetalle.estado === 'Completada' ? 'success' : 'error'} size="small" />
+                    </Box>
+                    <Typography variant="body2" sx={{ mt: 0.5 }}>{compraDetalle.fecha_emision}</Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* ITEMS */}
+              <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden', mb: 2.5, bgcolor: 'white' }}>
+                <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+                  <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
+                    <Package size={15} /> Repuestos Comprados
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">{compraDetalle.fecha_emision}</Typography>
                 </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                <Chip label={compraDetalle.tipo_pago} color={compraDetalle.tipo_pago === 'Contado' ? 'success' : 'warning'} size="small" />
-                <Chip label={compraDetalle.estado} color={compraDetalle.estado === 'Completada' ? 'primary' : 'error'} size="small" variant="outlined" />
-                {cuentaDetalle && (
-                  <Chip label={`Cuenta por pagar: ${cuentaDetalle.estado}`} size="small" variant="outlined" />
-                )}
-              </Box>
-
-              <Divider sx={{ mb: 2 }} />
-
-              <TableContainer>
                 <Table size="small">
                   <TableHead>
-                    <TableRow>
-                      <TableCell>Repuesto</TableCell>
-                      <TableCell align="right">Cant.</TableCell>
-                      <TableCell align="right">P. Unit.</TableCell>
-                      <TableCell align="right">Subtotal</TableCell>
+                    <TableRow sx={{ bgcolor: '#f1f5f9' }}>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Repuesto</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Cant.</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>P. Unit.</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Subtotal</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {(compraDetalle.detalles || []).map((det) => (
                       <TableRow key={det.id}>
-                        <TableCell>
-                          <Typography variant="body2">{det.repuesto_nombre}</Typography>
+                        <TableCell sx={{ fontSize: '0.9rem' }}>
+                          <Typography variant="body2" fontWeight={600}>{det.repuesto_nombre}</Typography>
                           <Typography variant="caption" color="text.secondary">{det.repuesto_codigo}</Typography>
                         </TableCell>
-                        <TableCell align="right">{det.cantidad}</TableCell>
-                        <TableCell align="right">S/ {parseFloat(det.precio_unitario).toFixed(2)}</TableCell>
-                        <TableCell align="right">S/ {parseFloat(det.subtotal).toFixed(2)}</TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.9rem' }}>{det.cantidad}</TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.9rem' }}>S/ {parseFloat(det.precio_unitario).toFixed(2)}</TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>S/ {parseFloat(det.subtotal).toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
+              </Paper>
 
-              <Divider sx={{ my: 2 }} />
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                <Typography variant="body2">Subtotal: S/ {parseFloat(compraDetalle.subtotal).toFixed(2)}</Typography>
-                <Typography variant="body2">IGV: S/ {parseFloat(compraDetalle.igv).toFixed(2)}</Typography>
-                <Typography variant="subtitle1" fontWeight="bold">Total: S/ {parseFloat(compraDetalle.total).toFixed(2)}</Typography>
-              </Box>
-
-              {compraDetalle.observaciones && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="body2" color="text.secondary">Observaciones</Typography>
-                  <Typography variant="body2">{compraDetalle.observaciones}</Typography>
-                </>
-              )}
+              {/* PAGO Y TOTALES */}
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, bgcolor: 'white' }}>
+                <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5, mb: 1 }}>
+                  <Wallet size={15} /> Pago y Totales
+                </Typography>
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={7}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Chip
+                        size="small"
+                        icon={compraDetalle.tipo_pago === 'Contado' ? undefined : <CreditCard size={14} />}
+                        label={compraDetalle.tipo_pago === 'Contado' ? 'Compra al Contado' : 'Compra al Crédito'}
+                        color={compraDetalle.tipo_pago === 'Contado' ? 'default' : 'warning'}
+                        sx={{ fontWeight: 600 }}
+                      />
+                      {cuentaDetalle && (
+                        <Chip label={`Cuenta por pagar: ${cuentaDetalle.estado}`} size="small" variant="outlined" />
+                      )}
+                    </Box>
+                    {compraDetalle.observaciones && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary" display="block">Observaciones</Typography>
+                        <Typography variant="body2">{compraDetalle.observaciones}</Typography>
+                      </Box>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={5}>
+                    <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2.5, p: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="body2" color="text.secondary">Subtotal</Typography>
+                        <Typography variant="body2" fontWeight={600}>S/ {parseFloat(compraDetalle.subtotal).toFixed(2)}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Typography variant="body2" color="text.secondary">IGV</Typography>
+                        <Typography variant="body2" fontWeight={600}>S/ {parseFloat(compraDetalle.igv).toFixed(2)}</Typography>
+                      </Box>
+                      <Divider sx={{ mb: 1.5, borderColor: '#bfdbfe' }} />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body1" fontWeight={700}>TOTAL</Typography>
+                        <Typography variant="h5" fontWeight={800} color="primary.main">
+                          S/ {parseFloat(compraDetalle.total).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
             </Box>
           ) : (
             <Typography color="text.secondary">No se pudo cargar el detalle.</Typography>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
           {compraDetalle?.tipo_pago === 'Credito' && (
-            <Button onClick={() => verCuentaPorPagar(compraDetalle)} sx={{ textTransform: 'none' }}>
+            <Button onClick={() => verCuentaPorPagar(compraDetalle)} sx={{ textTransform: 'none', fontWeight: 700 }}>
               Ver cuenta por pagar
             </Button>
           )}
-          <Button onClick={cerrarDetalle} sx={{ textTransform: 'none' }}>Cerrar</Button>
+          <Button onClick={cerrarDetalle} variant="outlined" color="primary" sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}>
+            Cerrar
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

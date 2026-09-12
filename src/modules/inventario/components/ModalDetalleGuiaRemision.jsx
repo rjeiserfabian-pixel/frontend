@@ -1,26 +1,27 @@
 import React from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions, Button,
+  Dialog, DialogContent, DialogActions, Button,
   Box, Typography, Grid, Paper, Table, TableHead, TableRow, TableCell, TableBody,
   Divider, IconButton, Chip
 } from '@mui/material';
-import { X, Package, Calendar, User, FileText, ArrowRightLeft } from 'lucide-react';
+import { X, Truck, MapPin, User, Calendar, FileText, Package } from 'lucide-react';
 
 const ESTADO_CHIP = {
-  PENDIENTE: { label: 'Pendiente de confirmación', color: 'warning' },
-  COMPLETADO: { label: 'Completado', color: 'success' },
-  RECHAZADO: { label: 'Rechazado', color: 'error' },
+  CREADA: { label: 'Creada', color: 'default' },
+  EN_TRASLADO: { label: 'En Traslado', color: 'warning' },
+  COMPLETADA: { label: 'Completada', color: 'success' },
 };
 
-export default function ModalDetalleTraslado({ open, onClose, traslado }) {
-  if (!traslado) return null;
+export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
+  if (!guia) return null;
 
-  const estadoInfo = ESTADO_CHIP[traslado.estado] || { label: traslado.estado, color: 'default' };
+  const estadoInfo = ESTADO_CHIP[guia.estado] || { label: guia.estado, color: 'default' };
+  const numeroGuia = `${guia.serie_prefijo || 'GR'}-${String(guia.correlativo).padStart(6, '0')}`;
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
+    <Dialog
+      open={open}
+      onClose={onClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
@@ -30,24 +31,24 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
         }
       }}
     >
-      <Box sx={{ 
-        bgcolor: '#1e293b', 
-        color: 'white', 
-        p: 2.5, 
-        display: 'flex', 
+      <Box sx={{
+        bgcolor: '#1e293b',
+        color: 'white',
+        p: 2.5,
+        display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box sx={{ p: 1, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1, display: 'flex' }}>
-            <FileText size={20} color="white" />
+            <Truck size={20} color="white" />
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 600, m: 0, lineHeight: 1.2 }}>
-              Detalle del Movimiento
+              Detalle de la Guía {numeroGuia}
             </Typography>
             <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
-              Registrado el {new Date(traslado.fecha_traslado).toLocaleDateString()} a las {new Date(traslado.fecha_traslado).toLocaleTimeString()}
+              Emitida el {new Date(guia.fecha_emision).toLocaleDateString()}
             </Typography>
           </Box>
         </Box>
@@ -61,30 +62,36 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                <Package size={16} color="#64748b" />
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Almacén Origen</Typography>
+                <MapPin size={16} color="#64748b" />
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Punto de Partida</Typography>
               </Box>
               <Typography variant="body1" sx={{ fontWeight: 600, pl: 3.5 }}>
-                {traslado.almacen_origen_nombre}
+                {guia.ubigeo_partida_nombre}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', pl: 3.5 }}>
+                {guia.punto_partida}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                <ArrowRightLeft size={16} color="#64748b" />
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Almacén Destino</Typography>
+                <MapPin size={16} color="#64748b" />
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Punto de Llegada</Typography>
               </Box>
               <Typography variant="body1" sx={{ fontWeight: 600, pl: 3.5 }}>
-                {traslado.almacen_destino_nombre}
+                {guia.ubigeo_llegada_nombre}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748b', pl: 3.5 }}>
+                {guia.punto_llegada}
               </Typography>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <User size={16} color="#64748b" />
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Realizado por</Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Cliente / Destinatario</Typography>
               </Box>
               <Typography variant="body1" sx={{ fontWeight: 600, pl: 3.5 }}>
-                {traslado.usuario_nombre}
+                {guia.cliente_nombre || '-'}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -97,31 +104,42 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
               </Box>
             </Grid>
 
-            {traslado.estado === 'COMPLETADO' && traslado.confirmado_por_nombre && (
-              <Grid item xs={12} md={6}>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Confirmado por</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {traslado.confirmado_por_nombre}
-                  {traslado.fecha_confirmacion && ` — ${new Date(traslado.fecha_confirmacion).toLocaleString()}`}
-                </Typography>
-              </Grid>
-            )}
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                <Truck size={16} color="#64748b" />
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Transportista</Typography>
+              </Box>
+              <Typography variant="body1" sx={{ fontWeight: 600, pl: 3.5 }}>
+                {guia.transportista_nombre || 'Aún no asignado'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                <Package size={16} color="#64748b" />
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Vehículo / Placa</Typography>
+              </Box>
+              <Typography variant="body1" sx={{ fontWeight: 600, pl: 3.5 }}>
+                {guia.vehiculo_placa || 'Aún no asignado'}
+              </Typography>
+            </Grid>
 
-            {traslado.estado === 'RECHAZADO' && (
-              <Grid item xs={12} md={6}>
-                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Motivo del rechazo</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#dc2626' }}>
-                  {traslado.motivo_rechazo || '-'}
-                </Typography>
-              </Grid>
-            )}
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Motivo del traslado</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>{guia.motivo_traslado || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Fecha de traslado</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {guia.fecha_traslado ? new Date(guia.fecha_traslado + 'T00:00').toLocaleDateString() : '-'}
+              </Typography>
+            </Grid>
 
-            {traslado.observaciones && (
+            {guia.observaciones && (
               <Grid item xs={12}>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mb: 1 }}>Observaciones:</Typography>
                 <Typography variant="body2" sx={{ bgcolor: '#f1f5f9', p: 1.5, borderRadius: 1 }}>
-                  {traslado.observaciones}
+                  {guia.observaciones}
                 </Typography>
               </Grid>
             )}
@@ -129,7 +147,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
         </Paper>
 
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#1e293b' }}>
-          Productos Trasladados ({traslado.detalles?.length || 0})
+          Bienes a Transportar ({guia.detalles?.length || 0})
         </Typography>
 
         <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
@@ -137,21 +155,17 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
             <TableHead sx={{ bgcolor: '#f8fafc' }}>
               <TableRow>
                 <TableCell><b>Código</b></TableCell>
-                <TableCell><b>Producto</b></TableCell>
+                <TableCell><b>Descripción</b></TableCell>
                 <TableCell align="center"><b>U.M.</b></TableCell>
-                <TableCell><b>Ubi. Origen</b></TableCell>
-                <TableCell><b>Ubi. Destino</b></TableCell>
                 <TableCell align="center"><b>Cantidad</b></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {traslado.detalles?.map((det) => (
+              {guia.detalles?.map((det) => (
                 <TableRow key={det.id}>
                   <TableCell>{det.repuesto_codigo}</TableCell>
                   <TableCell>{det.repuesto_nombre}</TableCell>
                   <TableCell align="center">{det.repuesto_unidad || '-'}</TableCell>
-                  <TableCell>{det.ubicacion_origen_nombre}</TableCell>
-                  <TableCell>{det.ubicacion_destino_nombre}</TableCell>
                   <TableCell align="center">
                     <Typography sx={{ fontWeight: 'bold', color: '#2563eb' }}>
                       {parseFloat(det.cantidad)}

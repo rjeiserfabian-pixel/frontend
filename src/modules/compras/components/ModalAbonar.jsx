@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog, DialogContent, DialogActions,
   Button, TextField, MenuItem, CircularProgress,
-  InputAdornment, Box, Typography
+  InputAdornment, Box, Typography, FormControlLabel, Switch, IconButton
 } from '@mui/material';
+import { X, Wallet } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
 import { ventasService } from '../../ventas/services/ventasApi';
@@ -22,7 +23,8 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
     monto_abonado: '',
     fecha_pago: getLocalDate(),
     metodo_pago_id: '',
-    referencia: ''
+    referencia: '',
+    afecta_caja: true
   });
 
   useEffect(() => {
@@ -31,7 +33,8 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
         monto_abonado: parseFloat(cuenta.saldo_pendiente).toFixed(2),
         fecha_pago: getLocalDate(),
         metodo_pago_id: '',
-        referencia: ''
+        referencia: '',
+        afecta_caja: true
       });
       fetchMetodos();
     }
@@ -80,23 +83,26 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
         monto_abonado: monto,
         fecha_pago: formData.fecha_pago,
         metodo_pago: currentMetodo.nombre, // Guardamos el nombre como string según el backend
-        referencia: formData.referencia
+        metodo_pago_id: currentMetodo.id, // Usado solo para armar el movimiento de caja
+        referencia: formData.referencia,
+        afecta_caja: formData.afecta_caja
       };
 
       await comprasService.registrarPago(payload);
-      
+
       Swal.fire({
         icon: 'success',
         title: '¡Abono registrado!',
         timer: 1500,
         showConfirmButton: false
       });
-      
+
       onSuccess();
       onClose();
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'Hubo un problema al registrar el abono.', 'error');
+      const msg = error.response?.data?.error || 'Hubo un problema al registrar el abono.';
+      Swal.fire('Error', msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -105,19 +111,36 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
   if (!cuenta) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
+      <Box sx={{
+        background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+        color: 'white', px: 3, py: 2.5,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ p: 1.2, bgcolor: 'rgba(255,255,255,0.18)', borderRadius: 2, display: 'flex' }}>
+            <Wallet size={20} />
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={800} lineHeight={1.2}>Registrar Abono</Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85 }}>{cuenta.compra_comprobante || cuenta.proveedor_nombre}</Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} sx={{ color: 'white' }}>
+          <X size={20} />
+        </IconButton>
+      </Box>
       <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Registrar Abono</DialogTitle>
-        <DialogContent dividers>
-          
-          <Box sx={{ mb: 3, p: 2, bgcolor: '#e3f2fd', borderRadius: 2, border: '1px solid', borderColor: '#bbdefb' }}>
+        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
+
+          <Box sx={{ mb: 3, p: 2, bgcolor: '#eff6ff', borderRadius: 2, border: '1px solid', borderColor: '#bfdbfe' }}>
             <Typography variant="body2" color="text.secondary">Deuda actual (Saldo):</Typography>
             <Typography variant="h5" fontWeight="bold" color="primary.main">
               S/ {parseFloat(cuenta.saldo_pendiente).toFixed(2)}
             </Typography>
           </Box>
 
-          <TextField 
+          <TextField
             label="Monto a abonar"
             type="number"
             fullWidth
@@ -169,7 +192,7 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
             />
           )}
           {!reqRef && (
-            <TextField 
+            <TextField
               label="Nro. Referencia / Operación (Opcional)"
               fullWidth
               sx={{ mb: 1 }}
@@ -179,18 +202,35 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
             />
           )}
 
+          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: formData.afecta_caja ? '#eff6ff' : '#f1f5f9', borderRadius: 2, border: '1px solid', borderColor: formData.afecta_caja ? '#bfdbfe' : '#e2e8f0' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.afecta_caja}
+                  onChange={e => setFormData({ ...formData, afecta_caja: e.target.checked })}
+                />
+              }
+              label="Afecta a Caja"
+            />
+            <Typography variant="caption" display="block" color="text.secondary" sx={{ pl: '1px' }}>
+              {formData.afecta_caja
+                ? 'Se descontará como egreso de tu caja abierta (pago en efectivo/físico desde el cajón).'
+                : 'No se tocará ninguna caja (ej. transferencia bancaria hecha fuera del sistema de caja).'}
+            </Typography>
+          </Box>
+
         </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 1.5 }}>
-          <Button onClick={onClose} color="inherit" disabled={loading}>
+        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
+          <Button onClick={onClose} variant="outlined" color="inherit" disabled={loading}>
             Cancelar
           </Button>
-          <Button 
-            type="submit" 
-            variant="contained" 
-            color="primary" 
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
             disabled={loading || metodosList.length === 0}
             startIcon={loading && <CircularProgress size={20} color="inherit" />}
-            sx={{ px: 3, borderRadius: '8px' }}
+            sx={{ px: 3, borderRadius: '8px', fontWeight: 700 }}
           >
             Confirmar Pago
           </Button>

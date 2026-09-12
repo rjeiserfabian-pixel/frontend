@@ -4,11 +4,12 @@ import {
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   TablePagination, Chip
 } from '@mui/material';
-import { Truck, Printer, Play, CheckCircle } from 'lucide-react';
+import { Truck, Printer, Play, CheckCircle, Eye } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import ModalNuevoguia from '../components/ModalNuevaGuiaRemision';
 import ModalSalidaGuia from '../components/ModalSalidaGuia';
+import ModalDetalleGuiaRemision from '../components/ModalDetalleGuiaRemision';
 import PrintGuiaRemisionA4 from '../components/PrintGuiaRemisionA4';
 import { useReactToPrint } from 'react-to-print';
 
@@ -18,7 +19,8 @@ export default function GuiasRemisionPage() {
   const [openModalNueva, setOpenModalNueva] = useState(false);
   const [openModalSalida, setOpenModalSalida] = useState(false);
   const [selectedGuia, setSelectedGuia] = useState(null);
-  
+  const [guiaDetalle, setGuiaDetalle] = useState(null);
+
   // Paginación
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -165,9 +167,12 @@ export default function GuiasRemisionPage() {
                         <CheckCircle size={18} />
                       </IconButton>
                     )}
-                    <IconButton 
-                      color="primary" 
-                      onClick={() => setGuiaParaImprimir(item)} 
+                    <IconButton color="info" onClick={() => setGuiaDetalle(item)} title="Ver Detalle" sx={{ mr: 1 }}>
+                      <Eye size={18} />
+                    </IconButton>
+                    <IconButton
+                      color="primary"
+                      onClick={() => setGuiaParaImprimir(item)}
                       title="Imprimir Guía"
                       disabled={item.estado === 'CREADA'} // Solo imprime si ya dio salida
                     >
@@ -214,6 +219,12 @@ export default function GuiasRemisionPage() {
           }}
         />
       )}
+
+      <ModalDetalleGuiaRemision
+        open={!!guiaDetalle}
+        onClose={() => setGuiaDetalle(null)}
+        guia={guiaDetalle}
+      />
 
       <div style={{ display: 'none' }}>
         <PrintGuiaRemisionA4 ref={printRef} guia={guiaParaImprimir} />

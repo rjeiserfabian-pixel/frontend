@@ -175,11 +175,8 @@ const RegistroManualVentasPage = () => {
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [buscandoCliente, setBuscandoCliente] = useState(false);
 
-  const buscarRepuestos = async (query) => {
-    if (!query) {
-      setResultadosProductos([]);
-      return;
-    }
+  const buscarRepuestos = async (query = '') => {
+    if (query.length === 1) return;
     setCargandoProductos(true);
     try {
       const res = await inventarioService.getRepuestos({ search: query });
@@ -191,13 +188,36 @@ const RegistroManualVentasPage = () => {
     }
   };
 
+  // Igual que en el POS: el stock se calcula sobre el almacén de origen
+  // elegido, porque esta venta manual también descuenta inventario (Kardex).
+  const getStockDisponible = (producto) => {
+    if (!producto || !producto.inventario_stock) return producto?.stock_total_disponible || 0;
+    const selectedAlmacen = todosAlmacenes.find(a => a.id === almacenOrigenId);
+    if (!selectedAlmacen) return 0;
+    const stockEnAlmacen = producto.inventario_stock
+      .filter(s => s.almacen_nombre === selectedAlmacen.nombre)
+      .reduce((sum, s) => sum + parseFloat(s.stock_disponible || 0), 0);
+    return stockEnAlmacen;
+  };
+
   const agregarAlCarrito = (producto) => {
     if (!producto) return;
+
+    const stockReal = getStockDisponible(producto);
+    if (stockReal <= 0) {
+      Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Producto agotado en este almacén', showConfirmButton: false, timer: 2500 });
+      return;
+    }
+
     const existe = carrito.find(item => item.id === producto.id);
     if (existe) {
-      setCarrito(carrito.map(item => item.id === producto.id ? { ...item, cantidad: item.cantidad + 1 } : item));
+      if (existe.cantidad + 1 > stockReal) {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: `Solo hay ${stockReal} unidades disponibles`, showConfirmButton: false, timer: 2500 });
+        return;
+      }
+      setCarrito(carrito.map(item => item.id === producto.id ? { ...item, cantidad: item.cantidad + 1, stock_maximo: stockReal } : item));
     } else {
-      setCarrito([...carrito, { ...producto, cantidad: 1, precio_venta: parseFloat(producto.precio_lista || producto.precio_cash || 0) }]);
+      setCarrito([...carrito, { ...producto, cantidad: 1, precio_venta: parseFloat(producto.precio_lista || producto.precio_cash || 0), stock_maximo: stockReal }]);
     }
     setBusquedaProducto('');
     setResultadosProductos([]);
@@ -373,14 +393,25 @@ const RegistroManualVentasPage = () => {
       await ventasService.procesarVentaDirecta(payload);
       
       Swal.fire('Venta Registrada', 'El registro manual se ha guardado exitosamente.', 'success').then(() => {
-        // Limpiar formulario
+        // Limpiar TODO el formulario para dejarlo listo para la siguiente venta a regularizar
         setCarrito([]);
+        setBusquedaProducto('');
+        setResultadosProductos([]);
         setDni('');
         setClienteNombre('');
         setClienteApellidos('');
         setClienteDireccion('');
         setClienteTelefono('');
         setClienteId(null);
+        setTipoComprobanteId('');
+        setCondicionPago('CONTADO');
+        setMoneda('PEN');
+        setTipoCambio(1.0000);
+        setPagos(metodosPago.length > 0 ? [{ id: Date.now(), metodo_id: metodosPago[0].id, monto: 0, referencia: '' }] : []);
+        const ahora = new Date();
+        ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+        setFechaVentaManual(ahora.toISOString().slice(0, 16));
+        setFechaLimite(ahora.toISOString().split('T')[0]);
       });
     } catch (error) {
       console.error(error);
@@ -674,10 +705,12 @@ const RegistroManualVentasPage = () => {
                   </FormControl>
                   <TextField 
                     size="small" 
+                    type="number"
                     label="Tipo de Cambio (TC)" 
-                    value={tipoCambio.toFixed(4)}
+                    value={tipoCambio}
                     disabled={moneda === 'PEN'}
-                    onChange={e => setTipoCambio(parseFloat(e.target.value) || 0)}
+                    onChange={e => setTipoCambio(e.target.value === '' ? '' : e.target.value)}
+                    inputProps={{ step: "0.0001", min: "0" }}
                     sx={{ width: 150 }}
                     InputProps={{
                       endAdornment: cargandoTC ? (
@@ -707,10 +740,31 @@ const RegistroManualVentasPage = () => {
               freeSolo
               options={resultadosProductos}
               getOptionLabel={(option) => typeof option === 'string' ? option : `${option.codigo || ''} - ${option.nombre}`}
+              getOptionDisabled={(option) => getStockDisponible(option) <= 0}
+              renderOption={(props, option) => {
+                const stockOption = getStockDisponible(option);
+                const agotado = stockOption <= 0;
+                const { key, ...otherProps } = props;
+                return (
+                  <li key={key || option.id} {...otherProps} style={{ color: agotado ? '#aaa' : 'inherit', cursor: agotado ? 'not-allowed' : 'pointer', opacity: agotado ? 0.7 : 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body2">{option.codigo} - {option.nombre}</Typography>
+                      {agotado ? (
+                        <Typography variant="caption" color="error" fontWeight="bold">AGOTADO</Typography>
+                      ) : (
+                        <Typography variant="caption" color="textSecondary" fontWeight="bold">Stock disponible: {stockOption}</Typography>
+                      )}
+                    </Box>
+                  </li>
+                );
+              }}
               loading={cargandoProductos}
+              onOpen={() => {
+                if (resultadosProductos.length === 0) buscarRepuestos('');
+              }}
               onInputChange={(e, val) => {
                 setBusquedaProducto(val);
-                if (val.length >= 2) buscarRepuestos(val);
+                buscarRepuestos(val);
               }}
               onChange={(e, val) => {
                 if (typeof val === 'object' && val !== null) agregarAlCarrito(val);

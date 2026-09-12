@@ -1,165 +1,141 @@
-import React from 'react';
-import { Package, Calendar, User, Truck, FileText, CheckCircle2, MapPin } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import api from '../../../core/api/axios';
+
+const ESTADO_LABELS = {
+  CREADA: 'Creada',
+  EN_TRASLADO: 'En Traslado',
+  COMPLETADA: 'Completada',
+};
+
+const Campo = ({ label, children, className = '' }) => (
+  <td className={`align-top py-2 px-3 border border-slate-300 ${className}`}>
+    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 m-0 mb-0.5">{label}</p>
+    <p className="text-[12px] font-semibold text-slate-900 m-0">{children || '-'}</p>
+  </td>
+);
 
 const PrintGuiaRemisionA4 = React.forwardRef(({ guia }, ref) => {
+  const [empresa, setEmpresa] = useState(null);
+
+  useEffect(() => {
+    api.get('/seguridad/empresa/')
+      .then((res) => setEmpresa(res.data.data))
+      .catch((error) => console.error('Error al obtener la configuración de la empresa', error));
+  }, []);
+
   if (!guia) return null;
 
+  const empresaLogo = empresa?.logo
+    ? (empresa.logo.startsWith('http') ? empresa.logo : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresa.logo}`)
+    : null;
+  const direccionEmpresa = [empresa?.direccion, empresa?.distrito, empresa?.provincia, empresa?.departamento]
+    .filter(Boolean).join(' - ');
+  const numeroDocumento = `${guia.serie_prefijo || 'GR'}-${String(guia.correlativo).padStart(6, '0')}`;
+
   return (
-    <div ref={ref} className="bg-white text-slate-800 font-sans p-8" style={{ width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}>
-      {/* HEADER */}
-      <div className="flex justify-between items-start mb-8 border-b border-slate-200 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Truck size={24} className="text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight m-0">GUÍA DE REMISIÓN</h1>
-          </div>
-          <p className="text-slate-500 font-medium text-sm m-0">Comprobante Interno de Traslado</p>
-        </div>
-        <div className="text-right">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold text-sm mb-2">
-            <CheckCircle2 size={16} /> {guia.estado}
-          </div>
-          <p className="text-slate-900 font-bold text-lg m-0">{guia.serie_prefijo}-{String(guia.correlativo).padStart(6, '0')}</p>
-        </div>
-      </div>
-
-      {/* INFO CARDS */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 mb-1">
-            <MapPin size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Punto de Partida</span>
-          </div>
-          <p className="font-bold text-slate-900 text-sm m-0 pl-6">{guia.ubigeo_partida_nombre}</p>
-          <p className="text-slate-600 text-xs m-0 pl-6">{guia.punto_partida}</p>
-        </div>
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 mb-1">
-            <MapPin size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Punto de Llegada</span>
-          </div>
-          <p className="font-bold text-slate-900 text-sm m-0 pl-6">{guia.ubigeo_llegada_nombre}</p>
-          <p className="text-slate-600 text-xs m-0 pl-6">{guia.punto_llegada}</p>
-        </div>
-        
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 mb-1">
-            <User size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Cliente / Destinatario</span>
-          </div>
-          <p className="font-bold text-slate-900 text-sm m-0 pl-6">{guia.cliente_nombre}</p>
-        </div>
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 mb-1">
-            <Calendar size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Fechas</span>
-          </div>
-          <p className="font-bold text-slate-900 text-sm m-0 pl-6">Emisión: {new Date(guia.fecha_emision).toLocaleDateString()}</p>
-          <p className="text-slate-600 text-xs m-0 pl-6">Traslado: {new Date(guia.fecha_traslado + 'T00:00').toLocaleDateString()}</p>
-        </div>
-
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 mb-1">
-            <Truck size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Transportista</span>
-          </div>
-          <p className="font-bold text-slate-900 text-sm m-0 pl-6">{guia.transportista_nombre}</p>
-        </div>
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-2 text-slate-500 mb-1">
-            <Package size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Vehículo / Placa</span>
-          </div>
-          <p className="font-bold text-slate-900 text-sm m-0 pl-6">{guia.vehiculo_placa}</p>
-        </div>
-      </div>
-
-      {/* MOTIVO Y OBSERVACIONES */}
-      <div className="mb-8 grid grid-cols-2 gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-slate-700 mb-2 font-semibold">
-            <FileText size={18} /> Motivo del Traslado
-          </div>
-          <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 text-sm text-slate-700">
-            {guia.motivo_traslado}
-          </div>
-        </div>
-        {guia.observaciones && (
+    <div ref={ref} className="bg-white text-slate-800 font-sans p-10" style={{ width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}>
+      {/* ENCABEZADO: EMPRESA + RECUADRO DE DOCUMENTO */}
+      <div className="flex justify-between items-start gap-6 mb-4">
+        <div className="flex items-center gap-3">
+          {empresaLogo && (
+            <img src={empresaLogo} alt="Logo" style={{ maxHeight: '60px', maxWidth: '150px', objectFit: 'contain' }} />
+          )}
           <div>
-            <div className="flex items-center gap-2 text-slate-700 mb-2 font-semibold">
-              <FileText size={18} /> Observaciones
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-700">
-              {guia.observaciones}
-            </div>
+            <p className="font-bold text-slate-900 text-[15px] m-0 leading-tight">{empresa?.razon_social || 'Empresa no configurada'}</p>
+            <p className="text-slate-600 text-[11px] m-0">RUC: {empresa?.ruc || '-'}</p>
+            <p className="text-slate-600 text-[11px] m-0">{direccionEmpresa || 'Dirección no configurada'}</p>
+            {empresa?.telefono && <p className="text-slate-600 text-[11px] m-0">Tel: {empresa.telefono}</p>}
           </div>
-        )}
-      </div>
-
-      {/* TABLE */}
-      <div className="mb-12">
-        <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
-          Bienes a Transportar <span className="text-sm font-normal text-slate-500">({guia.detalles?.length || 0} ítems)</span>
-        </h3>
-        <div className="rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-left border-collapse text-sm">
-            <thead className="bg-slate-100 text-slate-600">
-              <tr>
-                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Código</th>
-                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Descripción</th>
-                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs text-center">U.M.</th>
-                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs text-center">Cantidad</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {guia.detalles?.map((det, idx) => (
-                <tr key={det.id || idx} className="bg-white">
-                  <td className="py-3 px-4 font-medium text-slate-600">{det.repuesto_codigo}</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">{det.repuesto_nombre}</td>
-                  <td className="py-3 px-4 text-center text-slate-600 text-xs font-medium">
-                    {det.repuesto_unidad || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="font-bold text-blue-600 bg-blue-50 py-1 px-3 rounded-md">
-                      {parseFloat(det.cantidad)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        </div>
+        <div className="border-2 border-slate-800 rounded-md px-6 py-3 text-center" style={{ minWidth: '230px' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 m-0">RUC {empresa?.ruc || '-'}</p>
+          <p className="text-[13px] font-extrabold uppercase text-slate-900 m-0 mt-1">Guía de Remisión</p>
+          <p className="text-[11px] font-semibold uppercase text-slate-500 m-0">Remitente</p>
+          <p className="text-[22px] font-extrabold text-blue-700 m-0 mt-1">{numeroDocumento}</p>
         </div>
       </div>
+
+      <div className="flex justify-between items-center border-t-2 border-b-2 border-slate-800 py-1.5 mb-4">
+        <p className="text-[9px] italic text-slate-500 m-0">Comprobante interno de traslado. No es una Guía de Remisión Electrónica ante SUNAT.</p>
+        <span className="text-[10px] font-bold uppercase text-slate-700 m-0">
+          Estado: {ESTADO_LABELS[guia.estado] || guia.estado}
+        </span>
+      </div>
+
+      {/* DATOS DEL TRASLADO */}
+      <table className="w-full border-collapse mb-5" style={{ tableLayout: 'fixed' }}>
+        <tbody>
+          <tr>
+            <Campo label="Destinatario / Cliente" className="w-1/2">{guia.cliente_nombre}</Campo>
+            <Campo label="Motivo del traslado" className="w-1/2">{guia.motivo_traslado}</Campo>
+          </tr>
+          <tr>
+            <Campo label="Fecha de emisión">{new Date(guia.fecha_emision).toLocaleDateString()}</Campo>
+            <Campo label="Fecha de inicio de traslado">{new Date(guia.fecha_traslado + 'T00:00').toLocaleDateString()}</Campo>
+          </tr>
+          <tr>
+            <Campo label="Punto de partida">{guia.ubigeo_partida_nombre} — {guia.punto_partida}</Campo>
+            <Campo label="Punto de llegada">{guia.ubigeo_llegada_nombre} — {guia.punto_llegada}</Campo>
+          </tr>
+          <tr>
+            <Campo label="Transportista">{guia.transportista_nombre}</Campo>
+            <Campo label="Vehículo / Placa">{guia.vehiculo_placa}</Campo>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ITEMS */}
+      <p className="text-[12px] font-bold uppercase tracking-wide text-slate-700 mb-1.5">
+        Bienes a Transportar <span className="font-normal text-slate-500 normal-case">({guia.detalles?.length || 0} ítems)</span>
+      </p>
+      <table className="w-full border-collapse text-[12px] mb-6">
+        <thead>
+          <tr className="bg-slate-800 text-white">
+            <th className="py-2 px-3 text-left font-semibold border border-slate-800" style={{ width: '15%' }}>Código</th>
+            <th className="py-2 px-3 text-left font-semibold border border-slate-800">Descripción</th>
+            <th className="py-2 px-3 text-center font-semibold border border-slate-800" style={{ width: '12%' }}>U.M.</th>
+            <th className="py-2 px-3 text-center font-semibold border border-slate-800" style={{ width: '15%' }}>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {guia.detalles?.map((det, idx) => (
+            <tr key={det.id || idx} className={idx % 2 === 1 ? 'bg-slate-50' : 'bg-white'}>
+              <td className="py-2 px-3 border border-slate-300 text-slate-600">{det.repuesto_codigo}</td>
+              <td className="py-2 px-3 border border-slate-300 font-semibold text-slate-900">{det.repuesto_nombre}</td>
+              <td className="py-2 px-3 border border-slate-300 text-center text-slate-600">{det.repuesto_unidad || '-'}</td>
+              <td className="py-2 px-3 border border-slate-300 text-center font-bold text-slate-900">{parseFloat(det.cantidad)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       {/* OBSERVACIONES */}
       {guia.observaciones && (
-        <div className="mb-12">
-          <h3 className="font-bold text-slate-900 text-sm mb-2">Observaciones</h3>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-700 whitespace-pre-wrap">
+        <div className="mb-8">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Observaciones</p>
+          <p className="text-[12px] text-slate-700 border border-slate-300 rounded-md p-3 whitespace-pre-wrap m-0">
             {guia.observaciones}
-          </div>
+          </p>
         </div>
       )}
 
       {/* FIRMAS */}
-      <div className="mt-24 grid grid-cols-2 gap-12 px-12">
+      <div className="grid grid-cols-2 gap-12 px-12" style={{ marginTop: '90px' }}>
         <div className="text-center">
-          <div className="border-t border-slate-400 pt-3">
-            <p className="font-bold text-slate-800 text-sm m-0">Firma Remitente</p>
+          <div className="border-t border-slate-500 pt-2">
+            <p className="font-semibold text-slate-800 text-[11px] m-0">Firma Remitente</p>
           </div>
         </div>
         <div className="text-center">
-          <div className="border-t border-slate-400 pt-3">
-            <p className="font-bold text-slate-800 text-sm m-0">Firma Destinatario / Transportista</p>
+          <div className="border-t border-slate-500 pt-2">
+            <p className="font-semibold text-slate-800 text-[11px] m-0">Firma Destinatario / Transportista</p>
           </div>
         </div>
       </div>
-      
-      <div className="mt-12 text-center text-xs text-slate-400">
-        Documento generado por TallerApp
-      </div>
+
+      <p className="text-center text-[9px] text-slate-400 m-0" style={{ marginTop: '48px' }}>
+        Impreso el {new Date().toLocaleString()}
+      </p>
     </div>
   );
 });

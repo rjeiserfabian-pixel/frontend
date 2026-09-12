@@ -5,7 +5,7 @@ import {
   TableHead, TableRow, Button, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, Grid, Card, CardContent, Divider
 } from '@mui/material';
-import { ArrowLeft, DollarSign, X, Plus, Trash2, Wrench, FileText, Eye, Printer, Wallet, CheckCircle, Calendar, History, CreditCard, Banknote } from 'lucide-react';
+import { ArrowLeft, DollarSign, X, Plus, Trash2, Wrench, FileText, Eye, Printer, Wallet, CheckCircle, Calendar, History, CreditCard, Banknote, User, Receipt, Package, Phone, MapPin } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { useReactToPrint } from 'react-to-print';
@@ -22,6 +22,30 @@ const getMetodoIcon = (metodo) => {
   }
   return <Box sx={{ width: 28, height: 28, borderRadius: 1.5, bgcolor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Wallet size={16} /></Box>;
 };
+
+// Tarjeta de información con encabezado a color, usada en Cliente/Venta/Repuestos
+const InfoCard = ({ icon, title, accent, children }) => (
+  <Paper elevation={0} sx={{ p: 3, height: '100%', borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.04)' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2.5 }}>
+      <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${accent}1A`, color: accent, display: 'flex' }}>
+        {icon}
+      </Box>
+      <Typography variant="subtitle1" fontWeight={800} color="#1e293b">{title}</Typography>
+    </Box>
+    {children}
+  </Paper>
+);
+
+// Fila etiqueta/valor usada dentro de InfoCard
+const InfoField = ({ icon, label, children }) => (
+  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
+    {icon && <Box sx={{ color: '#94a3b8', mt: 0.3 }}>{icon}</Box>}
+    <Box sx={{ minWidth: 0 }}>
+      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{label}</Typography>
+      <Typography variant="body1" fontWeight={700} sx={{ wordBreak: 'break-word', color: '#1e293b' }}>{children}</Typography>
+    </Box>
+  </Box>
+);
 
 export default function CuentasCobrarDetallePage() {
   const { id } = useParams();
@@ -231,12 +255,20 @@ export default function CuentasCobrarDetallePage() {
     }
   };
 
-  const getEstadoChip = (estado) => {
-    switch (estado) {
+  const getEstadoChip = (cuota) => {
+    // El estado real de CuotaCredito es PENDIENTE/PARCIAL/PAGADA/ATRASADA
+    // (nunca "PAGADO"/"ATRASADO", esos son los de CuentaPorCobrar) — antes
+    // este switch comparaba contra los valores equivocados y nunca hacía
+    // match salvo PENDIENTE. Además, como nada marca ATRASADA en la BD,
+    // "esta_vencida" (calculado por el backend por fecha) tiene prioridad.
+    if (cuota.estado !== 'PAGADA' && cuota.esta_vencida) {
+      return <Chip label="Atrasada" color="error" size="small" />;
+    }
+    switch (cuota.estado) {
       case 'PENDIENTE': return <Chip label="Pendiente" color="warning" size="small" />;
-      case 'PAGADO': return <Chip label="Pagada" color="success" size="small" />;
-      case 'ATRASADO': return <Chip label="Atrasada" color="error" size="small" />;
-      default: return <Chip label={estado} size="small" />;
+      case 'PARCIAL': return <Chip label="Pago Parcial" color="info" size="small" />;
+      case 'PAGADA': return <Chip label="Pagada" color="success" size="small" />;
+      default: return <Chip label={cuota.estado} size="small" />;
     }
   };
 
@@ -249,117 +281,102 @@ export default function CuentasCobrarDetallePage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
-          <ArrowLeft />
-        </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-          Detalle de Cuenta: {cuenta.codigo_credito}
-        </Typography>
+      <Box sx={{
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+        borderRadius: 4, color: 'white', p: 3, mb: 3,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
+        boxShadow: '0 8px 24px rgba(30,58,138,0.25)'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton onClick={() => navigate(-1)} sx={{ color: 'white', mr: 1 }}>
+            <ArrowLeft />
+          </IconButton>
+          <Box sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,0.18)', borderRadius: 2, display: 'flex' }}>
+            <Wallet size={24} />
+          </Box>
+          <Box>
+            <Typography variant="h5" fontWeight={800} lineHeight={1.2}>
+              Cuenta {cuenta.codigo_credito}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.85 }}>
+              {cuenta.cliente_nombre} {cuenta.cliente_apellidos}
+            </Typography>
+          </Box>
+          {cuenta.esta_atrasada && cuenta.estado !== 'PAGADO' && (
+            <Chip label="Atrasado" color="error" size="small" sx={{ fontWeight: 700, ml: 1 }} />
+          )}
+        </Box>
+        <Box sx={{ textAlign: 'right', bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 2, px: 2.5, py: 1 }}>
+          <Typography variant="caption" sx={{ opacity: 0.85, display: 'block' }}>Saldo pendiente</Typography>
+          <Typography variant="h6" fontWeight={800}>S/ {Number(cuenta.saldo_pendiente).toFixed(2)}</Typography>
+        </Box>
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Sección: Datos del Cliente */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', borderBottom: '1px solid #eee', pb: 1 }}>
-              Datos del Cliente
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="textSecondary">Nombre Completo</Typography>
-                  <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{cuenta.cliente_nombre} {cuenta.cliente_apellidos}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Teléfono</Typography>
-                  <Typography variant="body1">{cuenta.cliente_telefono || 'N/A'}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="textSecondary">DNI</Typography>
-                  <Typography variant="body1">{cuenta.cliente_dni || 'N/A'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Dirección</Typography>
-                  <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{cuenta.cliente_direccion || 'N/A'}</Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+          <InfoCard icon={<User size={18} />} title="Datos del Cliente" accent="#2563eb">
+            <InfoField icon={<User size={15} />} label="Nombre Completo">
+              {cuenta.cliente_nombre} {cuenta.cliente_apellidos}
+            </InfoField>
+            <InfoField label="DNI">{cuenta.cliente_dni || 'N/A'}</InfoField>
+            <InfoField icon={<Phone size={15} />} label="Teléfono">{cuenta.cliente_telefono || 'N/A'}</InfoField>
+            <InfoField icon={<MapPin size={15} />} label="Dirección">{cuenta.cliente_direccion || 'N/A'}</InfoField>
+          </InfoCard>
         </Grid>
 
         {/* Sección: Datos de Venta */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', borderBottom: '1px solid #eee', pb: 1 }}>
-              Datos de la Venta
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="textSecondary">Nro Comprobante</Typography>
-                  <Typography variant="body1">{cuenta.venta_serie || 'N/A'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Fecha y Hora</Typography>
-                  <Typography variant="body1">
-                    {cuenta.venta_fecha ? new Date(cuenta.venta_fecha).toLocaleString() : 'N/A'}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="textSecondary">Monto Financiado</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>S/ {Number(cuenta.monto_financiado).toFixed(2)}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Saldo Pendiente Total</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: cuenta.saldo_pendiente > 0 ? '#ef4444' : 'inherit' }}>
-                    S/ {Number(cuenta.saldo_pendiente).toFixed(2)}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+          <InfoCard icon={<Receipt size={18} />} title="Datos de la Venta" accent="#7c3aed">
+            <InfoField label="Nro Comprobante">{cuenta.venta_serie || 'N/A'}</InfoField>
+            <InfoField icon={<Calendar size={15} />} label="Fecha y Hora">
+              {cuenta.venta_fecha ? new Date(cuenta.venta_fecha).toLocaleString() : 'N/A'}
+            </InfoField>
+            <InfoField label="Monto Financiado">S/ {Number(cuenta.monto_financiado).toFixed(2)}</InfoField>
+            <Box sx={{ mt: 2.5, p: 1.8, borderRadius: 2, bgcolor: cuenta.saldo_pendiente > 0 ? '#fef2f2' : '#f0fdf4', border: '1px solid', borderColor: cuenta.saldo_pendiente > 0 ? '#fecaca' : '#bbf7d0' }}>
+              <Typography variant="caption" sx={{ color: cuenta.saldo_pendiente > 0 ? '#991b1b' : '#166534', fontWeight: 700, textTransform: 'uppercase' }}>
+                Saldo Pendiente Total
+              </Typography>
+              <Typography variant="h6" fontWeight={800} sx={{ color: cuenta.saldo_pendiente > 0 ? '#dc2626' : '#16a34a' }}>
+                S/ {Number(cuenta.saldo_pendiente).toFixed(2)}
+              </Typography>
+            </Box>
+          </InfoCard>
         </Grid>
 
         {/* Sección: Repuestos */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', borderBottom: '1px solid #eee', pb: 1 }}>
-              Repuestos
-            </Typography>
+          <InfoCard icon={<Package size={18} />} title="Repuestos" accent="#16a34a">
             {repuestos.length > 0 ? (
               repuestos.map((detalle, index) => (
-                <Box key={detalle.id} sx={{ mb: index !== repuestos.length - 1 ? 2 : 0, pb: index !== repuestos.length - 1 ? 2 : 0, borderBottom: index !== repuestos.length - 1 ? '1px dashed #e0e0e0' : 'none' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Wrench size={16} color="#3b82f6" style={{ marginRight: 6 }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', flex: 1 }}>
+                <Box
+                  key={detalle.id}
+                  sx={{
+                    mb: index !== repuestos.length - 1 ? 2 : 0,
+                    pb: index !== repuestos.length - 1 ? 2 : 0,
+                    borderBottom: index !== repuestos.length - 1 ? '1px dashed #e2e8f0' : 'none'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Wrench size={15} color="#16a34a" />
+                    <Typography variant="body2" fontWeight={700} sx={{ flex: 1 }}>
                       {detalle.repuesto_nombre}
                     </Typography>
                   </Box>
-                  <Grid container spacing={1}>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="textSecondary">Cant: </Typography>
-                      <Typography variant="body2" component="span">{detalle.cantidad} {detalle.repuesto_unidad_medida}</Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="textSecondary">P.U: </Typography>
-                      <Typography variant="body2" component="span">S/ {Number(detalle.precio_unitario).toFixed(2)}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography variant="caption" color="textSecondary">Subtotal: </Typography>
-                      <Typography variant="body2" component="span" sx={{ fontWeight: 'bold' }}>S/ {Number(detalle.subtotal_linea).toFixed(2)}</Typography>
-                    </Grid>
-                  </Grid>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {detalle.cantidad} {detalle.repuesto_unidad_medida} × S/ {Number(detalle.precio_unitario).toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700} color="#16a34a">
+                      S/ {Number(detalle.subtotal_linea).toFixed(2)}
+                    </Typography>
+                  </Box>
                 </Box>
               ))
             ) : (
-              <Typography variant="body2" color="textSecondary">No hay repuestos.</Typography>
+              <Typography variant="body2" color="text.secondary">No hay repuestos.</Typography>
             )}
-          </Paper>
+          </InfoCard>
         </Grid>
       </Grid>
 
@@ -416,7 +433,7 @@ export default function CuentasCobrarDetallePage() {
                   <TableCell>{fechaFormat}</TableCell>
                   <TableCell align="right">S/ {Number(cuota.monto).toFixed(2)}</TableCell>
                   <TableCell align="right">S/ {Number(cuota.saldo_pendiente).toFixed(2)}</TableCell>
-                  <TableCell align="center">{getEstadoChip(cuota.estado)}</TableCell>
+                  <TableCell align="center">{getEstadoChip(cuota)}</TableCell>
                 <TableCell align="center">
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                     {cuota.estado !== 'PAGADA' && (
@@ -456,15 +473,30 @@ export default function CuentasCobrarDetallePage() {
       </TableContainer>
 
       {/* MODAL DE PAGO MÚLTIPLE */}
-      <Dialog open={openPago} onClose={handleClosePago} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          Cobrar Cuota {selectedCuota?.numero_cuota}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Saldo Pendiente de la Cuota: <strong>S/ {Number(selectedCuota?.saldo_pendiente).toFixed(2)}</strong>
-          </Typography>
-
+      <Dialog open={openPago} onClose={handleClosePago} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
+        <Box sx={{
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          color: 'white', px: 3, py: 2.5,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ p: 1.2, bgcolor: 'rgba(255,255,255,0.18)', borderRadius: 2, display: 'flex' }}>
+              <DollarSign size={22} />
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
+                Cobrar Cuota {selectedCuota?.numero_cuota}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                Saldo pendiente: S/ {Number(selectedCuota?.saldo_pendiente).toFixed(2)}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton onClick={handleClosePago} sx={{ color: 'white' }}>
+            <X size={20} />
+          </IconButton>
+        </Box>
+        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
           <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'flex-start' }}>
             <FormControl size="small" sx={{ flex: 2 }}>
               <InputLabel>Método de Pago</InputLabel>
@@ -555,13 +587,14 @@ export default function CuentasCobrarDetallePage() {
           )}
 
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClosePago} color="inherit">Cancelar</Button>
-          <Button 
-            onClick={confirmarPago} 
-            variant="contained" 
+        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
+          <Button onClick={handleClosePago} variant="outlined" color="inherit">Cancelar</Button>
+          <Button
+            onClick={confirmarPago}
+            variant="contained"
             color="success"
             disabled={pagosActuales.length === 0 || restanteTotal < 0}
+            sx={{ fontWeight: 700 }}
           >
             Confirmar Pago
           </Button>

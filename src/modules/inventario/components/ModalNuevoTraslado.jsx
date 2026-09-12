@@ -108,6 +108,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
       repuesto_id: repuestoSeleccionado.repuesto,
       repuesto_codigo: repuestoSeleccionado.repuesto_codigo,
       repuesto_nombre: repuestoSeleccionado.repuesto_nombre,
+      repuesto_unidad: repuestoSeleccionado.repuesto_unidad,
       ubicacion_origen_id: repuestoSeleccionado.ubicacion,
       ubicacion_origen_nombre: repuestoSeleccionado.ubicacion_codigo,
       stock_disponible: repuestoSeleccionado.stock_disponible,
@@ -368,7 +369,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             <Autocomplete
               sx={{ flexGrow: 1 }}
               options={repuestosOrigen}
-              getOptionLabel={(opt) => `${opt.repuesto_codigo} - ${opt.repuesto_nombre} | Ubicación: ${opt.ubicacion_codigo} | Stock Disp: ${opt.stock_disponible}`}
+              getOptionLabel={(opt) => `${opt.repuesto_codigo} - ${opt.repuesto_nombre} (${opt.repuesto_unidad || '-'}) | Ubicación: ${opt.ubicacion_codigo} | Stock Disp: ${opt.stock_disponible}`}
               value={repuestoSeleccionado}
               inputValue={repuestoBusqueda}
               onOpen={() => {
@@ -419,6 +420,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
               <TableRow sx={{ '& th': { borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: 600, py: 1.5 } }}>
                 <TableCell>Código</TableCell>
                 <TableCell>Producto</TableCell>
+                <TableCell align="center">U.M.</TableCell>
                 <TableCell align="center">Ubi. Origen</TableCell>
                 <TableCell align="center">Stock Origen</TableCell>
                 <TableCell align="center">Ubi. Destino</TableCell>
@@ -429,7 +431,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             <TableBody>
               {detalles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#94a3b8' }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#94a3b8' }}>
                     Agregue productos para transferir seleccionándolos arriba
                   </TableCell>
                 </TableRow>
@@ -440,6 +442,11 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 500, color: '#0f172a' }}>
                         {row.repuesto_nombre}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                        {row.repuesto_unidad || '-'}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -505,7 +512,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
           }}>
             <Info size={20} color="#3b82f6" />
             <Typography variant="body2" sx={{ color: '#1e3a8a', fontWeight: 500 }}>
-              El stock se actualizará automáticamente en los almacenes seleccionados y se registrarán los movimientos en el Kardex.
+              El stock saldrá de inmediato del almacén origen y quedará "en tránsito". Recién se sumará al almacén destino cuando alguien confirme la recepción física desde el listado de movimientos. Todo queda registrado en el Kardex.
             </Typography>
           </Box>
         </Paper>

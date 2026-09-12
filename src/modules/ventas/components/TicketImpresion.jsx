@@ -38,6 +38,13 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
     getEmpresaData('departamento')
   ].filter(Boolean).join(' - ');
 
+  // La venta se contabiliza siempre en soles; si se cobró en otra moneda
+  // (USD/EUR), mostramos el equivalente solo como referencia usando el TC
+  // guardado en la venta, para que el cliente vea con qué se le cobró.
+  const esMonedaExtranjera = venta.moneda && venta.moneda !== 'PEN';
+  const simboloMonedaVenta = venta.moneda === 'EUR' ? '€' : '$';
+  const tcVenta = parseFloat(venta.tipo_cambio) || 1;
+
   // Datos para el QR
   const qrData = JSON.stringify({
     ID: venta.id,
@@ -94,9 +101,9 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
           <Typography variant="body2" sx={{ fontSize: '11px' }}>
             Tel: {getEmpresaData('telefono', '000-000-000')}
           </Typography>
-          {getEmpresaData('pagina_web') && (
+          {getEmpresaData('web') && (
             <Typography variant="body2" sx={{ fontSize: '11px' }}>
-              Pagina: {getEmpresaData('pagina_web')}
+              Pagina: {getEmpresaData('web')}
             </Typography>
           )}
         </Box>
@@ -128,6 +135,9 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
           </Typography>
           <Typography variant="body2" sx={{ fontSize: '11px' }}>
             <strong>VENDEDOR:</strong> {venta.vendedor_nombre || 'Sistema'}
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '11px' }}>
+            <strong>CONDICIÓN DE PAGO:</strong> {venta.estado === 'AL_CREDITO' ? 'AL CRÉDITO' : 'AL CONTADO'}
           </Typography>
           {venta.caja_nombre && (
             <Typography variant="body2" sx={{ fontSize: '11px' }}>
@@ -172,6 +182,14 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
               {(parseFloat(venta.total) || 0).toFixed(2)}
             </Typography>
           </Box>
+          {esMonedaExtranjera && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+              <Typography variant="body2" sx={{ fontSize: '11px' }}>Equivalente (TC {tcVenta.toFixed(4)})</Typography>
+              <Typography variant="body2" sx={{ fontSize: '11px' }}>
+                {simboloMonedaVenta} {((parseFloat(venta.total) || 0) / tcVenta).toFixed(2)}
+              </Typography>
+            </Box>
+          )}
           {parseFloat(venta.vuelto) > 0 && (
             <>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
@@ -180,6 +198,14 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
                   {(parseFloat(venta.monto_recibido) || 0).toFixed(2)}
                 </Typography>
               </Box>
+              {esMonedaExtranjera && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                  <Typography variant="body2" sx={{ fontSize: '11px' }}>Recibió en {simboloMonedaVenta}</Typography>
+                  <Typography variant="body2" sx={{ fontSize: '11px' }}>
+                    {simboloMonedaVenta} {((parseFloat(venta.monto_recibido) || 0) / tcVenta).toFixed(2)}
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                 <Typography variant="body2" sx={{ fontSize: '12px' }}>VUELTO S/</Typography>
                 <Typography variant="body2" sx={{ fontSize: '12px' }}>
