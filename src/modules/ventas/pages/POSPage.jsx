@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, Chip, IconButton, 
   CircularProgress, Grid, TextField, MenuItem, Select, InputLabel, 
-  FormControl, Divider, Tabs, Tab, Autocomplete, InputAdornment,
+  FormControl, Divider, Autocomplete, InputAdornment,
   Dialog, DialogContent, DialogActions, TablePagination
 } from '@mui/material';
 import {
@@ -26,7 +26,14 @@ import { useSucursal } from '../../../shared/contexts/SucursalContext';
 
 // -------------------------------------------------------------
 const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
-  const [tabValue, setTabValue] = useState(0);
+  // Fechas por defecto: primer día del mes actual → hoy
+  const _now = new Date();
+  const _yy = _now.getFullYear();
+  const _mm = String(_now.getMonth() + 1).padStart(2, '0');
+  const _dd = String(_now.getDate()).padStart(2, '0');
+  const defaultDesde = `${_yy}-${_mm}-01`;
+  const defaultHasta = `${_yy}-${_mm}-${_dd}`;
+
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSaleDetails, setSelectedSaleDetails] = useState(null);
@@ -34,18 +41,79 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Filtros
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroCliente, setFiltroCliente] = useState('');
+  const [filtroReferencia, setFiltroReferencia] = useState('');
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(defaultDesde);
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(defaultHasta);
+
+  // Valores con debounce para los campos de texto libre
+  // (evita una petición HTTP por cada tecla presionada)
+  const [debouncedCliente, setDebouncedCliente] = useState('');
+  const [debouncedReferencia, setDebouncedReferencia] = useState('');
+  const debounceClienteRef = useRef(null);
+  const debounceRefRef = useRef(null);
+
+  const handleClienteChange = (valor) => {
+    setFiltroCliente(valor);
+    if (debounceClienteRef.current) clearTimeout(debounceClienteRef.current);
+    debounceClienteRef.current = setTimeout(() => {
+      setDebouncedCliente(valor);
+      setPage(0);
+    }, 400);
+  };
+
+  const handleReferenciaChange = (valor) => {
+    setFiltroReferencia(valor);
+    if (debounceRefRef.current) clearTimeout(debounceRefRef.current);
+    debounceRefRef.current = setTimeout(() => {
+      setDebouncedReferencia(valor);
+      setPage(0);
+    }, 400);
+  };
+
+  const hayFiltrosActivos = !!(
+    filtroEstado ||
+    filtroCliente ||
+    filtroReferencia ||
+    filtroFechaDesde !== defaultDesde ||
+    filtroFechaHasta !== defaultHasta
+  );
+
+  const limpiarFiltros = () => {
+    setFiltroEstado('');
+    setFiltroCliente('');
+    setFiltroReferencia('');
+    setDebouncedCliente('');
+    setDebouncedReferencia('');
+    setFiltroFechaDesde(defaultDesde);
+    setFiltroFechaHasta(defaultHasta);
+    setPage(0);
+  };
+
+  // Mapeo de valor del Select → valor interno del backend
+  const ESTADO_MAP = {
+    PRE_VENTA:  'PRE_VENTA',
+    PAGADA:     'PAGADA',
+    AL_CREDITO: 'AL_CREDITO',
+    CANCELADA:  'CANCELADA',
+  };
+
   const fetchVentas = async () => {
     try {
       setLoading(true);
-      let estadoFiltro = '';
-      if (tabValue === 1) estadoFiltro = 'PENDIENTE';
-      if (tabValue === 2) estadoFiltro = 'COMPLETADO';
-      
-      const response = await ventasService.getVentas({
+      const params = {
         page: page + 1,
         page_size: rowsPerPage,
-        estado: estadoFiltro
-      });
+      };
+      if (filtroEstado)        params.estado         = ESTADO_MAP[filtroEstado] || filtroEstado;
+      if (debouncedCliente)   params.cliente         = debouncedCliente;
+      if (debouncedReferencia) params.referencia     = debouncedReferencia;
+      if (filtroFechaDesde)   params.fecha_desde     = filtroFechaDesde;
+      if (filtroFechaHasta)   params.fecha_hasta     = filtroFechaHasta;
+
+      const response = await ventasService.getVentas(params);
       const data = response.results ? response.results : response;
       setVentas(data);
       setTotalCount(response.count || (response.results ? response.results.length : response.length) || 0);
@@ -60,7 +128,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   useEffect(() => {
     fetchVentas();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, tabValue]);
+  }, [page, rowsPerPage, filtroEstado, debouncedCliente, debouncedReferencia, filtroFechaDesde, filtroFechaHasta]);
 
   const getStatusChip = (estado) => {
     switch(estado) {
@@ -99,13 +167,68 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
         </Button>
       </Box>
 
-      <Paper sx={{ width: '100%', mb: 3, boxShadow: 1 }}>
-        <Tabs value={tabValue} onChange={(e, v) => { setTabValue(v); setPage(0); }} indicatorColor="primary" textColor="primary" sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
-          <Tab label="Todos" />
-          <Tab label="Pendientes" />
-          <Tab label="Completados" />
-        </Tabs>
+      {/* Barra de Filtros */}
+      <Paper sx={{ p: 2, mb: 3, borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <TextField
+            select
+            size="small"
+            label="Estado"
+            sx={{ width: 200 }}
+            value={filtroEstado}
+            onChange={(e) => { setFiltroEstado(e.target.value); setPage(0); }}
+          >
+            <MenuItem value="">Todos</MenuItem>
+            <MenuItem value="PRE_VENTA">Pendiente</MenuItem>
+            <MenuItem value="PAGADA">Completado</MenuItem>
+            <MenuItem value="AL_CREDITO">Crédito</MenuItem>
+            <MenuItem value="CANCELADA">Cancelado</MenuItem>
+          </TextField>
+          <TextField
+            size="small"
+            label="Cliente"
+            sx={{ width: 220 }}
+            value={filtroCliente}
+            onChange={(e) => handleClienteChange(e.target.value)}
+            placeholder="Nombre o DNI/RUC..."
+          />
+          <TextField
+            size="small"
+            label="Comprobante / Referencia"
+            sx={{ width: 220 }}
+            value={filtroReferencia}
+            onChange={(e) => handleReferenciaChange(e.target.value)}
+            placeholder="F001-000001 o TK-..."
+          />
+          <TextField
+            type="date"
+            size="small"
+            label="Desde"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ style: { colorScheme: 'light' } }}
+            sx={{ width: 160 }}
+            value={filtroFechaDesde}
+            onChange={(e) => { setFiltroFechaDesde(e.target.value); setPage(0); }}
+          />
+          <TextField
+            type="date"
+            size="small"
+            label="Hasta"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ style: { colorScheme: 'light' } }}
+            sx={{ width: 160 }}
+            value={filtroFechaHasta}
+            onChange={(e) => { setFiltroFechaHasta(e.target.value); setPage(0); }}
+          />
+          {hayFiltrosActivos && (
+            <Button size="small" onClick={limpiarFiltros} sx={{ textTransform: 'none' }}>
+              Limpiar filtros
+            </Button>
+          )}
+        </Box>
+      </Paper>
 
+      <Paper sx={{ width: '100%', mb: 3, boxShadow: 1 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
         ) : (

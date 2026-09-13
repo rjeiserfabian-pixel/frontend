@@ -26,11 +26,18 @@ export default function OrdenesTrabajoPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   // Filtros
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+  const currentDay = String(now.getDate()).padStart(2, '0');
+  const defaultDesde = `${currentYear}-${currentMonth}-01`;
+  const defaultHasta = `${currentYear}-${currentMonth}-${currentDay}`;
+
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroMecanico, setFiltroMecanico] = useState(null);
   const [filtroPlaca, setFiltroPlaca] = useState('');
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(defaultDesde);
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(defaultHasta);
 
   useEffect(() => {
     api.get('seguridad/usuarios/?rol=MECANICO')
@@ -72,15 +79,15 @@ export default function OrdenesTrabajoPage() {
     setter(valor);
   };
 
-  const hayFiltrosActivos = !!(filtroEstado || filtroMecanico || filtroPlaca || filtroFechaDesde || filtroFechaHasta);
+  const hayFiltrosActivos = !!(filtroEstado || filtroMecanico || filtroPlaca || filtroFechaDesde !== defaultDesde || filtroFechaHasta !== defaultHasta);
 
   const limpiarFiltros = () => {
     setPage(0);
     setFiltroEstado('');
     setFiltroMecanico(null);
     setFiltroPlaca('');
-    setFiltroFechaDesde('');
-    setFiltroFechaHasta('');
+    setFiltroFechaDesde(defaultDesde);
+    setFiltroFechaHasta(defaultHasta);
   };
 
   const getStatusColor = (estado) => {

@@ -38,8 +38,8 @@ export const tallerService = {
     return response.data;
   },
 
-  anularOrden: async (id, motivo) => {
-    const response = await api.post(`taller/ordenes/${id}/anular/`, { motivo });
+  anularOrden: async (id, motivo, categoria = null) => {
+    const response = await api.post(`taller/ordenes/${id}/anular/`, { motivo, categoria });
     return response.data;
   },
 
@@ -49,7 +49,12 @@ export const tallerService = {
     const response = await api.post('taller/hallazgos/', data);
     return response.data;
   },
-  
+
+  actualizarHallazgo: async (id, data) => {
+    const response = await api.patch(`taller/hallazgos/${id}/`, data);
+    return response.data;
+  },
+
   eliminarHallazgo: async (id) => {
     const response = await api.delete(`taller/hallazgos/${id}/`);
     return response.data;

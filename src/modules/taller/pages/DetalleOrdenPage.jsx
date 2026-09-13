@@ -5,7 +5,7 @@ import {
   TextField, Dialog, DialogTitle, DialogContent, DialogActions, Chip,
   Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup, Alert
 } from '@mui/material';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
@@ -38,7 +38,9 @@ export default function DetalleOrdenPage() {
   const [repuestosSeleccionados, setRepuestosSeleccionados] = useState([]);
   
   const [nuevoHallazgo, setNuevoHallazgo] = useState('');
+  const [editingHallazgoId, setEditingHallazgoId] = useState(null);
   const [nuevoServicio, setNuevoServicio] = useState({ descripcion: '', precio: 0 });
+  const [hallazgoOrigenId, setHallazgoOrigenId] = useState(null);
   const [nuevoRepuesto, setNuevoRepuesto] = useState({ repuesto: null, cantidad: 1, precio_unitario: 0 });
   
   const [mecanicos, setMecanicos] = useState([]);
@@ -116,29 +118,83 @@ export default function DetalleOrdenPage() {
     }
   };
 
+  const handleOpenNuevoHallazgo = () => {
+    setEditingHallazgoId(null);
+    setNuevoHallazgo('');
+    setHallazgoModal(true);
+  };
+
+  const handleOpenEditarHallazgo = (hallazgo) => {
+    setEditingHallazgoId(hallazgo.id);
+    setNuevoHallazgo(hallazgo.descripcion);
+    setHallazgoModal(true);
+  };
+
   const handleAddHallazgo = async () => {
     try {
-      await tallerService.crearHallazgo({ orden: id, descripcion: nuevoHallazgo });
+      if (editingHallazgoId) {
+        await tallerService.actualizarHallazgo(editingHallazgoId, { descripcion: nuevoHallazgo });
+      } else {
+        await tallerService.crearHallazgo({ orden: id, descripcion: nuevoHallazgo });
+      }
       setHallazgoModal(false);
       setNuevoHallazgo('');
+      setEditingHallazgoId(null);
       fetchOrden();
     } catch (err) {
       console.error(err);
+      Swal.fire('Error', 'No se pudo guardar el hallazgo.', 'error');
     }
+  };
+
+  const handleDeleteHallazgo = async (hallazgo) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar hallazgo?',
+      text: hallazgo.descripcion,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await tallerService.eliminarHallazgo(hallazgo.id);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'No se pudo eliminar el hallazgo.', 'error');
+    }
+  };
+
+  const handleConvertirAServicio = (hallazgo) => {
+    setHallazgoOrigenId(hallazgo.id);
+    setNuevoServicio({ descripcion: hallazgo.descripcion, precio: 0 });
+    setServicioModal(true);
+  };
+
+  const handleOpenNuevoServicio = () => {
+    setHallazgoOrigenId(null);
+    setNuevoServicio({ descripcion: '', precio: 0 });
+    setServicioModal(true);
   };
 
   const handleAddServicio = async () => {
     try {
-      await tallerService.crearServicio({ 
-        orden: id, 
-        descripcion: nuevoServicio.descripcion, 
-        precio_estimado: nuevoServicio.precio 
+      await tallerService.crearServicio({
+        orden: id,
+        descripcion: nuevoServicio.descripcion,
+        precio_estimado: nuevoServicio.precio,
+        hallazgo_origen: hallazgoOrigenId
       });
       setServicioModal(false);
       setNuevoServicio({ descripcion: '', precio: 0 });
+      setHallazgoOrigenId(null);
       fetchOrden();
     } catch (err) {
       console.error(err);
+      Swal.fire('Error', 'No se pudo agregar el servicio.', 'error');
     }
   };
   
@@ -166,6 +222,8 @@ export default function DetalleOrdenPage() {
       handleImprimirPDF();
     } catch (err) {
       console.error("Error al generar cotización", err);
+      const mensaje = err.response?.data?.detail || err.response?.data?.error || 'Error al generar la cotización.';
+      Swal.fire('No se pudo generar la cotización', mensaje, 'error');
     }
   };
 
@@ -237,25 +295,40 @@ export default function DetalleOrdenPage() {
   };
 
   const handleAnularOrden = async () => {
-    const { value: motivo } = await Swal.fire({
+    const opcionesHtml = CATEGORIAS_ANULACION.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+
+    const { value: formValues } = await Swal.fire({
       title: 'Anular Orden de Trabajo',
-      html: 'Esta acción liberará las reservas de stock de los repuestos aprobados aún no instalados.<br/>Ingresa el motivo de la anulación:',
-      input: 'textarea',
-      inputPlaceholder: 'Motivo de la anulación...',
+      html: `
+        <p style="text-align:left; font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">
+          Esta acción liberará las reservas de stock de los repuestos aprobados aún no instalados.
+        </p>
+        <select id="swal-categoria" class="swal2-select" style="width: 95%; display: block; margin: 0 auto 10px auto;">
+          ${opcionesHtml}
+        </select>
+        <textarea id="swal-motivo" class="swal2-textarea" placeholder="Detalle del motivo de la anulación..." style="width: 95%; display: block; margin: 0 auto;"></textarea>
+      `,
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
       confirmButtonText: 'Anular Orden',
       cancelButtonText: 'Cancelar',
-      inputValidator: (value) => {
-        if (!value || !value.trim()) return 'Debes indicar un motivo.';
+      focusConfirm: false,
+      preConfirm: () => {
+        const categoria = document.getElementById('swal-categoria').value;
+        const motivo = document.getElementById('swal-motivo').value.trim();
+        if (!motivo) {
+          Swal.showValidationMessage('Debes indicar el detalle del motivo.');
+          return false;
+        }
+        return { categoria, motivo };
       }
     });
 
-    if (!motivo) return;
+    if (!formValues) return;
 
     try {
-      await tallerService.anularOrden(id, motivo);
+      await tallerService.anularOrden(id, formValues.motivo, formValues.categoria);
       Swal.fire({ icon: 'success', title: 'Orden anulada', showConfirmButton: false, timer: 1500 });
       fetchOrden();
     } catch (err) {
@@ -309,6 +382,37 @@ export default function DetalleOrdenPage() {
     }
   };
 
+  const handleEditarFechaEntrega = async () => {
+    const { value: newDateStr } = await Swal.fire({
+      title: orden.fecha_estimada_entrega ? 'Editar Fecha de Entrega' : 'Prometer Fecha de Entrega',
+      html: 'Fecha en la que se le comunicará al cliente que el vehículo estará listo.',
+      input: 'date',
+      inputValue: orden.fecha_estimada_entrega ? new Date(orden.fecha_estimada_entrega).toISOString().split('T')[0] : '',
+      showCancelButton: true,
+      confirmButtonColor: '#0f172a',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (newDateStr) {
+      try {
+        await tallerService.actualizarOrden(id, { fecha_estimada_entrega: newDateStr + 'T18:00:00Z' });
+        fetchOrden();
+        Swal.fire('Actualizado', 'La fecha de entrega prometida ha sido actualizada.', 'success');
+      } catch (error) {
+        Swal.fire('Error', 'No se pudo actualizar la fecha de entrega.', 'error');
+      }
+    }
+  };
+
+  const CATEGORIAS_ANULACION = [
+    { value: 'RECHAZO_CLIENTE', label: 'Cliente rechazó la cotización' },
+    { value: 'ERROR_REGISTRO', label: 'Error en el registro' },
+    { value: 'DUPLICADO', label: 'Orden duplicada' },
+    { value: 'OTRO', label: 'Otro motivo' },
+  ];
+
   // Helper para mostrar motivos de ingreso estructurados
   const renderMotivos = (texto) => {
     if (!texto) return <Typography variant="body2" color="text.secondary">Sin motivo especificado</Typography>;
@@ -332,9 +436,31 @@ export default function DetalleOrdenPage() {
   const activeStep = orden.estado === 'FACTURADO' ? PASOS_ORDEN.length : PASOS_ORDEN.indexOf(orden.estado);
   const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
   const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
-  const motivoCancelacion = estaCancelada
-    ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')?.observaciones
+  const historialCancelacion = estaCancelada
+    ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')
     : null;
+  const motivoCancelacion = historialCancelacion?.observaciones;
+  const categoriaCancelacionLabel = historialCancelacion?.motivo_categoria_display;
+
+  // Totales de la cotización: se calculan en el cliente porque servicios/repuestos
+  // ya vienen completos en el detalle de la orden (evita otro round-trip al backend).
+  const totalCotizado = (orden.servicios || []).reduce((sum, s) => sum + parseFloat(s.precio_estimado || 0), 0)
+    + (orden.repuestos || []).reduce((sum, r) => sum + (parseFloat(r.cantidad || 0) * parseFloat(r.precio_unitario || 0)), 0);
+  const totalAprobado = (orden.servicios || []).filter(s => s.aprobado_cliente).reduce((sum, s) => sum + parseFloat(s.precio_estimado || 0), 0)
+    + (orden.repuestos || []).filter(r => r.aprobado_cliente).reduce((sum, r) => sum + (parseFloat(r.cantidad || 0) * parseFloat(r.precio_unitario || 0)), 0);
+  const hayAlgoCotizado = (orden.servicios?.length || 0) > 0 || (orden.repuestos?.length || 0) > 0;
+  const hayAlgoAprobado = (orden.servicios || []).some(s => s.aprobado_cliente) || (orden.repuestos || []).some(r => r.aprobado_cliente);
+
+  // Antigüedad de la orden: alerta si sigue en Recepción sin mecánico asignado
+  // después de un tiempo razonable (2 horas) — evita que un vehículo "se pierda" en el mostrador.
+  const horasEnTaller = orden.fecha_ingreso ? (Date.now() - new Date(orden.fecha_ingreso).getTime()) / (1000 * 60 * 60) : 0;
+  const formatTiempoEnTaller = (horas) => {
+    if (horas < 1) return `${Math.max(1, Math.round(horas * 60))} min`;
+    if (horas < 24) return `${Math.round(horas)} h`;
+    return `${Math.round(horas / 24)} d`;
+  };
+  const LIMITE_HORAS_SIN_ASIGNAR = 2;
+  const alertaSinAsignar = orden.estado === 'RECEPCIONADO' && !orden.mecanico_nombre && horasEnTaller >= LIMITE_HORAS_SIN_ASIGNAR;
 
   return (
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
@@ -388,7 +514,12 @@ export default function DetalleOrdenPage() {
         <Box sx={{ width: '100%', px: 2 }}>
           {estaCancelada ? (
             <Alert severity="error" sx={{ borderRadius: '12px' }}>
-              <Typography fontWeight="700">Orden Cancelada</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                <Typography fontWeight="700">Orden Cancelada</Typography>
+                {categoriaCancelacionLabel && (
+                  <Chip label={categoriaCancelacionLabel} size="small" color="error" variant="outlined" sx={{ fontWeight: 600 }} />
+                )}
+              </Box>
               <Typography variant="body2">
                 {motivoCancelacion || 'Sin motivo registrado.'}
               </Typography>
@@ -445,7 +576,7 @@ export default function DetalleOrdenPage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         
         {/* Top Row: Info Cards */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 3 }}>
           
           {/* Vehiculo Card */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
@@ -527,8 +658,63 @@ export default function DetalleOrdenPage() {
                   </Box>
                 )}
               </Box>
+
+              {alertaSinAsignar && (
+                <Box sx={{ mt: 2, p: 1.5, borderRadius: '10px', bgcolor: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AlertTriangle size={16} className="text-red-600" style={{ flexShrink: 0 }} />
+                  <Typography variant="caption" fontWeight="700" color="#b91c1c">
+                    Sin mecánico asignado hace {formatTiempoEnTaller(horasEnTaller)}
+                  </Typography>
+                </Box>
+              )}
             </Paper>
-          
+
+          {/* Resumen Económico y Tiempos */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
+              <Typography variant="subtitle1" fontWeight="700" mb={3} display="flex" alignItems="center" gap={1}>
+                <Box sx={{ p: 1, bgcolor: 'slate.100', borderRadius: 2 }}><Coins size={18} className="text-slate-700" /></Box>
+                Resumen y Tiempos
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Total Cotizado</Typography>
+                  <Typography variant="h6" fontWeight="700">
+                    {hayAlgoCotizado ? `S/ ${totalCotizado.toFixed(2)}` : '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Total Aprobado</Typography>
+                  <Typography variant="body1" fontWeight="700" color={hayAlgoAprobado ? 'success.main' : 'text.secondary'}>
+                    {hayAlgoAprobado ? `S/ ${totalAprobado.toFixed(2)}` : 'Aún no hay aprobación'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase" display="flex" alignItems="center" gap={0.5}>
+                    <Calendar size={12} /> Entrega Prometida
+                  </Typography>
+                  <Typography variant="body1" fontWeight="600">
+                    {orden.fecha_estimada_entrega ? new Date(orden.fecha_estimada_entrega).toLocaleDateString('es-PE') : 'Sin definir'}
+                  </Typography>
+                </Box>
+                {!estaCancelada && orden.estado !== 'FACTURADO' && (
+                  <IconButton size="small" onClick={handleEditarFechaEntrega} title="Editar fecha de entrega prometida">
+                    <Pencil size={16} />
+                  </IconButton>
+                )}
+              </Box>
+
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight="600" textTransform="uppercase">Tiempo en Taller</Typography>
+                <Typography variant="body1" fontWeight="600">{formatTiempoEnTaller(horasEnTaller)}</Typography>
+              </Box>
+            </Paper>
+
         </Box>
 
         {/* Bottom Area: Workflow */}
@@ -567,12 +753,13 @@ export default function DetalleOrdenPage() {
           {orden.estado === 'ESPERANDO_APROBACION' && (
             <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: isExpirada ? '#fef2f2' : '#f0fdf4', border: '1px solid', borderColor: isExpirada ? '#fecaca' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
-                <Typography variant="h6" fontWeight="700" color={isExpirada ? "#991b1b" : "#166534"} mb={0.5}>
+                <Typography variant="h6" fontWeight="700" color={isExpirada ? "#991b1b" : "#166534"} mb={0.5} display="flex" alignItems="center" gap={1.5}>
                   {isExpirada ? "Cotización Expirada" : "Esperando Aprobación del Cliente"}
+                  <Chip label={`Total: S/ ${totalCotizado.toFixed(2)}`} size="small" sx={{ fontWeight: 700, bgcolor: 'white' }} />
                 </Typography>
                 <Typography variant="body2" color={isExpirada ? "#7f1d1d" : "#15803d"}>
-                  {isExpirada 
-                    ? `La cotización expiró el ${new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString()}. Edite la fecha de vencimiento para poder aprobarla.` 
+                  {isExpirada
+                    ? `La cotización expiró el ${new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString()}. Edite la fecha de vencimiento para poder aprobarla.`
                     : `La cotización ha sido generada (Vence: ${orden.fecha_vencimiento_cotizacion ? new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString() : 'N/A'}). Registra la confirmación del cliente para comenzar los trabajos.`}
                 </Typography>
               </Box>
@@ -601,10 +788,11 @@ export default function DetalleOrdenPage() {
           {orden.estado === 'APROBADO' && (
             <Box mb={4}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" fontWeight="800" color="primary.main" display="flex" alignItems="center" gap={1}>
+                <Typography variant="h6" fontWeight="800" color="primary.main" display="flex" alignItems="center" gap={1.5}>
                   <CheckCircle size={24} /> Panel de Ejecución
+                  <Chip label={`Total Aprobado: S/ ${totalAprobado.toFixed(2)}`} size="small" color="primary" sx={{ fontWeight: 700 }} />
                 </Typography>
-                
+
                 <Button
                   variant="contained"
                   onClick={handleFinalizarOrden}
@@ -716,14 +904,14 @@ export default function DetalleOrdenPage() {
                   size="small" 
                   variant="outlined"
                   startIcon={<Plus size={16} />} 
-                  onClick={() => setHallazgoModal(true)}
+                  onClick={handleOpenNuevoHallazgo}
                   disabled={!esEditable}
                   sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
                 >
                   Nuevo Hallazgo
                 </Button>
               </Box>
-              
+
               <Box sx={{ p: 3 }}>
                 {orden.hallazgos.length === 0 ? (
                   <Box py={4} textAlign="center">
@@ -731,14 +919,45 @@ export default function DetalleOrdenPage() {
                   </Box>
                 ) : (
                   <Grid container spacing={2}>
-                    {orden.hallazgos.map((h, i) => (
-                      <Grid item xs={12} sm={6} key={h.id}>
-                        <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: '12px', bgcolor: 'slate.50' }}>
-                          <Typography variant="caption" color="text.secondary" fontWeight="600" display="block" mb={0.5}>Hallazgo #{i+1}</Typography>
-                          <Typography variant="body2" fontWeight="500">{h.descripcion}</Typography>
-                        </Box>
-                      </Grid>
-                    ))}
+                    {orden.hallazgos.map((h, i) => {
+                      const yaCotizado = (orden.servicios || []).some(s => s.hallazgo_origen === h.id);
+                      return (
+                        <Grid item xs={12} sm={6} key={h.id}>
+                          <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: '12px', bgcolor: 'slate.50' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary" fontWeight="600" display="flex" alignItems="center" gap={1}>
+                                Hallazgo #{i+1}
+                                {yaCotizado && (
+                                  <Chip label="Cotizado" size="small" color="success" variant="outlined" sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700 }} />
+                                )}
+                              </Typography>
+                              {esEditable && (
+                                <Box sx={{ display: 'flex', gap: 0.25 }}>
+                                  <IconButton size="small" onClick={() => handleOpenEditarHallazgo(h)} title="Editar hallazgo">
+                                    <Pencil size={14} />
+                                  </IconButton>
+                                  <IconButton size="small" onClick={() => handleDeleteHallazgo(h)} title="Eliminar hallazgo">
+                                    <X size={14} className="text-red-500" />
+                                  </IconButton>
+                                </Box>
+                              )}
+                            </Box>
+                            <Typography variant="body2" fontWeight="500" mb={1.5}>{h.descripcion}</Typography>
+                            {esEditable && !yaCotizado && (
+                              <Button
+                                size="small"
+                                variant="text"
+                                startIcon={<Wrench size={14} />}
+                                onClick={() => handleConvertirAServicio(h)}
+                                sx={{ textTransform: 'none', fontWeight: 600, p: 0, minWidth: 0 }}
+                              >
+                                Convertir a Servicio
+                              </Button>
+                            )}
+                          </Box>
+                        </Grid>
+                      );
+                    })}
                   </Grid>
                 )}
               </Box>
@@ -755,7 +974,7 @@ export default function DetalleOrdenPage() {
                   size="small" 
                   variant="outlined"
                   startIcon={<Plus size={16} />} 
-                  onClick={() => setServicioModal(true)}
+                  onClick={handleOpenNuevoServicio}
                   disabled={!esEditable}
                   sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
                 >
@@ -897,9 +1116,9 @@ export default function DetalleOrdenPage() {
 
       {/* Modal Hallazgo */}
       <Dialog open={hallazgoModal} onClose={() => setHallazgoModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle><Typography variant="h6" fontWeight="700">Registrar Hallazgo</Typography></DialogTitle>
+        <DialogTitle><Typography variant="h6" fontWeight="700">{editingHallazgoId ? 'Editar Hallazgo' : 'Registrar Hallazgo'}</Typography></DialogTitle>
         <DialogContent>
-          <TextField 
+          <TextField
             autoFocus margin="dense" label="Descripción detallada" fullWidth multiline rows={3}
             value={nuevoHallazgo} onChange={e => setNuevoHallazgo(e.target.value)}
             sx={{ mt: 1 }}
@@ -907,21 +1126,26 @@ export default function DetalleOrdenPage() {
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={() => setHallazgoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
-          <Button onClick={handleAddHallazgo} variant="contained" disabled={!nuevoHallazgo} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Guardar</Button>
+          <Button onClick={handleAddHallazgo} variant="contained" disabled={!nuevoHallazgo} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>
+            {editingHallazgoId ? 'Guardar Cambios' : 'Guardar'}
+          </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Modal Servicio */}
       <Dialog open={servicioModal} onClose={() => setServicioModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
         <DialogTitle><Typography variant="h6" fontWeight="700">Agregar Servicio a Cotizar</Typography></DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
-          <TextField 
-            label="Descripción del Servicio" fullWidth 
+          {hallazgoOrigenId && (
+            <Alert severity="info" sx={{ borderRadius: '10px' }}>Este servicio quedará vinculado al hallazgo de inspección.</Alert>
+          )}
+          <TextField
+            label="Descripción del Servicio" fullWidth
             value={nuevoServicio.descripcion} onChange={e => setNuevoServicio({...nuevoServicio, descripcion: e.target.value})}
             sx={{ mt: 1 }}
           />
-          <TextField 
-            label="Costo Estimado (S/)" type="number" fullWidth 
+          <TextField
+            label="Costo Estimado (S/)" type="number" fullWidth
             value={nuevoServicio.precio} onChange={e => setNuevoServicio({...nuevoServicio, precio: e.target.value})}
           />
         </DialogContent>

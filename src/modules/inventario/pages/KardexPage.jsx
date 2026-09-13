@@ -214,8 +214,8 @@ export default function KardexPage() {
                         <TableCell align="center">
                           <Typography variant="body2">{mov.stock_resultante}</Typography>
                         </TableCell>
-                        <TableCell sx={{ fontSize: '0.8rem', maxWidth: 200 }}>
-                          <Typography variant="caption" noWrap title={mov.motivo}>
+                        <TableCell sx={{ fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                          <Typography variant="caption" title={mov.motivo}>
                             {mov.motivo}
                           </Typography>
                         </TableCell>
