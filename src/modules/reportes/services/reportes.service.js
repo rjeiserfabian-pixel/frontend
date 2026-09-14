@@ -95,6 +95,17 @@ export const exportarVehiculos = (params, formato) =>
     responseType: 'blob',
   });
 
+// ── Reporte de Kioskos ───────────────────────────────────────────────────────
+
+export const getReporteKioskos = (params) =>
+  api.get('reportes/kioskos/', { params: buildParams(params) });
+
+export const exportarKioskos = (params, formato) =>
+  api.get('reportes/kioskos/', {
+    params: buildParams({ ...params, formato }),
+    responseType: 'blob',
+  });
+
 // ── Helper: dispara descarga de blob ────────────────────────────────────────
 
 /**

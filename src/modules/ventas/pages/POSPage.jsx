@@ -27,6 +27,7 @@ import { useSucursal } from '../../../shared/contexts/SucursalContext';
 
 // -------------------------------------------------------------
 const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
+  const { activeSucursalId } = useSucursal();
   // Fechas por defecto: primer día del mes actual → hoy
   const _now = new Date();
   const _yy = _now.getFullYear();
@@ -113,6 +114,10 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
       if (debouncedReferencia) params.referencia     = debouncedReferencia;
       if (filtroFechaDesde)   params.fecha_desde     = filtroFechaDesde;
       if (filtroFechaHasta)   params.fecha_hasta     = filtroFechaHasta;
+      // Un cajero solo debe ver los pedidos de SU sucursal activa — antes se
+      // mostraban tickets de todas las sucursales a cualquier cajero, lo que
+      // permitía cobrar (y descontar stock de) una sucursal ajena.
+      if (activeSucursalId)   params.sucursal        = activeSucursalId;
 
       const response = await ventasService.getVentas(params);
       const data = response.results ? response.results : response;
@@ -129,7 +134,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   useEffect(() => {
     fetchVentas();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, filtroEstado, debouncedCliente, debouncedReferencia, filtroFechaDesde, filtroFechaHasta]);
+  }, [page, rowsPerPage, filtroEstado, debouncedCliente, debouncedReferencia, filtroFechaDesde, filtroFechaHasta, activeSucursalId]);
 
   const getStatusChip = (estado) => {
     switch(estado) {
@@ -844,6 +849,11 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 // -------------------------------------------------------------
 const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const { activeSucursalId } = useSucursal();
+  // Si estamos cobrando un ticket ya existente (Kiosko/OT), su sucursal quedó
+  // fijada al crearlo — se respeta esa, no la que el cajero tenga activa en
+  // su pantalla en este momento (antes se sobreescribía, causando que el
+  // stock se descontara del almacén equivocado).
+  const sucursalEfectivaId = initialOrder?.sucursal ? String(initialOrder.sucursal) : activeSucursalId;
   const [condicionPago, setCondicionPago] = useState('CONTADO');
   // El vencimiento del crédito no puede ser hoy (ver validación al confirmar),
   // así que el valor por defecto ya nace en mañana para no forzar al cajero
@@ -950,8 +960,8 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   }, [tipoComprobanteId, seriesComprobante]);
 
   useEffect(() => {
-    if (activeSucursalId && todosAlmacenes.length > 0) {
-      const sucursalAlmacenes = todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId));
+    if (sucursalEfectivaId && todosAlmacenes.length > 0) {
+      const sucursalAlmacenes = todosAlmacenes.filter(a => String(a.sucursal) === String(sucursalEfectivaId));
       if (sucursalAlmacenes.length > 0) {
         // Seleccionamos el primero por defecto (Almacén Principal de esta sucursal)
         setAlmacenOrigenId(sucursalAlmacenes[0].id);
@@ -959,7 +969,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
         setAlmacenOrigenId('');
       }
     }
-  }, [activeSucursalId, todosAlmacenes]);
+  }, [sucursalEfectivaId, todosAlmacenes]);
 
   useEffect(() => {
     if (pagos.length === 1 && total > 0) {
@@ -1200,7 +1210,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       return;
     }
 
-    if (!activeSucursalId) {
+    if (!sucursalEfectivaId) {
       Swal.fire('Atención', 'Seleccione una sucursal en la parte superior antes de continuar.', 'warning');
       return;
     }
@@ -1290,7 +1300,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
 
       const payloadVenta = {
         venta_id: initialOrder?.id || undefined,
-        sucursal_id: parseInt(activeSucursalId, 10),
+        sucursal_id: parseInt(sucursalEfectivaId, 10),
         cliente_id: finalClienteId,
         tipo_comprobante_id: tipoComprobanteId,
         serie_id: serieId,
@@ -1430,12 +1440,12 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                   value={almacenOrigenId}
                   label="Almacén de Origen"
                   onChange={e => setAlmacenOrigenId(e.target.value)}
-                  disabled={!activeSucursalId}
+                  disabled={!sucursalEfectivaId}
                 >
-                  {todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId)).map(a => (
+                  {todosAlmacenes.filter(a => String(a.sucursal) === String(sucursalEfectivaId)).map(a => (
                     <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>
                   ))}
-                  {todosAlmacenes.filter(a => String(a.sucursal) === String(activeSucursalId)).length === 0 && (
+                  {todosAlmacenes.filter(a => String(a.sucursal) === String(sucursalEfectivaId)).length === 0 && (
                     <MenuItem value="" disabled>No hay almacenes</MenuItem>
                   )}
                   </Select>

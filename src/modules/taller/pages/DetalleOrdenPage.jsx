@@ -3,7 +3,8 @@ import {
   Box, Typography, Button, Paper, Grid, Divider, CircularProgress,
   Table, TableBody, TableCell, TableHead, TableRow, IconButton,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions, Chip,
-  Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup, Alert
+  Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup, Alert,
+  LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
 import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -19,6 +20,12 @@ const PASOS_ORDEN = [
   'APROBADO',
   'FINALIZADO'
 ];
+
+const SEVERIDAD_CONFIG = {
+  ALTA: { label: 'Alta', color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
+  MEDIA: { label: 'Media', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
+  BAJA: { label: 'Baja', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+};
 
 export default function DetalleOrdenPage() {
   const { id } = useParams();
@@ -38,9 +45,11 @@ export default function DetalleOrdenPage() {
   const [repuestosSeleccionados, setRepuestosSeleccionados] = useState([]);
   
   const [nuevoHallazgo, setNuevoHallazgo] = useState('');
+  const [nuevaSeveridad, setNuevaSeveridad] = useState('MEDIA');
   const [editingHallazgoId, setEditingHallazgoId] = useState(null);
   const [nuevoServicio, setNuevoServicio] = useState({ descripcion: '', precio: 0 });
   const [hallazgoOrigenId, setHallazgoOrigenId] = useState(null);
+  const [editingServicioId, setEditingServicioId] = useState(null);
   const [nuevoRepuesto, setNuevoRepuesto] = useState({ repuesto: null, cantidad: 1, precio_unitario: 0 });
   
   const [mecanicos, setMecanicos] = useState([]);
@@ -121,21 +130,23 @@ export default function DetalleOrdenPage() {
   const handleOpenNuevoHallazgo = () => {
     setEditingHallazgoId(null);
     setNuevoHallazgo('');
+    setNuevaSeveridad('MEDIA');
     setHallazgoModal(true);
   };
 
   const handleOpenEditarHallazgo = (hallazgo) => {
     setEditingHallazgoId(hallazgo.id);
     setNuevoHallazgo(hallazgo.descripcion);
+    setNuevaSeveridad(hallazgo.severidad || 'MEDIA');
     setHallazgoModal(true);
   };
 
   const handleAddHallazgo = async () => {
     try {
       if (editingHallazgoId) {
-        await tallerService.actualizarHallazgo(editingHallazgoId, { descripcion: nuevoHallazgo });
+        await tallerService.actualizarHallazgo(editingHallazgoId, { descripcion: nuevoHallazgo, severidad: nuevaSeveridad });
       } else {
-        await tallerService.crearHallazgo({ orden: id, descripcion: nuevoHallazgo });
+        await tallerService.crearHallazgo({ orden: id, descripcion: nuevoHallazgo, severidad: nuevaSeveridad });
       }
       setHallazgoModal(false);
       setNuevoHallazgo('');
@@ -176,28 +187,110 @@ export default function DetalleOrdenPage() {
 
   const handleOpenNuevoServicio = () => {
     setHallazgoOrigenId(null);
+    setEditingServicioId(null);
     setNuevoServicio({ descripcion: '', precio: 0 });
+    setServicioModal(true);
+  };
+
+  const handleOpenEditarServicio = (servicio) => {
+    setHallazgoOrigenId(null);
+    setEditingServicioId(servicio.id);
+    setNuevoServicio({ descripcion: servicio.descripcion, precio: servicio.precio_estimado });
     setServicioModal(true);
   };
 
   const handleAddServicio = async () => {
     try {
-      await tallerService.crearServicio({
-        orden: id,
-        descripcion: nuevoServicio.descripcion,
-        precio_estimado: nuevoServicio.precio,
-        hallazgo_origen: hallazgoOrigenId
-      });
+      if (editingServicioId) {
+        await tallerService.actualizarServicio(editingServicioId, {
+          descripcion: nuevoServicio.descripcion,
+          precio_estimado: nuevoServicio.precio,
+        });
+      } else {
+        await tallerService.crearServicio({
+          orden: id,
+          descripcion: nuevoServicio.descripcion,
+          precio_estimado: nuevoServicio.precio,
+          hallazgo_origen: hallazgoOrigenId
+        });
+      }
       setServicioModal(false);
       setNuevoServicio({ descripcion: '', precio: 0 });
       setHallazgoOrigenId(null);
+      setEditingServicioId(null);
       fetchOrden();
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'No se pudo agregar el servicio.', 'error');
+      Swal.fire('Error', 'No se pudo guardar el servicio.', 'error');
     }
   };
-  
+
+  const handleDeleteServicio = async (servicio) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar servicio?',
+      text: servicio.descripcion,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await tallerService.eliminarServicio(servicio.id);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'No se pudo eliminar el servicio.', 'error');
+    }
+  };
+
+  const handleEditarCantidadRepuesto = async (repuesto) => {
+    const { value: nuevaCantidad } = await Swal.fire({
+      title: 'Editar Cantidad',
+      html: `<p style="text-align:left;font-size:0.85rem;color:#64748b;margin-bottom:8px;">${repuesto.repuesto_detalle?.nombre || 'Repuesto'}</p>`,
+      input: 'number',
+      inputValue: parseFloat(repuesto.cantidad),
+      inputAttributes: { min: 0.01, step: 'any' },
+      showCancelButton: true,
+      confirmButtonColor: '#0f172a',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value || parseFloat(value) <= 0) return 'Ingresa una cantidad válida.';
+      }
+    });
+    if (!nuevaCantidad) return;
+    try {
+      await tallerService.actualizarRepuesto(repuesto.id, { cantidad: nuevaCantidad });
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'No se pudo actualizar la cantidad.', 'error');
+    }
+  };
+
+  const handleDeleteRepuesto = async (repuesto) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar repuesto?',
+      text: repuesto.repuesto_detalle?.nombre || 'Repuesto',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await tallerService.eliminarRepuesto(repuesto.id);
+      fetchOrden();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'No se pudo eliminar el repuesto.', 'error');
+    }
+  };
+
   const handleAddRepuesto = async () => {
     if (!nuevoRepuesto.repuesto) return;
     try {
@@ -435,6 +528,8 @@ export default function DetalleOrdenPage() {
   const estaCancelada = orden.estado === 'CANCELADO';
   const activeStep = orden.estado === 'FACTURADO' ? PASOS_ORDEN.length : PASOS_ORDEN.indexOf(orden.estado);
   const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
+  const hayMecanicoAsignado = !!orden.mecanico_asignado;
+  const puedeAgregarHallazgo = esEditable && hayMecanicoAsignado;
   const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
   const historialCancelacion = estaCancelada
     ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')
@@ -812,11 +907,25 @@ export default function DetalleOrdenPage() {
               
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'slate.50', height: '100%' }}>
-                    <Typography variant="subtitle1" fontWeight="700" mb={2} display="flex" justifyContent="space-between">
+                  {(() => {
+                    const aprobados = orden.servicios.filter(s => s.aprobado_cliente);
+                    const completados = aprobados.filter(s => s.completado).length;
+                    const pct = aprobados.length ? (completados / aprobados.length) * 100 : 0;
+                    const completo = aprobados.length > 0 && pct === 100;
+                    return (
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: completo ? '#86efac' : 'divider', borderLeft: '4px solid', borderLeftColor: completo ? '#22c55e' : '#f59e0b', bgcolor: 'slate.50', height: '100%' }}>
+                    <Typography variant="subtitle1" fontWeight="700" mb={1} display="flex" justifyContent="space-between">
                       Servicios Aprobados
-                      <Chip label={`${orden.servicios.filter(s => s.aprobado_cliente && s.completado).length}/${orden.servicios.filter(s => s.aprobado_cliente).length}`} size="small" />
+                      <Chip label={`${completados}/${aprobados.length}`} size="small" color={completo ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
                     </Typography>
+                    {aprobados.length > 0 && (
+                      <LinearProgress
+                        variant="determinate"
+                        value={pct}
+                        color={completo ? 'success' : 'warning'}
+                        sx={{ height: 8, borderRadius: 4, mb: 2, bgcolor: 'rgba(0,0,0,0.06)' }}
+                      />
+                    )}
                     <Box display="flex" flexDirection="column" gap={2}>
                       {orden.servicios.filter(s => s.aprobado_cliente).map(s => (
                         <Paper key={s.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white' }}>
@@ -838,14 +947,30 @@ export default function DetalleOrdenPage() {
                       )}
                     </Box>
                   </Paper>
+                    );
+                  })()}
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'slate.50', height: '100%' }}>
-                    <Typography variant="subtitle1" fontWeight="700" mb={2} display="flex" justifyContent="space-between">
+                  {(() => {
+                    const aprobados = orden.repuestos.filter(r => r.aprobado_cliente);
+                    const instalados = aprobados.filter(r => r.instalado).length;
+                    const pct = aprobados.length ? (instalados / aprobados.length) * 100 : 0;
+                    const completo = aprobados.length > 0 && pct === 100;
+                    return (
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: completo ? '#86efac' : 'divider', borderLeft: '4px solid', borderLeftColor: completo ? '#22c55e' : '#f59e0b', bgcolor: 'slate.50', height: '100%' }}>
+                    <Typography variant="subtitle1" fontWeight="700" mb={1} display="flex" justifyContent="space-between">
                       Repuestos Aprobados
-                      <Chip label={`${orden.repuestos.filter(r => r.aprobado_cliente && r.instalado).length}/${orden.repuestos.filter(r => r.aprobado_cliente).length}`} size="small" />
+                      <Chip label={`${instalados}/${aprobados.length}`} size="small" color={completo ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
                     </Typography>
+                    {aprobados.length > 0 && (
+                      <LinearProgress
+                        variant="determinate"
+                        value={pct}
+                        color={completo ? 'success' : 'warning'}
+                        sx={{ height: 8, borderRadius: 4, mb: 2, bgcolor: 'rgba(0,0,0,0.06)' }}
+                      />
+                    )}
                     <Box display="flex" flexDirection="column" gap={2}>
                       {orden.repuestos.filter(r => r.aprobado_cliente).map(r => (
                         <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white' }}>
@@ -870,6 +995,8 @@ export default function DetalleOrdenPage() {
                       )}
                     </Box>
                   </Paper>
+                    );
+                  })()}
                 </Grid>
               </Grid>
             </Box>
@@ -900,17 +1027,29 @@ export default function DetalleOrdenPage() {
                   <ClipboardList size={20} className="text-slate-500" />
                   1. Inspección y Hallazgos
                 </Typography>
-                <Button 
-                  size="small" 
-                  variant="outlined"
-                  startIcon={<Plus size={16} />} 
-                  onClick={handleOpenNuevoHallazgo}
-                  disabled={!esEditable}
-                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
-                >
-                  Nuevo Hallazgo
-                </Button>
+                <Tooltip title={esEditable && !hayMecanicoAsignado ? 'Asigna un mecánico antes de registrar hallazgos' : ''}>
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Plus size={16} />}
+                      onClick={handleOpenNuevoHallazgo}
+                      disabled={!puedeAgregarHallazgo}
+                      sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                    >
+                      Nuevo Hallazgo
+                    </Button>
+                  </span>
+                </Tooltip>
               </Box>
+
+              {esEditable && !hayMecanicoAsignado && (
+                <Box sx={{ px: 3, pt: 2 }}>
+                  <Alert severity="warning" sx={{ borderRadius: '10px' }}>
+                    Asigna un mecánico responsable antes de registrar hallazgos de inspección.
+                  </Alert>
+                </Box>
+              )}
 
               <Box sx={{ p: 3 }}>
                 {orden.hallazgos.length === 0 ? (
@@ -921,12 +1060,18 @@ export default function DetalleOrdenPage() {
                   <Grid container spacing={2}>
                     {orden.hallazgos.map((h, i) => {
                       const yaCotizado = (orden.servicios || []).some(s => s.hallazgo_origen === h.id);
+                      const sev = SEVERIDAD_CONFIG[h.severidad] || SEVERIDAD_CONFIG.MEDIA;
                       return (
                         <Grid item xs={12} sm={6} key={h.id}>
-                          <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: '12px', bgcolor: 'slate.50' }}>
+                          <Box sx={{ p: 2, border: '1px solid', borderColor: sev.border, borderLeft: '4px solid', borderLeftColor: sev.color, borderRadius: '12px', bgcolor: sev.bg }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                               <Typography variant="caption" color="text.secondary" fontWeight="600" display="flex" alignItems="center" gap={1}>
                                 Hallazgo #{i+1}
+                                <Chip
+                                  label={sev.label}
+                                  size="small"
+                                  sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700, bgcolor: sev.color, color: 'white' }}
+                                />
                                 {yaCotizado && (
                                   <Chip label="Cotizado" size="small" color="success" variant="outlined" sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700 }} />
                                 )}
@@ -988,12 +1133,13 @@ export default function DetalleOrdenPage() {
                     <TableCell sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Descripción del Servicio</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Costo Estimado</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Estado Aprobación</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {orden.servicios.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
                         <Typography variant="body2" color="text.secondary">No hay servicios agregados a la cotización.</Typography>
                       </TableCell>
                     </TableRow>
@@ -1009,10 +1155,34 @@ export default function DetalleOrdenPage() {
                             <Chip label="Pendiente" size="small" sx={{ fontWeight: 600, borderRadius: '6px', bgcolor: 'slate.100', color: 'slate.600' }} />
                           )}
                         </TableCell>
+                        <TableCell align="center">
+                          {esEditable && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
+                              <IconButton size="small" onClick={() => handleOpenEditarServicio(s)} title="Editar servicio">
+                                <Pencil size={14} />
+                              </IconButton>
+                              <IconButton size="small" onClick={() => handleDeleteServicio(s)} title="Eliminar servicio">
+                                <X size={14} className="text-red-500" />
+                              </IconButton>
+                            </Box>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
+                {orden.servicios.length > 0 && (
+                  <TableBody>
+                    <TableRow sx={{ bgcolor: 'slate.50' }}>
+                      <TableCell sx={{ fontWeight: 700, borderBottom: 'none' }}>Total</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main', borderBottom: 'none' }}>
+                        S/ {orden.servicios.reduce((sum, s) => sum + parseFloat(s.precio_estimado || 0), 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: 'none' }} />
+                      <TableCell sx={{ borderBottom: 'none' }} />
+                    </TableRow>
+                  </TableBody>
+                )}
               </Table>
             </Paper>
 
@@ -1042,12 +1212,13 @@ export default function DetalleOrdenPage() {
                     <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Cantidad</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Precio Unit.</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Total</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600, color: 'text.secondary', py: 2 }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {orden.repuestos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
                         <Typography variant="body2" color="text.secondary">No hay repuestos agregados a la cotización.</Typography>
                       </TableCell>
                     </TableRow>
@@ -1055,7 +1226,7 @@ export default function DetalleOrdenPage() {
                     orden.repuestos.map(r => (
                       <TableRow key={r.id} hover>
                         <TableCell sx={{ fontWeight: 500 }}>
-                          {r.repuesto_detalle?.nombre || 'Repuesto'} 
+                          {r.repuesto_detalle?.nombre || 'Repuesto'}
                           {r.repuesto_detalle?.codigo_fabricante && <Typography variant="caption" display="block" color="text.secondary">{r.repuesto_detalle.codigo_fabricante}</Typography>}
                         </TableCell>
                         <TableCell align="center" sx={{ fontWeight: 600 }}>{parseFloat(r.cantidad).toString()}</TableCell>
@@ -1063,10 +1234,33 @@ export default function DetalleOrdenPage() {
                         <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
                           S/ {(parseFloat(r.cantidad) * parseFloat(r.precio_unitario)).toFixed(2)}
                         </TableCell>
+                        <TableCell align="center">
+                          {esEditable && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
+                              <IconButton size="small" onClick={() => handleEditarCantidadRepuesto(r)} title="Editar cantidad">
+                                <Pencil size={14} />
+                              </IconButton>
+                              <IconButton size="small" onClick={() => handleDeleteRepuesto(r)} title="Eliminar repuesto">
+                                <X size={14} className="text-red-500" />
+                              </IconButton>
+                            </Box>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
+                {orden.repuestos.length > 0 && (
+                  <TableBody>
+                    <TableRow sx={{ bgcolor: 'slate.50' }}>
+                      <TableCell colSpan={3} sx={{ fontWeight: 700, borderBottom: 'none' }}>Total</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main', borderBottom: 'none' }}>
+                        S/ {orden.repuestos.reduce((sum, r) => sum + (parseFloat(r.cantidad || 0) * parseFloat(r.precio_unitario || 0)), 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: 'none' }} />
+                    </TableRow>
+                  </TableBody>
+                )}
               </Table>
             </Paper>
 
@@ -1121,8 +1315,31 @@ export default function DetalleOrdenPage() {
           <TextField
             autoFocus margin="dense" label="Descripción detallada" fullWidth multiline rows={3}
             value={nuevoHallazgo} onChange={e => setNuevoHallazgo(e.target.value)}
-            sx={{ mt: 1 }}
+            sx={{ mt: 1, mb: 2 }}
           />
+          <Typography variant="caption" fontWeight="600" color="text.secondary" display="block" mb={1}>
+            Gravedad
+          </Typography>
+          <ToggleButtonGroup
+            value={nuevaSeveridad}
+            exclusive
+            onChange={(e, val) => val && setNuevaSeveridad(val)}
+            size="small"
+            fullWidth
+          >
+            {Object.entries(SEVERIDAD_CONFIG).map(([key, cfg]) => (
+              <ToggleButton
+                key={key}
+                value={key}
+                sx={{
+                  textTransform: 'none', fontWeight: 700, borderRadius: '8px !important',
+                  '&.Mui-selected': { bgcolor: cfg.color, color: 'white', '&:hover': { bgcolor: cfg.color } },
+                }}
+              >
+                {cfg.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={() => setHallazgoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
@@ -1134,7 +1351,7 @@ export default function DetalleOrdenPage() {
 
       {/* Modal Servicio */}
       <Dialog open={servicioModal} onClose={() => setServicioModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle><Typography variant="h6" fontWeight="700">Agregar Servicio a Cotizar</Typography></DialogTitle>
+        <DialogTitle><Typography variant="h6" fontWeight="700">{editingServicioId ? 'Editar Servicio' : 'Agregar Servicio a Cotizar'}</Typography></DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           {hallazgoOrigenId && (
             <Alert severity="info" sx={{ borderRadius: '10px' }}>Este servicio quedará vinculado al hallazgo de inspección.</Alert>
@@ -1151,7 +1368,9 @@ export default function DetalleOrdenPage() {
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={() => setServicioModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
-          <Button onClick={handleAddServicio} variant="contained" disabled={!nuevoServicio.descripcion} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Agregar</Button>
+          <Button onClick={handleAddServicio} variant="contained" disabled={!nuevoServicio.descripcion} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>
+            {editingServicioId ? 'Guardar Cambios' : 'Agregar'}
+          </Button>
         </DialogActions>
       </Dialog>
       

@@ -1,14 +1,18 @@
 import React, { useState } from "react";
-import { 
-  Search, Car, Wrench, CheckCircle, ArrowLeft, ArrowRight, 
-  User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete, Trash2
+import {
+  Search, Car, Wrench, CheckCircle, ArrowLeft, ArrowRight,
+  User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete, Trash2, Monitor
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { useParams } from "react-router-dom";
 import { clienteService } from "../../clientes/services/clienteService";
 import { vehiculoService } from "../../vehiculos/services/vehiculosService";
 import { inventarioService } from "../../inventario/services/inventarioService";
 import { ventasService } from "../services/ventasApi";
+import { kioskoService } from "../services/kioskoService";
 import { useReactToPrint } from 'react-to-print';
+
+const KIOSKO_CONFIG_KEY = 'kiosko_config';
 
 const KeyButton = ({ children, onClick, className, variant }) => {
   const v = variant || "default";
@@ -71,6 +75,52 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
 };
 
 export const KioskoPage = () => {
+  const { codigo } = useParams();
+  const [kioskoConfig, setKioskoConfig] = useState(null);
+  // cargando | activando | sin_configurar | listo | error
+  const [kioskoEstado, setKioskoEstado] = useState('cargando');
+
+  React.useEffect(() => {
+    const inicializar = async () => {
+      if (codigo) {
+        setKioskoEstado('activando');
+        try {
+          const data = await kioskoService.activar(codigo);
+          const config = {
+            token: data.token,
+            kiosko_id: data.kiosko_id,
+            kiosko_nombre: data.kiosko_nombre,
+            sucursal_id: data.sucursal_id,
+            sucursal_nombre: data.sucursal_nombre,
+          };
+          localStorage.setItem(KIOSKO_CONFIG_KEY, JSON.stringify(config));
+          setKioskoConfig(config);
+          setKioskoEstado('listo');
+          // Deja la URL limpia: el código de activación no debe quedar visible
+          // ni reutilizable desde el historial del navegador del kiosko.
+          window.history.replaceState({}, '', '/kiosko');
+        } catch (err) {
+          console.error('Error activando kiosko:', err);
+          setKioskoEstado('error');
+        }
+        return;
+      }
+
+      const guardado = localStorage.getItem(KIOSKO_CONFIG_KEY);
+      if (!guardado) {
+        setKioskoEstado('sin_configurar');
+        return;
+      }
+      try {
+        setKioskoConfig(JSON.parse(guardado));
+        setKioskoEstado('listo');
+      } catch {
+        setKioskoEstado('sin_configurar');
+      }
+    };
+    inicializar();
+  }, [codigo]);
+
   const printRef = React.useRef();
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -92,8 +142,17 @@ export const KioskoPage = () => {
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
   const [kilometraje, setKilometraje] = useState("");
 
-  const actualizarCantidad = (productoId, cantidad) => {
-    setCarrito(prev => prev.map(c => c.id === productoId ? { ...c, cantidad: cantidad } : c));
+  const actualizarCantidad = (productoId, cantidad, stockMaximo) => {
+    let valor = cantidad;
+    if (stockMaximo != null && valor !== '' && parseFloat(valor) > stockMaximo) {
+      valor = stockMaximo;
+      Swal.fire({
+        toast: true, position: 'top', timer: 1800, showConfirmButton: false,
+        icon: 'warning', title: `Solo hay ${stockMaximo} disponibles`,
+        background: "#1e293b", color: "#fff",
+      });
+    }
+    setCarrito(prev => prev.map(c => c.id === productoId ? { ...c, cantidad: valor } : c));
   };
 
   const removerDelCarrito = (productoId) => {
@@ -123,12 +182,12 @@ export const KioskoPage = () => {
       if (!marca) return;
       setLoadingRepuestos(true);
       setRepuestosCompatibles([]);
-      inventarioService.getRepuestosCompatibles(marca, modelo, anio)
+      inventarioService.getRepuestosCompatibles(marca, modelo, anio, null, kioskoConfig?.token)
         .then(data => setRepuestosCompatibles(Array.isArray(data) ? data : (data.results || [])))
         .catch(() => setRepuestosCompatibles([]))
         .finally(() => setLoadingRepuestos(false));
     }
-  }, [step, vehiculo]);
+  }, [step, vehiculo, kioskoConfig]);
 
   const handleNext = () => setStep(p => p + 1);
   const handleBack = () => setStep(p => p - 1);
@@ -216,6 +275,30 @@ export const KioskoPage = () => {
   const resetAll = () => { setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]); setRepuestosCompatibles([]); setKilometraje(""); };
 
   const generarTicket = async () => {
+    if (!kioskoConfig?.token) {
+      Swal.fire({ icon: "error", title: "Kiosko no configurado", text: "Este kiosko no está activado. Avisa al personal del taller.", background: "#1e293b", color: "#fff" });
+      return;
+    }
+
+    // Última validación antes de generar el ticket: el stock pudo cambiar
+    // mientras el cliente armaba su pedido (otro cliente compró, o el "AGREGAR"
+    // inicial no alcanzó a ajustar la cantidad). Sin esto, el ticket se genera
+    // igual y el cliente recién se entera en caja de que no había suficiente.
+    const sinStockSuficiente = carrito.filter(item => {
+      const stockItemRaw = item.stock_disponible_sucursal ?? item.stock_total_disponible;
+      const stockItem = stockItemRaw != null ? parseFloat(stockItemRaw) : null;
+      return stockItem != null && parseFloat(item.cantidad || 0) > stockItem;
+    });
+    if (sinStockSuficiente.length > 0) {
+      const detalle = sinStockSuficiente.map(i => `${i.nombre} (pediste ${i.cantidad}, hay ${i.stock_disponible_sucursal ?? i.stock_total_disponible})`).join('<br/>');
+      Swal.fire({
+        icon: "warning", title: "Stock insuficiente",
+        html: `No hay suficiente stock en esta sucursal para:<br/><br/>${detalle}<br/><br/>Ajusta la cantidad para continuar.`,
+        background: "#1e293b", color: "#fff",
+      });
+      return;
+    }
+
     try {
       Swal.fire({ title: "Generando Ticket...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
@@ -274,7 +357,11 @@ export const KioskoPage = () => {
       const payload = {
         cliente_id: finalClienteId,
         vehiculo_id: finalVehiculoId,
-        sucursal_id: 1,
+        // sucursal_id ya no decide nada por sí solo: el backend resuelve la
+        // sucursal real a partir de kiosko_token. Se manda igual por si acaso,
+        // pero es kiosko_token el que manda.
+        sucursal_id: kioskoConfig.sucursal_id,
+        kiosko_token: kioskoConfig.token,
         kilometraje: kilometraje ? parseInt(kilometraje, 10) : null,
         detalles: carrito.map(c => ({ repuesto_id: c.id, cantidad: parseFloat(c.cantidad || 1), precio_unitario: parseFloat(c.precio_lista || c.precio || 0) }))
       };
@@ -289,6 +376,39 @@ export const KioskoPage = () => {
   };
 
   const vNombre = vehiculo ? ((vehiculo.marca || "") + " " + (vehiculo.modelo || "") + (vehiculo.anio_fabricacion ? " " + vehiculo.anio_fabricacion : "")).trim() : placa;
+
+  // Este kiosko todavía no sabe a qué sucursal pertenece: no mostramos el
+  // flujo normal (mostraríamos stock/tickets de la sucursal equivocada).
+  // Solo el personal del taller debería ver esta pantalla, en el primer
+  // arranque de un equipo nuevo.
+  if (kioskoEstado === 'cargando' || kioskoEstado === 'activando') {
+    return (
+      <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 items-center justify-center flex-col gap-4">
+        <div className="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-400">{kioskoEstado === 'activando' ? 'Activando kiosko...' : 'Cargando...'}</p>
+      </div>
+    );
+  }
+
+  if (kioskoEstado === 'sin_configurar' || kioskoEstado === 'error') {
+    return (
+      <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 items-center justify-center p-8">
+        <div className="max-w-md w-full bg-[#121826] border border-slate-800 rounded-3xl p-8 text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-[#e50914]/10 border-2 border-[#e50914] flex items-center justify-center mb-6">
+            <Monitor size={32} className="text-[#e50914]" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">
+            {kioskoEstado === 'error' ? 'Código de activación inválido' : 'Este kiosko no está configurado'}
+          </h2>
+          <p className="text-slate-400 text-sm">
+            {kioskoEstado === 'error'
+              ? 'El código no existe o el kiosko fue desactivado. Pide al administrador un código nuevo desde el panel (Configuración › Kioskos).'
+              : 'Pide al administrador que registre este equipo desde el panel (Configuración › Kioskos) y abre el enlace de activación que te entregue en este mismo dispositivo.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <React.Fragment>
@@ -319,9 +439,16 @@ export const KioskoPage = () => {
         <div className="flex-1 flex flex-col relative z-10 bg-[#0b0f19]">
           <div className="flex items-center justify-between p-8 border-b border-slate-800/50 bg-[#0b0f19]/90 backdrop-blur-md">
             {renderStepper()}
-            <div className="flex items-center gap-3 text-slate-400 cursor-pointer hover:text-white transition-colors">
-              <div className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center">?</div>
-              <span className="font-medium text-sm">Necesitas ayuda?</span>
+            <div className="flex items-center gap-4">
+              {kioskoConfig?.sucursal_nombre && (
+                <span className="hidden md:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 border border-slate-800 rounded-full px-3 py-1.5">
+                  <Monitor size={13} /> {kioskoConfig.sucursal_nombre}
+                </span>
+              )}
+              <div className="flex items-center gap-3 text-slate-400 cursor-pointer hover:text-white transition-colors">
+                <div className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center">?</div>
+                <span className="font-medium text-sm">Necesitas ayuda?</span>
+              </div>
             </div>
           </div>
 
@@ -537,7 +664,19 @@ export const KioskoPage = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2" style={{ maxHeight: "50vh" }}>
-                    {repuestosCompatibles.map(producto => (
+                    {repuestosCompatibles.map(producto => {
+                      // stock_disponible_sucursal es el stock real de ESTA sucursal (lo calcula
+                      // el backend a partir del kiosko_token); si por algún motivo no vino
+                      // (kiosko no configurado), se cae al stock global como último recurso.
+                      const stockRaw = producto.stock_disponible_sucursal ?? producto.stock_total_disponible;
+                      const stock = stockRaw != null ? parseFloat(stockRaw) : null;
+                      const sinStock = stock != null && stock <= 0;
+                      const stockBadge = stock == null ? null : sinStock
+                        ? <span className="bg-red-900/30 text-red-400 text-xs px-2 py-1 rounded border border-red-800/40 font-medium">Sin stock</span>
+                        : stock <= 5
+                          ? <span className="bg-amber-900/30 text-amber-400 text-xs px-2 py-1 rounded border border-amber-800/40 font-medium">Quedan {stock}</span>
+                          : <span className="bg-emerald-900/30 text-emerald-400 text-xs px-2 py-1 rounded border border-emerald-800/40 font-medium">{stock} disponibles</span>;
+                      return (
                       <div key={producto.id} className="bg-[#121826] border border-slate-800 hover:border-[#e50914]/50 p-6 rounded-2xl flex items-center gap-6 transition-all">
                         <div className="w-20 h-20 bg-[#0b0f19] rounded-xl flex items-center justify-center"><Wrench size={32} className="text-[#e50914]" /></div>
                         <div className="flex-1">
@@ -552,18 +691,20 @@ export const KioskoPage = () => {
                                 {producto.viscosidad}
                               </span>
                             )}
+                            {stockBadge}
                           </div>
                           <div className="flex justify-between items-center mt-3">
                             <span className="text-2xl font-bold text-[#e50914]">S/ {parseFloat(producto.precio_lista || 0).toFixed(2)}</span>
                             {carrito.find(c => c.id === producto.id) ? (
                               <div className="flex items-center gap-2">
-                                <input 
-                                  type="number" 
+                                <input
+                                  type="number"
                                   step={producto.unidad_medida_permite_decimales ? "any" : "1"}
                                   min="0"
+                                  max={stock != null ? stock : undefined}
                                   className="w-20 bg-[#0b0f19] border border-[#e50914] text-white text-center py-1 rounded-lg font-bold outline-none"
                                   value={carrito.find(c => c.id === producto.id).cantidad}
-                                  onChange={(e) => actualizarCantidad(producto.id, e.target.value)}
+                                  onChange={(e) => actualizarCantidad(producto.id, e.target.value, stock)}
                                 />
                                 <button onClick={() => removerDelCarrito(producto.id)} className="bg-[#121826] text-[#e50914] p-1.5 rounded hover:bg-[#e50914] hover:text-white transition-all border border-[#e50914]">
                                   <Trash2 size={18} />
@@ -571,16 +712,24 @@ export const KioskoPage = () => {
                               </div>
                             ) : (
                               <button
-                                onClick={() => { setCarrito([...carrito, { ...producto, cantidad: 1 }]); }}
-                                className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
+                                onClick={() => {
+                                  // Si hay menos de 1 unidad disponible (ej. 0.5 litros), la
+                                  // cantidad inicial no puede ser "1" a secas — antes se agregaba
+                                  // siempre 1 sin mirar el stock real de la sucursal.
+                                  const cantidadInicial = stock != null ? Math.min(1, stock) : 1;
+                                  setCarrito([...carrito, { ...producto, cantidad: cantidadInicial }]);
+                                }}
+                                disabled={sinStock}
+                                className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] disabled:opacity-40 disabled:hover:bg-[#0b0f19] disabled:hover:border-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
                               >
-                                AGREGAR
+                                {sinStock ? 'SIN STOCK' : 'AGREGAR'}
                               </button>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 <div className="mt-6">
@@ -599,23 +748,33 @@ export const KioskoPage = () => {
                     <div className="flex flex-col gap-4">
                       {carrito.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center border-b border-slate-800 pb-4">
+                          {(() => {
+                            const stockItemRaw = item.stock_disponible_sucursal ?? item.stock_total_disponible;
+                            const stockItem = stockItemRaw != null ? parseFloat(stockItemRaw) : null;
+                            return (
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-4"><Wrench size={24} className="text-[#e50914]" /><span className="text-lg font-medium text-white">{item.nombre}</span></div>
                             <div className="flex items-center gap-2 pl-10">
                                 <span className="text-slate-400 text-sm">Cant:</span>
-                                <input 
-                                  type="number" 
+                                <input
+                                  type="number"
                                   step={item.unidad_medida_permite_decimales ? "any" : "1"}
                                   min="0"
+                                  max={stockItem != null ? stockItem : undefined}
                                   className="w-16 bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white text-center py-1 rounded-lg font-bold outline-none text-sm"
                                   value={item.cantidad}
-                                  onChange={(e) => actualizarCantidad(item.id, e.target.value)}
+                                  onChange={(e) => actualizarCantidad(item.id, e.target.value, stockItem)}
                                 />
+                                {stockItem != null && (
+                                  <span className="text-slate-500 text-xs">de {stockItem} disp.</span>
+                                )}
                                 <button onClick={() => removerDelCarrito(item.id)} className="text-slate-500 hover:text-[#e50914]">
                                   <Trash2 size={18} />
                                 </button>
                             </div>
                           </div>
+                            );
+                          })()}
                           <div className="flex flex-col items-end">
                             <span className="text-sm text-slate-500">S/ {parseFloat(item.precio_lista || 0).toFixed(2)} c/u</span>
                             <span className="font-bold text-white text-xl">S/ {(parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)).toFixed(2)}</span>

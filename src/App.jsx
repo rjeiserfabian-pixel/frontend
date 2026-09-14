@@ -26,6 +26,7 @@ import ProveedoresPage from './modules/clientes/pages/ProveedoresPage';
 import TransportistasPage from './modules/clientes/pages/TransportistasPage';
 import VehiculosTransportePage from './modules/vehiculos/pages/VehiculosTransportePage';
 import KioskoPage from './modules/ventas/pages/KioskoPage';
+import KioskosPage from './modules/ventas/pages/KioskosPage';
 import CajaPage from './modules/ventas/pages/CajaPage';
 import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
@@ -56,6 +57,7 @@ import ReporteClientesPage from './modules/reportes/pages/ReporteClientesPage';
 import ReporteComprasPage from './modules/reportes/pages/ReporteComprasPage';
 import ReporteAvanzadoPage from './modules/reportes/pages/ReporteAvanzadoPage';
 import ReporteVehiculosPage from './modules/reportes/pages/ReporteVehiculosPage';
+import ReporteKioskosPage from './modules/reportes/pages/ReporteKioskosPage';
 
 // --- Módulo Cajas ---
 import DashboardCajasPage from './modules/cajas/pages/DashboardCajasPage';
@@ -76,6 +78,7 @@ function App() {
         {/* Rutas Públicas / Kiosko (Full Screen) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/kiosko" element={<KioskoPage />} />
+        <Route path="/kiosko/activar/:codigo" element={<KioskoPage />} />
         <Route path="/estado-vehiculo" element={<ConsultaVehiculoPage />} />
         
         {/* Rutas Protegidas (Requieren Login) */}
@@ -110,6 +113,7 @@ function App() {
           <Route path="/contactos/proveedores" element={<ProveedoresPage />} />
           <Route path="/contactos/transportistas" element={<TransportistasPage />} />
           <Route path="/configuracion/vehiculos-transporte" element={<VehiculosTransportePage />} />
+          <Route path="/configuracion/kioskos" element={<KioskosPage />} />
           <Route path="/caja" element={<CajaPage />} />
           <Route path="/ventas/pos" element={<POSPage />} />
           <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
@@ -131,6 +135,7 @@ function App() {
           <Route path="/reportes/compras"   element={<ReporteComprasPage />} />
           <Route path="/reportes/avanzado"  element={<ReporteAvanzadoPage />} />
           <Route path="/reportes/vehiculos" element={<ReporteVehiculosPage />} />
+          <Route path="/reportes/kioskos"   element={<ReporteKioskosPage />} />
 
           {/* Rutas de Cajas */}
           <Route path="/cajas"                          element={<DashboardCajasPage />} />

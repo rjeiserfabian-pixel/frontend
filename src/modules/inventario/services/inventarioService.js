@@ -95,12 +95,16 @@ export const inventarioService = {
   },
 
   // --- Busqueda Dinamica por Compatibilidad de Vehículo ---
-  getRepuestosCompatibles: async (marca, modelo, anio, motor) => {
+  getRepuestosCompatibles: async (marca, modelo, anio, motor, kioskoToken) => {
     let query = `?marca=${encodeURIComponent(marca)}`;
     if (modelo) query += `&modelo=${encodeURIComponent(modelo)}`;
     if (anio)   query += `&anio=${encodeURIComponent(anio)}`;
     if (motor)  query += `&motor=${encodeURIComponent(motor)}`;
-    
+    // Cuando viene de un kiosko registrado, el backend usa esto para calcular
+    // el stock real de ESA sucursal (stock_disponible_sucursal) en vez del
+    // stock global de toda la empresa.
+    if (kioskoToken) query += `&kiosko_token=${encodeURIComponent(kioskoToken)}`;
+
     const response = await api.get(`${URL_REPUESTOS}compatibles/${query}`);
     return response.data;
   },

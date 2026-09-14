@@ -66,6 +66,11 @@ export const tallerService = {
     return response.data;
   },
   
+  actualizarServicio: async (id, data) => {
+    const response = await api.patch(`taller/servicios/${id}/`, data);
+    return response.data;
+  },
+
   eliminarServicio: async (id) => {
     const response = await api.delete(`taller/servicios/${id}/`);
     return response.data;
@@ -76,7 +81,12 @@ export const tallerService = {
     const response = await api.post('taller/repuestos/', data);
     return response.data;
   },
-  
+
+  actualizarRepuesto: async (id, data) => {
+    const response = await api.patch(`taller/repuestos/${id}/`, data);
+    return response.data;
+  },
+
   eliminarRepuesto: async (id) => {
     const response = await api.delete(`taller/repuestos/${id}/`);
     return response.data;
