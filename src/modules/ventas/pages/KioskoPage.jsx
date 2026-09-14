@@ -141,23 +141,31 @@ export const KioskoPage = () => {
     if (dni.length !== 8) { Swal.fire({ icon: "warning", title: "DNI Invalido", text: "El DNI debe tener 8 digitos.", background: "#1e293b", color: "#fff" }); return; }
     try {
       setLoading(true);
-      const data = await clienteService.buscarPorDni(dni);
-      if (data) { setCliente(data); return; }
-      const res = await clienteService.consultarDni(dni);
-      const ext = res && res.data ? res.data : res;
-      // Si no hay datos (ni local ni en la API externa), o si la API solo trajo
-      // nombre/apellido parcial, se arma un cliente "borrador" (sin id) editable
-      // para que se pueda completar/registrar ahí mismo en vez de bloquear el flujo.
-      setCliente({
-        dni: (ext && (ext.numeroDocumento || ext.numero_documento)) || dni,
-        nombres: (ext && ext.nombres) || "",
-        apellidos: ext ? ((ext.apellido_paterno || "") + " " + (ext.apellido_materno || "")).trim() : "",
-        telefono: "",
-        direccion: (ext && ext.direccion) || "",
-        email: "",
-      });
-    } catch (e) { console.error(e); Swal.fire({ icon: "error", title: "Error", text: "Error al buscar cliente.", background: "#1e293b", color: "#fff" }); }
-    finally { setLoading(false); }
+      // Endpoint público del kiosko: busca en BD local y luego en API externa
+      const api = (await import('../../../core/api/axios')).default;
+      const res = await api.get(`/clientes/kiosko/buscar-cliente/?dni=${dni}`);
+      const { origen, data: ext } = res.data;
+
+      if (origen === 'local') {
+        // Cliente ya registrado en el sistema
+        setCliente(ext);
+      } else {
+        // Datos de la API externa (RENIEC) — necesita ser registrado
+        setCliente({
+          dni: (ext && (ext.numeroDocumento || ext.numero_documento)) || dni,
+          nombres: (ext && ext.nombres) || "",
+          apellidos: ext ? ((ext.apellido_paterno || "") + " " + (ext.apellido_materno || "")).trim() : "",
+          telefono: "",
+          direccion: (ext && ext.direccion) || "",
+          email: "",
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      Swal.fire({ icon: "error", title: "Error", text: "Error al buscar cliente.", background: "#1e293b", color: "#fff" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const actualizarCampoCliente = (campo, valor) => {
@@ -172,21 +180,18 @@ export const KioskoPage = () => {
     if (placa.length < 6) { Swal.fire({ icon: "warning", title: "Placa Invalida", text: "La placa debe tener al menos 6 caracteres.", background: "#1e293b", color: "#fff" }); return; }
     try {
       setLoading(true);
-      const resLocal = await vehiculoService.getVehiculos(1, placa);
-      const lista = Array.isArray(resLocal) ? resLocal : (resLocal.results || []);
-      const local = lista.find(v => (v.placa || "").toUpperCase() === placa.toUpperCase());
-      if (local) { setVehiculo(local); return; }
-      const data = await vehiculoService.buscarPorPlaca(placa);
-      if (data && (data.data || data)) { setVehiculo(data.data || data); }
-      else { setVehiculo({ placa, marca: "", modelo: "" }); }
+      // Endpoint público del kiosko para buscar vehículo sin autenticación
+      const api = (await import('../../../core/api/axios')).default;
+      const res = await api.get(`/vehiculos/kiosko/buscar-vehiculo/?placa=${placa}`);
+      const { origen, data: vData } = res.data;
+      setVehiculo(vData);
     } catch (e) {
-      // Placa no encontrada ni localmente ni en la API externa: en vez de
-      // bloquear el flujo, se deja continuar con un vehiculo "borrador" que
-      // solo pide marca y modelo (lo minimo para filtrar repuestos compatibles),
-      // sin volver tedioso un servicio pensado para ser rapido.
       console.error(e);
-      setVehiculo({ placa, marca: "", modelo: "" });
-    } finally { setLoading(false); }
+      // Si no se encuentra (404) o hay error de la API externa, crear un borrador
+      setVehiculo({ placa, marca: '', modelo: '' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderStepper = () => {
@@ -217,37 +222,39 @@ export const KioskoPage = () => {
       // 1. Resolver cliente (crear si es nuevo/borrador, es decir sin id)
       let finalClienteId = cliente ? cliente.id : null;
       if (!finalClienteId && cliente && cliente.dni) {
-        const nuevo = {
+        // Usar endpoint público del kiosko para crear el cliente sin autenticación
+        const api = (await import('../../../core/api/axios')).default;
+        const resCli = await api.post('/clientes/kiosko/crear-cliente/', {
           dni: cliente.dni,
           nombres: cliente.nombres,
           apellidos: cliente.apellidos || "-",
           direccion: cliente.direccion || "",
           telefono: cliente.telefono || "",
           email: cliente.email || "",
-        };
-        const resCli = await clienteService.crear(nuevo);
-        finalClienteId = resCli.id;
+        });
+        finalClienteId = resCli.data.id;
       }
       if (!finalClienteId) {
         throw new Error("No se pudo identificar al cliente.");
       }
 
-      // 2. Resolver vehículo: si ya existe, vincular el cliente actual si aún no
-      // lo estaba (relación muchos-a-muchos: un vehículo puede tener varios
-      // clientes con el tiempo); si es nuevo, crearlo ya vinculado.
+      // 2. Resolver vehículo: si ya existe vincular el cliente, si es nuevo crearlo
       let finalVehiculoId = null;
+      const apiInst = (await import('../../../core/api/axios')).default;
       if (vehiculo) {
         if (vehiculo.id) {
           finalVehiculoId = vehiculo.id;
           const yaVinculado = Array.isArray(vehiculo.clientes) && vehiculo.clientes.includes(finalClienteId);
           if (!yaVinculado) {
-            await vehiculoService.vincularCliente(vehiculo.id, finalClienteId);
+            // Endpoint público para vincular cliente al vehículo
+            await apiInst.post(`/vehiculos/${vehiculo.id}/kiosko/vincular-cliente/`, { cliente_id: finalClienteId });
           }
         } else {
+          // Vehículo nuevo: crearlo vía endpoint público del kiosko
           const nuevoVehiculo = {
             placa: vehiculo.placa || placa,
-            marca: vehiculo.marca || "",
-            modelo: vehiculo.modelo || "",
+            marca: vehiculo.marca || '',
+            modelo: vehiculo.modelo || '',
             clase: vehiculo.clase || null,
             tipo: vehiculo.tipo || null,
             uso: vehiculo.uso || null,
@@ -259,8 +266,8 @@ export const KioskoPage = () => {
             kilometraje_actual: kilometraje ? parseInt(kilometraje, 10) : null,
             clientes: [finalClienteId],
           };
-          const resVeh = await vehiculoService.createVehiculo(nuevoVehiculo);
-          finalVehiculoId = resVeh.id;
+          const resVeh = await apiInst.post('/vehiculos/kiosko/crear-vehiculo/', nuevoVehiculo);
+          finalVehiculoId = resVeh.data.id;
         }
       }
 

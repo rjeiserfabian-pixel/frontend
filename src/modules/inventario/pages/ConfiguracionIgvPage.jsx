@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2 } from 'lucide-react';
+import { Settings, Plus, Trash2, Edit } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -11,6 +11,8 @@ const ConfiguracionIgvPage = () => {
   const [impuestos, setImpuestos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [modalForm, setModalForm] = useState({ nombre: '', tasa: '', codigo_sunat: '' });
+  const [editId, setEditId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -28,7 +30,18 @@ const ConfiguracionIgvPage = () => {
   };
 
   const handleOpenModal = () => {
+    setEditId(null);
     setModalForm({ nombre: '', tasa: '', codigo_sunat: '' });
+    setOpenModal(true);
+  };
+
+  const handleOpenEditModal = (impuesto) => {
+    setEditId(impuesto.id);
+    setModalForm({
+      nombre: impuesto.nombre,
+      tasa: impuesto.tasa,
+      codigo_sunat: impuesto.codigo_sunat || ''
+    });
     setOpenModal(true);
   };
 
@@ -37,17 +50,29 @@ const ConfiguracionIgvPage = () => {
   };
 
   const handleGuardarModal = async () => {
+    setIsSubmitting(true);
     try {
-      await api.post('/ventas/impuestos/', {
-        nombre: modalForm.nombre,
-        tasa: modalForm.tasa,
-        codigo_sunat: modalForm.codigo_sunat
-      });
-      Swal.fire({icon: 'success', title: 'Creado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+      if (editId) {
+        await api.put(`/ventas/impuestos/${editId}/`, {
+          nombre: modalForm.nombre,
+          tasa: modalForm.tasa,
+          codigo_sunat: modalForm.codigo_sunat
+        });
+        Swal.fire({icon: 'success', title: 'Actualizado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+      } else {
+        await api.post('/ventas/impuestos/', {
+          nombre: modalForm.nombre,
+          tasa: modalForm.tasa,
+          codigo_sunat: modalForm.codigo_sunat
+        });
+        Swal.fire({icon: 'success', title: 'Creado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+      }
       setOpenModal(false);
       cargarDatos();
     } catch (error) {
-      Swal.fire({icon: 'error', title: 'Error', text: 'No se pudo crear el registro'});
+      Swal.fire({icon: 'error', title: 'Error', text: 'No se pudo guardar el registro'});
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -118,6 +143,7 @@ const ConfiguracionIgvPage = () => {
                   <td className="p-4">{i.tasa}%</td>
                   <td className="p-4">{i.codigo_sunat || '-'}</td>
                   <td className="p-4 text-right">
+                    <button onClick={() => handleOpenEditModal(i)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
                     <button onClick={() => handleEliminar(i.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                   </td>
                 </tr>
@@ -135,7 +161,7 @@ const ConfiguracionIgvPage = () => {
 
       {/* MUI Dialog Modal */}
       <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
-        <DialogTitle>Nuevo Impuesto</DialogTitle>
+        <DialogTitle>{editId ? 'Editar Impuesto' : 'Nuevo Impuesto'}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField 
@@ -163,8 +189,10 @@ const ConfiguracionIgvPage = () => {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseModal} color="inherit">Cancelar</Button>
-          <Button onClick={handleGuardarModal} variant="contained" color="primary">Guardar</Button>
+          <Button onClick={handleCloseModal} color="inherit" disabled={isSubmitting}>Cancelar</Button>
+          <Button onClick={handleGuardarModal} variant="contained" color="primary" disabled={isSubmitting}>
+            {isSubmitting ? 'Guardando...' : 'Guardar'}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

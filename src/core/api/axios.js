@@ -9,11 +9,18 @@ const api = axios.create({
 });
 
 // Interceptor para agregar el token a todas las peticiones
+// EXCEPTO en rutas públicas (kiosko, estado-vehiculo) donde no hay sesión iniciada.
+// Si se envía un token expirado/inválido hacia un endpoint AllowAny, el JWTAuthentication
+// global del backend lanza un 401 antes de evaluar los permisos de la vista.
+const PUBLIC_PATHS = ['/kiosko', '/estado-vehiculo'];
 api.interceptors.request.use(
   (config) => {
-    const token = authStorage.getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const isPublicPath = PUBLIC_PATHS.some(path => window.location.pathname.startsWith(path));
+    if (!isPublicPath) {
+      const token = authStorage.getAccessToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -25,6 +32,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Rutas públicas que no deben ser redirigidas al login
+    const publicPaths = ['/kiosko', '/estado-vehiculo'];
+    const isPublicPath = publicPaths.some(path => window.location.pathname.startsWith(path));
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
@@ -43,9 +55,11 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axios(originalRequest);
       } catch (refreshError) {
-        // Si el refresh token falló o expiró, forzar logout
-        authStorage.clear();
-        window.location.href = '/login';
+        // Si el refresh token falló o expiró, forzar logout SOLO si no es ruta pública
+        if (!isPublicPath) {
+          authStorage.clear();
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }

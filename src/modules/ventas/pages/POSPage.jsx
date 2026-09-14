@@ -5,7 +5,7 @@ import {
   TableContainer, TableHead, TableRow, Chip, IconButton, 
   CircularProgress, Grid, TextField, MenuItem, Select, InputLabel, 
   FormControl, Divider, Autocomplete, InputAdornment,
-  Dialog, DialogContent, DialogActions, TablePagination
+  Dialog, DialogContent, DialogActions, TablePagination, Tabs, Tab
 } from '@mui/material';
 import {
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
@@ -21,6 +21,7 @@ import { useReactToPrint } from 'react-to-print';
 import TicketImpresion from '../components/TicketImpresion';
 
 
+import { ErrorBoundary } from 'react-error-boundary';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 // ...
 
@@ -869,7 +870,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
         precio_venta: parseFloat(d.precio_unitario || 0),
         cantidad: parseFloat(d.cantidad || 1),
         tipo: d.repuesto ? 'REPUESTO' : 'SERVICIO',
-        originalDetalleId: d.id
+        originalDetalleId: d.id || null
       }));
     }
     return [];
@@ -1145,7 +1146,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   };
 
   const handleBuscarCliente = async () => {
-    if (!dni || dni.length < 8) return;
+    if (!dni || (dni || '').length < 8) return;
     setBuscandoCliente(true);
     try {
       let res;
@@ -1363,10 +1364,10 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
-                <TextField label={dni.length === 11 ? "Razón Social" : "Nombres"} fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
+                <TextField label={(dni || '').length === 11 ? "Razón Social" : "Nombres"} fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
               </Grid>
               <Grid item xs={12} sm={4}>
-                <TextField label="Apellidos" fullWidth value={clienteApellidos} onChange={(e) => setClienteApellidos(e.target.value)} size="small" disabled={dni.length === 11} />
+                <TextField label="Apellidos" fullWidth value={clienteApellidos} onChange={(e) => setClienteApellidos(e.target.value)} size="small" disabled={(dni || '').length === 11} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="Dirección" fullWidth value={clienteDireccion} onChange={(e) => setClienteDireccion(e.target.value)} size="small" />
@@ -1877,11 +1878,13 @@ export const POSPage = () => {
 
   if (selectedOrder) {
     return (
-      <PosDirectSale 
-        initialOrder={selectedOrder}
-        onBack={() => setSelectedOrder(null)} 
-        onComplete={handleCompleteWithPrint}
-      />
+      <ErrorBoundary fallbackRender={({error}) => <div style={{padding: '50px', background: 'white', color: 'red'}}><h1>Error Fatal en PosDirectSale</h1><pre>{error.message}</pre><pre>{error.stack}</pre></div>}>
+        <PosDirectSale 
+          initialOrder={selectedOrder}
+          onBack={() => setSelectedOrder(null)} 
+          onComplete={handleCompleteWithPrint}
+        />
+      </ErrorBoundary>
     );
   }
 
