@@ -15,6 +15,7 @@ import UnidadesPage from './modules/inventario/pages/UnidadesPage';
 import RepuestosPage from './modules/inventario/pages/RepuestosPage';
 import VehiculosPage from './modules/vehiculos/pages/VehiculosPage';
 import SucursalesPage from './modules/inventario/pages/SucursalesPage';
+import StockUbicacionesPage from './modules/inventario/pages/StockUbicacionesPage';
 import AlmacenesPage from './modules/inventario/pages/AlmacenesPage';
 import UbicacionesPage from './modules/inventario/pages/UbicacionesPage';
 import KardexPage from './modules/inventario/pages/KardexPage';
@@ -96,6 +97,7 @@ function App() {
           <Route path="/inventario/unidades" element={<UnidadesPage />} />
           <Route path="/inventario/repuestos" element={<RepuestosPage />} />
           <Route path="/inventario/sucursales" element={<SucursalesPage />} />
+          <Route path="/inventario/stock-ubicaciones" element={<StockUbicacionesPage />} />
           <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
           <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
           <Route path="/inventario/kardex" element={<KardexPage />} />

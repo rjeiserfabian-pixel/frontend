@@ -67,7 +67,9 @@ export const inventarioService = {
     if (params.categoria) query.append('categoria', params.categoria);
     if (params.marca) query.append('marca', params.marca);
     if (params.ordering) query.append('ordering', params.ordering);
-    
+    if (params.sucursal) query.append('sucursal', params.sucursal);
+    if (params.page_size) query.append('page_size', params.page_size);
+
     const response = await api.get(`${URL_REPUESTOS}?${query.toString()}`);
     return response.data;
   },
