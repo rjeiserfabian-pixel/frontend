@@ -4,6 +4,7 @@ import DashboardLayout from './shared/layouts/DashboardLayout';
 import DashboardPage from './modules/dashboard/pages/DashboardPage';
 import UsuariosPage from './modules/seguridad/pages/UsuariosPage';
 import RolesPage from './modules/seguridad/pages/RolesPage';
+import RolPermisosPage from './modules/seguridad/pages/RolPermisosPage';
 import ConfiguracionEmpresaPage from './modules/seguridad/pages/ConfiguracionEmpresaPage';
 import SeriesInternasPage from './modules/ventas/pages/SeriesInternasPage';
 import UbigeoPage from './modules/seguridad/pages/UbigeoPage';
@@ -88,6 +89,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/roles" element={<RolesPage />} />
+          <Route path="/roles/:id/permisos" element={<RolPermisosPage />} />
           <Route path="/seguridad/empresa" element={<ConfiguracionEmpresaPage />} />
           <Route path="/seguridad/series-internas" element={<SeriesInternasPage />} />
           <Route path="/seguridad/ubigeo" element={<UbigeoPage />} />
