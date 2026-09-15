@@ -9,10 +9,13 @@ import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import ModalAbonar from '../components/ModalAbonar';
 import ModalHistorialPagos from '../components/ModalHistorialPagos';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function CuentasPorPagarProveedorPage() {
   const { proveedorId } = useParams();
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeAbonar = tienePermiso('CUENTAS.POR_PAGAR.REGISTRAR_PAGO');
   const [cuentas, setCuentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [proveedorInfo, setProveedorInfo] = useState(null);
@@ -146,20 +149,22 @@ export default function CuentasPorPagarProveedorPage() {
                     <TableCell align="center">{getEstadoChip(cuenta)}</TableCell>
                     <TableCell align="center">
                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                         <Button
-                           size="small"
-                           variant="contained"
-                           color="primary"
-                           disabled={cuenta.estado === 'Pagada'}
-                           startIcon={<CreditCard size={16}/>}
-                           onClick={() => {
-                             setCuentaSeleccionada(cuenta);
-                             setModalAbonarOpen(true);
-                           }}
-                           sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
-                         >
-                            Abonar
-                         </Button>
+                         {puedeAbonar && (
+                           <Button
+                             size="small"
+                             variant="contained"
+                             color="primary"
+                             disabled={cuenta.estado === 'Pagada'}
+                             startIcon={<CreditCard size={16}/>}
+                             onClick={() => {
+                               setCuentaSeleccionada(cuenta);
+                               setModalAbonarOpen(true);
+                             }}
+                             sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+                           >
+                              Abonar
+                           </Button>
+                         )}
                          <IconButton
                            size="small"
                            title="Ver Historial de Pagos"

@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const PASOS_ORDEN = [
   'RECEPCIONADO',
@@ -31,6 +32,10 @@ export default function DetalleOrdenPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { activeSucursalId } = useSucursal();
+  const { tienePermiso } = usePermisos();
+  const puedeAprobar = tienePermiso('ORDENES_TRABAJO.APROBAR');
+  const puedeCambiarEstado = tienePermiso('ORDENES_TRABAJO.CAMBIAR_ESTADO');
+  const puedeEditar = tienePermiso('ORDENES_TRABAJO.EDITAR');
   const [orden, setOrden] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -529,7 +534,8 @@ export default function DetalleOrdenPage() {
   const activeStep = orden.estado === 'FACTURADO' ? PASOS_ORDEN.length : PASOS_ORDEN.indexOf(orden.estado);
   const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
   const hayMecanicoAsignado = !!orden.mecanico_asignado;
-  const puedeAgregarHallazgo = esEditable && hayMecanicoAsignado;
+  const puedeAgregarHallazgo = esEditable && hayMecanicoAsignado && puedeEditar;
+  const puedeEditarSubrecursos = esEditable && puedeEditar;
   const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
   const historialCancelacion = estaCancelada
     ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')
@@ -592,7 +598,7 @@ export default function DetalleOrdenPage() {
             >
               WhatsApp
             </Button>
-            {!estaCancelada && orden.estado !== 'FACTURADO' && (
+            {!estaCancelada && orden.estado !== 'FACTURADO' && puedeCambiarEstado && (
               <Button
                 variant="outlined"
                 color="error"
@@ -740,16 +746,20 @@ export default function DetalleOrdenPage() {
                 {orden.mecanico_nombre ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                     <Chip label={orden.mecanico_nombre} color="primary" variant="outlined" sx={{ fontWeight: 600, flexGrow: 1, justifyContent: 'flex-start' }} />
-                    <Button size="small" variant="text" onClick={handleOpenMecanicoModal} sx={{ minWidth: 0, p: 0.5, borderRadius: '8px' }} title="Cambiar Mecánico">
-                      <Settings size={18} className="text-slate-500" />
-                    </Button>
+                    {puedeEditar && (
+                      <Button size="small" variant="text" onClick={handleOpenMecanicoModal} sx={{ minWidth: 0, p: 0.5, borderRadius: '8px' }} title="Cambiar Mecánico">
+                        <Settings size={18} className="text-slate-500" />
+                      </Button>
+                    )}
                   </Box>
                 ) : (
                   <Box sx={{ mt: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <Typography variant="body2" color="error.main" fontWeight="600">Sin asignar</Typography>
-                    <Button variant="outlined" size="small" onClick={handleOpenMecanicoModal} startIcon={<User size={16} />} sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, alignSelf: 'flex-start' }}>
-                      Asignar ahora
-                    </Button>
+                    {puedeEditar && (
+                      <Button variant="outlined" size="small" onClick={handleOpenMecanicoModal} startIcon={<User size={16} />} sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, alignSelf: 'flex-start' }}>
+                        Asignar ahora
+                      </Button>
+                    )}
                   </Box>
                 )}
               </Box>
@@ -823,9 +833,9 @@ export default function DetalleOrdenPage() {
                 <Typography variant="body2" color="#e11d48">Asigna un mecánico para iniciar la inspección técnica o genera la cotización directamente si ya hay servicios.</Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                {(orden.servicios.length > 0 || orden.repuestos.length > 0) && (
-                  <Button 
-                    variant="outlined" 
+                {(orden.servicios.length > 0 || orden.repuestos.length > 0) && puedeEditar && (
+                  <Button
+                    variant="outlined"
                     size="large"
                     sx={{ color: '#be123c', borderColor: '#be123c', '&:hover': { bgcolor: '#ffe4e6', borderColor: '#9f1239' }, borderRadius: '12px', fontWeight: 600, px: 3 }}
                     onClick={handleGenerarCotizacion}
@@ -833,14 +843,16 @@ export default function DetalleOrdenPage() {
                     Generar Cotización Directa
                   </Button>
                 )}
-                <Button 
-                  variant="contained" 
-                  size="large"
-                  sx={{ bgcolor: '#e11d48', '&:hover': { bgcolor: '#be123c' }, borderRadius: '12px', fontWeight: 600, px: 4 }}
-                  onClick={handleOpenMecanicoModal}
-                >
-                  Enviar a Inspección
-                </Button>
+                {puedeEditar && (
+                  <Button
+                    variant="contained"
+                    size="large"
+                    sx={{ bgcolor: '#e11d48', '&:hover': { bgcolor: '#be123c' }, borderRadius: '12px', fontWeight: 600, px: 4 }}
+                    onClick={handleOpenMecanicoModal}
+                  >
+                    Enviar a Inspección
+                  </Button>
+                )}
               </Box>
             </Paper>
           )}
@@ -859,23 +871,27 @@ export default function DetalleOrdenPage() {
                 </Typography>
               </Box>
               <Box display="flex" gap={2}>
-                <Button 
-                  variant="outlined" 
-                  size="large"
-                  sx={{ color: '#0f172a', borderColor: '#cbd5e1', '&:hover': { bgcolor: '#f1f5f9' }, borderRadius: '12px', fontWeight: 600 }}
-                  onClick={handleEditarFechaVencimiento}
-                >
-                  Editar Fecha
-                </Button>
-                <Button 
-                  variant="contained" 
-                  size="large"
-                  disabled={isExpirada}
-                  sx={{ bgcolor: isExpirada ? '#94a3b8' : '#16a34a', '&:hover': { bgcolor: isExpirada ? '#94a3b8' : '#15803d' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
-                  onClick={handleOpenAprobacionModal}
-                >
-                  Registrar Aprobación
-                </Button>
+                {puedeEditar && (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{ color: '#0f172a', borderColor: '#cbd5e1', '&:hover': { bgcolor: '#f1f5f9' }, borderRadius: '12px', fontWeight: 600 }}
+                    onClick={handleEditarFechaVencimiento}
+                  >
+                    Editar Fecha
+                  </Button>
+                )}
+                {puedeAprobar && (
+                  <Button
+                    variant="contained"
+                    size="large"
+                    disabled={isExpirada}
+                    sx={{ bgcolor: isExpirada ? '#94a3b8' : '#16a34a', '&:hover': { bgcolor: isExpirada ? '#94a3b8' : '#15803d' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
+                    onClick={handleOpenAprobacionModal}
+                  >
+                    Registrar Aprobación
+                  </Button>
+                )}
               </Box>
             </Paper>
           )}
@@ -888,21 +904,23 @@ export default function DetalleOrdenPage() {
                   <Chip label={`Total Aprobado: S/ ${totalAprobado.toFixed(2)}`} size="small" color="primary" sx={{ fontWeight: 700 }} />
                 </Typography>
 
-                <Button
-                  variant="contained"
-                  onClick={handleFinalizarOrden}
-                  disabled={
-                    !(orden.servicios.filter(s => s.aprobado_cliente).length > 0 || orden.repuestos.filter(r => r.aprobado_cliente).length > 0) ||
-                    !orden.servicios.filter(s => s.aprobado_cliente).every(s => s.completado) ||
-                    !orden.repuestos.filter(r => r.aprobado_cliente).every(r => r.instalado)
-                  }
-                  sx={{
-                    bgcolor: 'slate.900', color: 'white', '&:hover': { bgcolor: 'slate.800' }, 
-                    borderRadius: '10px', px: 4, py: 1.5, fontWeight: 600, boxShadow: 'none'
-                  }}
-                >
-                  Finalizar Orden
-                </Button>
+                {puedeAprobar && (
+                  <Button
+                    variant="contained"
+                    onClick={handleFinalizarOrden}
+                    disabled={
+                      !(orden.servicios.filter(s => s.aprobado_cliente).length > 0 || orden.repuestos.filter(r => r.aprobado_cliente).length > 0) ||
+                      !orden.servicios.filter(s => s.aprobado_cliente).every(s => s.completado) ||
+                      !orden.repuestos.filter(r => r.aprobado_cliente).every(r => r.instalado)
+                    }
+                    sx={{
+                      bgcolor: 'slate.900', color: 'white', '&:hover': { bgcolor: 'slate.800' },
+                      borderRadius: '10px', px: 4, py: 1.5, fontWeight: 600, boxShadow: 'none'
+                    }}
+                  >
+                    Finalizar Orden
+                  </Button>
+                )}
               </Box>
               
               <Grid container spacing={3}>
@@ -935,6 +953,7 @@ export default function DetalleOrdenPage() {
                             color={s.completado ? "success" : "warning"}
                             size="small"
                             onClick={() => handleToggleCompletado(s.id)}
+                            disabled={!puedeEditar}
                             startIcon={s.completado ? <CheckCircle size={16}/> : <Clock size={16}/>}
                             sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
                           >
@@ -983,6 +1002,7 @@ export default function DetalleOrdenPage() {
                             color={r.instalado ? "success" : "warning"}
                             size="small"
                             onClick={() => handleToggleInstalado(r.id)}
+                            disabled={!puedeEditar}
                             startIcon={r.instalado ? <CheckCircle size={16}/> : <Clock size={16}/>}
                             sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
                           >
@@ -1008,14 +1028,16 @@ export default function DetalleOrdenPage() {
                 <Typography variant="h6" fontWeight="700" color="#1e3a8a" mb={0.5}>Orden de Trabajo Finalizada</Typography>
                 <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja.</Typography>
               </Box>
-              <Button 
-                variant="contained" 
-                size="large"
-                sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
-                onClick={handleEnviarAPos}
-              >
-                Cobrar en Punto de Venta
-              </Button>
+              {puedeAprobar && (
+                <Button
+                  variant="contained"
+                  size="large"
+                  sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
+                  onClick={handleEnviarAPos}
+                >
+                  Cobrar en Punto de Venta
+                </Button>
+              )}
             </Paper>
           )}
 
@@ -1076,7 +1098,7 @@ export default function DetalleOrdenPage() {
                                   <Chip label="Cotizado" size="small" color="success" variant="outlined" sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700 }} />
                                 )}
                               </Typography>
-                              {esEditable && (
+                              {puedeEditarSubrecursos && (
                                 <Box sx={{ display: 'flex', gap: 0.25 }}>
                                   <IconButton size="small" onClick={() => handleOpenEditarHallazgo(h)} title="Editar hallazgo">
                                     <Pencil size={14} />
@@ -1120,7 +1142,7 @@ export default function DetalleOrdenPage() {
                   variant="outlined"
                   startIcon={<Plus size={16} />} 
                   onClick={handleOpenNuevoServicio}
-                  disabled={!esEditable}
+                  disabled={!puedeEditarSubrecursos}
                   sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
                 >
                   Agregar Servicio
@@ -1156,7 +1178,7 @@ export default function DetalleOrdenPage() {
                           )}
                         </TableCell>
                         <TableCell align="center">
-                          {esEditable && (
+                          {puedeEditarSubrecursos && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
                               <IconButton size="small" onClick={() => handleOpenEditarServicio(s)} title="Editar servicio">
                                 <Pencil size={14} />
@@ -1198,7 +1220,7 @@ export default function DetalleOrdenPage() {
                   variant="outlined"
                   startIcon={<Plus size={16} />} 
                   onClick={handleOpenRepuestoModal}
-                  disabled={!esEditable}
+                  disabled={!puedeEditarSubrecursos}
                   sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
                 >
                   Agregar Repuesto
@@ -1235,7 +1257,7 @@ export default function DetalleOrdenPage() {
                           S/ {(parseFloat(r.cantidad) * parseFloat(r.precio_unitario)).toFixed(2)}
                         </TableCell>
                         <TableCell align="center">
-                          {esEditable && (
+                          {puedeEditarSubrecursos && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
                               <IconButton size="small" onClick={() => handleEditarCantidadRepuesto(r)} title="Editar cantidad">
                                 <Pencil size={14} />
@@ -1265,7 +1287,7 @@ export default function DetalleOrdenPage() {
             </Paper>
 
             {/* Acciones Generales (Enviar Cotizacion) */}
-            {orden.estado === 'INSPECCION' && (
+            {orden.estado === 'INSPECCION' && puedeEditar && (
               <Box sx={{ p: 3, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" sx={{ bgcolor: 'slate.900', color: 'white', '&:hover': { bgcolor: 'slate.800' }, borderRadius: '10px', px: 4, py: 1.5, fontWeight: 600 }} onClick={handleGenerarCotizacion}>
                   Enviar Cotización a Cliente (Simular PDF)

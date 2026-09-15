@@ -7,11 +7,17 @@ import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
 import TransportistasForm from '../components/TransportistasForm';
 import { useTransportistas } from '../hooks/useTransportistas';
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const TransportistasPage = () => {
-  const { 
-    transportistas, loading, cargarTransportistas, eliminarTransportista, 
-    totalCount 
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CONTACTOS.TRANSPORTISTAS.CREAR');
+  const puedeEditar = tienePermiso('CONTACTOS.TRANSPORTISTAS.EDITAR');
+  const puedeEliminar = tienePermiso('CONTACTOS.TRANSPORTISTAS.ELIMINAR');
+
+  const {
+    transportistas, loading, cargarTransportistas, eliminarTransportista,
+    totalCount
   } = useTransportistas();
   
   const [openModal, setOpenModal] = useState(false);
@@ -103,13 +109,15 @@ const TransportistasPage = () => {
             }}
             sx={{ width: 300 }}
           />
-          <Button 
-            variant="contained" 
-            startIcon={<Plus size={20} />} 
-            onClick={() => handleOpenModal()}
-          >
-            Nuevo Transportista
-          </Button>
+          {puedeCrear && (
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => handleOpenModal()}
+            >
+              Nuevo Transportista
+            </Button>
+          )}
         </Box>
 
         {/* TABLE */}
@@ -147,12 +155,16 @@ const TransportistasPage = () => {
                     <TableCell>{transportista.licencia_conducir || '-'} {transportista.categoria_licencia ? `(${transportista.categoria_licencia})` : ''}</TableCell>
                     <TableCell>{transportista.telefono || '-'}</TableCell>
                     <TableCell align="center">
-                      <IconButton color="primary" onClick={() => handleOpenModal(transportista)}>
-                        <Edit size={18} />
-                      </IconButton>
-                      <IconButton color="error" onClick={() => handleDelete(transportista.id)}>
-                        <Trash2 size={18} />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton color="primary" onClick={() => handleOpenModal(transportista)}>
+                          <Edit size={18} />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
+                        <IconButton color="error" onClick={() => handleDelete(transportista.id)}>
+                          <Trash2 size={18} />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

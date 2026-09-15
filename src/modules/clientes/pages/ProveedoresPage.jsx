@@ -7,11 +7,17 @@ import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
 import ProveedoresForm from '../components/ProveedoresForm';
 import { useProveedores } from '../hooks/useProveedores';
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ProveedoresPage = () => {
-  const { 
-    proveedores, loading, cargarProveedores, eliminarProveedor, 
-    totalCount 
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CONTACTOS.PROVEEDORES.CREAR');
+  const puedeEditar = tienePermiso('CONTACTOS.PROVEEDORES.EDITAR');
+  const puedeEliminar = tienePermiso('CONTACTOS.PROVEEDORES.ELIMINAR');
+
+  const {
+    proveedores, loading, cargarProveedores, eliminarProveedor,
+    totalCount
   } = useProveedores();
   
   const [openModal, setOpenModal] = useState(false);
@@ -103,13 +109,15 @@ const ProveedoresPage = () => {
             }}
             sx={{ width: 300 }}
           />
-          <Button 
-            variant="contained" 
-            startIcon={<Plus size={20} />} 
-            onClick={() => handleOpenModal()}
-          >
-            Nuevo Proveedor
-          </Button>
+          {puedeCrear && (
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => handleOpenModal()}
+            >
+              Nuevo Proveedor
+            </Button>
+          )}
         </Box>
 
         {/* TABLE */}
@@ -147,12 +155,16 @@ const ProveedoresPage = () => {
                     <TableCell>{proveedor.telefono || '-'}</TableCell>
                     <TableCell>{proveedor.direccion || '-'}</TableCell>
                     <TableCell align="center">
-                      <IconButton color="primary" onClick={() => handleOpenModal(proveedor)}>
-                        <Edit size={18} />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton color="primary" onClick={() => handleOpenModal(proveedor)}>
+                          <Edit size={18} />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
                       <IconButton color="error" onClick={() => handleDelete(proveedor.id)}>
                         <Trash2 size={18} />
                       </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

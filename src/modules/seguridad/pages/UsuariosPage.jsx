@@ -11,8 +11,14 @@ import { useForm } from 'react-hook-form';
 import api from '../../../core/api/axios';
 
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function UsuariosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('SEGURIDAD.USUARIOS.CREAR');
+  const puedeEditar = tienePermiso('SEGURIDAD.USUARIOS.EDITAR');
+  const puedeEliminar = tienePermiso('SEGURIDAD.USUARIOS.ELIMINAR');
+
   const [usuarios, setUsuarios] = useState([]);
   const [rolesDisponibles, setRolesDisponibles] = useState([]);
   const [sucursalesDisponibles, setSucursalesDisponibles] = useState([]);
@@ -153,14 +159,16 @@ export default function UsuariosPage() {
         <Typography variant="h5" fontWeight="bold" color="slate.800">
           Gestión de Usuarios
         </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={18} />}
-          onClick={() => handleOpen()}
-          sx={{ borderRadius: '8px', textTransform: 'none' }}
-        >
-          Nuevo Usuario
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() => handleOpen()}
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Nuevo Usuario
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
@@ -217,12 +225,16 @@ export default function UsuariosPage() {
                   />
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton color="primary" onClick={() => handleOpen(user)} size="small" sx={{ mr: 1 }}>
-                    <Edit size={18} />
-                  </IconButton>
-                  <IconButton color="error" onClick={() => handleDelete(user.id_usuario)} size="small">
-                    <Trash2 size={18} />
-                  </IconButton>
+                  {puedeEditar && (
+                    <IconButton color="primary" onClick={() => handleOpen(user)} size="small" sx={{ mr: 1 }}>
+                      <Edit size={18} />
+                    </IconButton>
+                  )}
+                  {puedeEliminar && (
+                    <IconButton color="error" onClick={() => handleDelete(user.id_usuario)} size="small">
+                      <Trash2 size={18} />
+                    </IconButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

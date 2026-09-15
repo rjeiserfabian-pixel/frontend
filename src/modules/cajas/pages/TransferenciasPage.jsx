@@ -6,9 +6,12 @@ import {
 } from '@mui/material';
 import { ArrowLeft, ArrowRightLeft } from 'lucide-react';
 import { getSesiones, crearTransferencia } from '../services/cajas.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function TransferenciasPage() {
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CAJAS.TRANSFERENCIAS.CREAR');
   const [params] = useSearchParams();
   const sesionParam = params.get('sesion') || '';
 
@@ -145,10 +148,15 @@ export default function TransferenciasPage() {
               Esta operación genera dos movimientos automáticos: un <strong>egreso</strong> en la caja origen y un <strong>ingreso</strong> en la caja destino. Ambos quedan registrados para auditoría.
             </Alert>
 
+            {!puedeCrear && (
+              <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                No tienes permiso para realizar transferencias entre cajas.
+              </Alert>
+            )}
             <Button
               variant="contained" size="large" color="primary"
               startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ArrowRightLeft size={18} />}
-              onClick={handleEnviar} disabled={loading}
+              onClick={handleEnviar} disabled={loading || !puedeCrear}
               sx={{ 
                 mt: 2,
                 py: 1.5, 

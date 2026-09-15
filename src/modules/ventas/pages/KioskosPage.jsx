@@ -10,6 +10,7 @@ import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { kioskoService } from '../services/kioskoService';
 import { inventarioService } from '../../inventario/services/inventarioService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 function useKioskos() {
   const [kioskos, setKioskos] = useState([]);
@@ -63,6 +64,11 @@ const copiarEnlaceActivacion = async (codigo) => {
 };
 
 export default function KioskosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CONFIGURACION.KIOSKOS.CREAR');
+  const puedeEditar = tienePermiso('CONFIGURACION.KIOSKOS.EDITAR');
+  const puedeEliminar = tienePermiso('CONFIGURACION.KIOSKOS.ELIMINAR');
+
   const { kioskos, sucursales, loading, fetchKioskos } = useKioskos();
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -154,9 +160,11 @@ export default function KioskosPage() {
             Terminales de autoservicio registrados y la sucursal a la que pertenece cada uno.
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => handleOpenModal()}>
-          Nuevo Kiosko
-        </Button>
+        {puedeCrear && (
+          <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => handleOpenModal()}>
+            Nuevo Kiosko
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
@@ -203,12 +211,16 @@ export default function KioskosPage() {
                         <IconButton color="secondary" onClick={() => copiarEnlaceActivacion(row.codigo_activacion)} title="Copiar enlace de activación">
                           <LinkIcon size={18} />
                         </IconButton>
-                        <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
-                          <Edit size={18} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(row.id, row.nombre)} title="Eliminar">
-                          <Trash2 size={18} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
+                            <Edit size={18} />
+                          </IconButton>
+                        )}
+                        {puedeEliminar && (
+                          <IconButton color="error" onClick={() => handleDelete(row.id, row.nombre)} title="Eliminar">
+                            <Trash2 size={18} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

@@ -7,11 +7,18 @@ import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
 import VehiculosTransporteForm from '../components/VehiculosTransporteForm';
 import { useVehiculosTransporte } from '../hooks/useVehiculosTransporte';
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const VehiculosTransportePage = () => {
-  const { 
-    vehiculos, loading, cargarVehiculos, eliminarVehiculo, 
-    totalCount 
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('VEHICULOS_TRANSPORTE.CREAR');
+  const puedeEditar = tienePermiso('VEHICULOS_TRANSPORTE.EDITAR');
+  // No existe ELIMINAR dedicado; el backend reutiliza EDITAR para el DELETE.
+  const puedeEliminar = tienePermiso('VEHICULOS_TRANSPORTE.EDITAR');
+
+  const {
+    vehiculos, loading, cargarVehiculos, eliminarVehiculo,
+    totalCount
   } = useVehiculosTransporte();
   
   const [openModal, setOpenModal] = useState(false);
@@ -102,13 +109,15 @@ const VehiculosTransportePage = () => {
             }}
             sx={{ width: 300 }}
           />
-          <Button 
-            variant="contained" 
-            startIcon={<Plus size={20} />} 
-            onClick={() => handleOpenModal()}
-          >
-            Nuevo Vehículo
-          </Button>
+          {puedeCrear && (
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => handleOpenModal()}
+            >
+              Nuevo Vehículo
+            </Button>
+          )}
         </Box>
 
         {/* TABLE */}
@@ -146,12 +155,16 @@ const VehiculosTransportePage = () => {
                     <TableCell>{vehiculo.configuracion_vehicular || '-'}</TableCell>
                     <TableCell>{vehiculo.carga_util ? `${vehiculo.carga_util} (Kg/Ton)` : '-'}</TableCell>
                     <TableCell align="center">
-                      <IconButton color="primary" onClick={() => handleOpenModal(vehiculo)}>
-                        <Edit size={18} />
-                      </IconButton>
-                      <IconButton color="error" onClick={() => handleDelete(vehiculo.id)}>
-                        <Trash2 size={18} />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton color="primary" onClick={() => handleOpenModal(vehiculo)}>
+                          <Edit size={18} />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
+                        <IconButton color="error" onClick={() => handleDelete(vehiculo.id)}>
+                          <Trash2 size={18} />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

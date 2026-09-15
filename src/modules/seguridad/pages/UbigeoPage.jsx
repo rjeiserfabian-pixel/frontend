@@ -6,8 +6,14 @@ import {
 import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export const UbigeoPage = () => {
+  const { tienePermiso } = usePermisos();
+  // Departamento/Provincia/DistritoViewSet exigen UBIGEO.VER también para
+  // crear/editar/eliminar (no hay CREAR/EDITAR/ELIMINAR dedicados en el catálogo).
+  const puedeGestionar = tienePermiso('UBIGEO.VER');
+
   const [activeTab, setActiveTab] = useState('departamentos');
 
   const [departamentos, setDepartamentos] = useState([]);
@@ -268,20 +274,24 @@ export const UbigeoPage = () => {
                 <td className="p-4 text-slate-800">{index + 1}</td>
                 <td className="p-4 text-slate-800">{item.nombre}</td>
                 <td className="p-4 text-right space-x-2">
-                  <button 
-                    onClick={() => openModal(type, item)} 
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Editar"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(type, item.id)} 
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  {puedeGestionar && (
+                    <button
+                      onClick={() => openModal(type, item)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Editar"
+                    >
+                      <Edit size={18} />
+                    </button>
+                  )}
+                  {puedeGestionar && (
+                    <button
+                      onClick={() => handleDelete(type, item.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))
@@ -334,12 +344,14 @@ export const UbigeoPage = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-700">Listado de Departamentos</h2>
-                <button 
-                  onClick={() => openModal('dep')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
-                >
-                  <Plus size={18} /> Nuevo Registro
-                </button>
+                {puedeGestionar && (
+                  <button
+                    onClick={() => openModal('dep')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                  >
+                    <Plus size={18} /> Nuevo Registro
+                  </button>
+                )}
               </div>
               {renderTable(departamentos, 'dep')}
             </div>
@@ -349,12 +361,14 @@ export const UbigeoPage = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-700">Listado de Provincias</h2>
-                <button 
-                  onClick={() => openModal('prov')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
-                >
-                  <Plus size={18} /> Nuevo Registro
-                </button>
+                {puedeGestionar && (
+                  <button
+                    onClick={() => openModal('prov')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                  >
+                    <Plus size={18} /> Nuevo Registro
+                  </button>
+                )}
               </div>
               {renderTable(provincias, 'prov')}
             </div>
@@ -364,12 +378,14 @@ export const UbigeoPage = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-700">Listado de Distritos</h2>
-                <button 
-                  onClick={() => openModal('dist')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
-                >
-                  <Plus size={18} /> Nuevo Registro
-                </button>
+                {puedeGestionar && (
+                  <button
+                    onClick={() => openModal('dist')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                  >
+                    <Plus size={18} /> Nuevo Registro
+                  </button>
+                )}
               </div>
               {renderTable(distritos, 'dist')}
             </div>

@@ -9,12 +9,18 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
 import { proveedorService } from '../../clientes/services/proveedorService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ESTADOS = ['Completada', 'Anulada'];
 const TIPOS_PAGO = ['Contado', 'Credito'];
 
 const ComprasPage = () => {
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  // CompraViewSet solo exige permiso dedicado (COMPRAS.ELIMINAR) para anular;
+  // listar/crear compras hoy solo requiere estar autenticado (hallazgo aparte).
+  const puedeAnular = tienePermiso('COMPRAS.ELIMINAR');
+  const puedeCrear = tienePermiso('COMPRAS.CREAR');
   const [compras, setCompras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [proveedores, setProveedores] = useState([]);
@@ -165,19 +171,21 @@ const ComprasPage = () => {
         <Typography variant="h5" sx={{ fontWeight: 600, color: '#0f172a' }}>
           Listado de Compras
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={20} />}
-          onClick={() => navigate('/compras/nueva')}
-          sx={{
-            bgcolor: '#2563eb',
-            '&:hover': { bgcolor: '#1d4ed8' },
-            textTransform: 'none',
-            borderRadius: 2
-          }}
-        >
-          Nueva Compra
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => navigate('/compras/nueva')}
+            sx={{
+              bgcolor: '#2563eb',
+              '&:hover': { bgcolor: '#1d4ed8' },
+              textTransform: 'none',
+              borderRadius: 2
+            }}
+          >
+            Nueva Compra
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ p: 2, mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
@@ -306,7 +314,7 @@ const ComprasPage = () => {
                             <CreditCard size={16} />
                           </IconButton>
                         )}
-                        {compra.estado === 'Completada' && (
+                        {compra.estado === 'Completada' && puedeAnular && (
                           <IconButton size="small" color="error" title="Anular compra" onClick={() => handleAnular(compra)}>
                             <Ban size={16} />
                           </IconButton>

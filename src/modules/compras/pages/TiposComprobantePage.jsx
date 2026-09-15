@@ -20,8 +20,15 @@ import {
 } from '@mui/material';
 import { Plus, Edit2, Trash2, FileText, Edit } from 'lucide-react';
 import { comprasService } from '../services/comprasApi';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const TiposComprobantePage = () => {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('COMPRAS.CREAR');
+  const puedeEditar = tienePermiso('COMPRAS.EDITAR');
+  // No hay ELIMINAR dedicado; el backend reutiliza EDITAR para el toggle activar/desactivar.
+  const puedeEliminar = tienePermiso('COMPRAS.EDITAR');
+
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -109,14 +116,16 @@ const TiposComprobantePage = () => {
           <h2 className="text-lg font-semibold text-slate-800">
             Listado de Comprobantes
           </h2>
-          <Button 
-            variant="contained" 
-            startIcon={<Plus size={20} />} 
-            onClick={() => handleOpenDialog()}
-            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
-          >
-            Nuevo Tipo
-          </Button>
+          {puedeCrear && (
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => handleOpenDialog()}
+              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+            >
+              Nuevo Tipo
+            </Button>
+          )}
         </div>
 
         <div className="w-full overflow-hidden border border-slate-200 rounded-xl shadow-none">
@@ -152,12 +161,16 @@ const TiposComprobantePage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onClick={() => handleOpenDialog(tipo)} className="text-blue-600 hover:text-blue-800 mx-3 transition-colors" title="Editar">
-                          <Edit size={18} />
-                        </button>
+                        {puedeEditar && (
+                          <button onClick={() => handleOpenDialog(tipo)} className="text-blue-600 hover:text-blue-800 mx-3 transition-colors" title="Editar">
+                            <Edit size={18} />
+                          </button>
+                        )}
+                        {puedeEliminar && (
                         <button onClick={() => handleDelete(tipo)} className={tipo.estado_activo ? "text-red-500 hover:text-red-700 transition-colors" : "text-emerald-500 hover:text-emerald-700 transition-colors"} title={tipo.estado_activo ? "Desactivar" : "Activar"}>
                           {tipo.estado_activo ? <Trash2 size={18} /> : <Plus size={18} />}
                         </button>
+                        )}
                       </td>
                     </tr>
                   ))}

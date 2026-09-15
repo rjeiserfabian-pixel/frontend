@@ -10,6 +10,7 @@ import { ArrowLeft, RefreshCw, Plus, Check, X } from 'lucide-react';
 import { getDetalleSesion, aprobarMovimiento, rechazarMovimiento } from '../services/cajas.service';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const fmtMoney = (v) =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v ?? 0);
@@ -39,6 +40,11 @@ const EstadoBadge = ({ estado }) => {
 export default function MovimientosPage() {
   const { id }     = useParams();
   const navigate   = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CAJAS.MOVIMIENTOS.CREAR');
+  const puedeAprobar = tienePermiso('CAJAS.MOVIMIENTOS.APROBAR');
+  const puedeRechazar = tienePermiso('CAJAS.MOVIMIENTOS.RECHAZAR');
+  const puedeCerrarCaja = tienePermiso('CAJAS.SESION.CERRAR');
 
   // Resumen de sesión (KPIs)
   const [resumen, setResumen]         = useState(null);
@@ -219,18 +225,22 @@ export default function MovimientosPage() {
           </Tooltip>
           {resumen?.sesion?.estado === 'ABIERTA' && (
             <>
-              <Button
-                variant="contained" size="small" startIcon={<Plus size={16} />}
-                onClick={() => navigate(`/cajas/movimiento/nuevo?sesion=${id}`)}
-              >
-                Registrar
-              </Button>
+              {puedeCrear && (
+                <Button
+                  variant="contained" size="small" startIcon={<Plus size={16} />}
+                  onClick={() => navigate(`/cajas/movimiento/nuevo?sesion=${id}`)}
+                >
+                  Registrar
+                </Button>
+              )}
+              {puedeCerrarCaja && (
               <Button
                 variant="outlined" color="error" size="small"
                 onClick={() => navigate(`/cajas/cierre/${id}`)}
               >
                 Cerrar Caja
               </Button>
+              )}
             </>
           )}
         </Stack>
@@ -374,18 +384,22 @@ export default function MovimientosPage() {
                   </TableCell>
                   <TableCell><EstadoBadge estado={m.estado_movimiento} /></TableCell>
                   <TableCell align="center">
-                    {m.estado_movimiento === 'PENDIENTE' && resumen?.sesion?.estado === 'ABIERTA' && (
+                    {m.estado_movimiento === 'PENDIENTE' && resumen?.sesion?.estado === 'ABIERTA' && (puedeAprobar || puedeRechazar) && (
                       <Stack direction="row" spacing={1} justifyContent="center">
-                        <Tooltip title="Aprobar">
-                          <IconButton size="small" color="success" onClick={() => handleAprobar(m.id)}>
-                            <Check size={18} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Rechazar">
-                          <IconButton size="small" color="error" onClick={() => handleRechazar(m.id)}>
-                            <X size={18} />
-                          </IconButton>
-                        </Tooltip>
+                        {puedeAprobar && (
+                          <Tooltip title="Aprobar">
+                            <IconButton size="small" color="success" onClick={() => handleAprobar(m.id)}>
+                              <Check size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {puedeRechazar && (
+                          <Tooltip title="Rechazar">
+                            <IconButton size="small" color="error" onClick={() => handleRechazar(m.id)}>
+                              <X size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     )}
                   </TableCell>

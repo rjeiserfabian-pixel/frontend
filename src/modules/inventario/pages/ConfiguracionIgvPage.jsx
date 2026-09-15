@@ -6,8 +6,14 @@ import {
   TextField, Button, Box 
 } from '@mui/material';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ConfiguracionIgvPage = () => {
+  const { tienePermiso } = usePermisos();
+  // ImpuestoViewSet solo declara VER/EDITAR — el mixin exige EDITAR también
+  // para crear y eliminar (no hay CREAR/ELIMINAR dedicados).
+  const puedeGestionar = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
+
   const [impuestos, setImpuestos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [modalForm, setModalForm] = useState({ nombre: '', tasa: '', codigo_sunat: '' });
@@ -116,12 +122,14 @@ const ConfiguracionIgvPage = () => {
           <h2 className="text-xl font-semibold text-slate-800">
             Listado de Impuestos
           </h2>
-          <button 
-            onClick={handleOpenModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-          >
-            <Plus size={20} /> Nuevo Registro
-          </button>
+          {puedeGestionar && (
+            <button
+              onClick={handleOpenModal}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+            >
+              <Plus size={20} /> Nuevo Registro
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -143,8 +151,12 @@ const ConfiguracionIgvPage = () => {
                   <td className="p-4">{i.tasa}%</td>
                   <td className="p-4">{i.codigo_sunat || '-'}</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => handleOpenEditModal(i)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                    <button onClick={() => handleEliminar(i.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                    {puedeGestionar && (
+                      <>
+                        <button onClick={() => handleOpenEditModal(i)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                        <button onClick={() => handleEliminar(i.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

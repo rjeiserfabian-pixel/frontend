@@ -9,8 +9,14 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function MarcasPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('INVENTARIO.MARCAS.CREAR');
+  const puedeEditar = tienePermiso('INVENTARIO.MARCAS.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.MARCAS.ELIMINAR');
+
   const [marcas, setMarcas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
@@ -124,13 +130,15 @@ export default function MarcasPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">Gestión de Marcas de Repuesto</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={20} />} 
-          onClick={() => handleOpenModal()}
-        >
-          Nueva Marca
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+          >
+            Nueva Marca
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
@@ -159,12 +167,16 @@ export default function MarcasPage() {
                       <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell align="center">
-                        <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                          <Edit size={18} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(row.id)}>
-                          <Trash2 size={18} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                            <Edit size={18} />
+                          </IconButton>
+                        )}
+                        {puedeEliminar && (
+                          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                            <Trash2 size={18} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

@@ -9,8 +9,17 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function UnidadesPage() {
+  const { tienePermiso } = usePermisos();
+  // El backend reutiliza INVENTARIO.REPUESTOS.EDITAR tanto para crear como para
+  // eliminar unidades (no existe un código CREAR/ELIMINAR dedicado para este
+  // catálogo auxiliar) — ver UnidadMedidaViewSet.
+  const puedeCrear = tienePermiso('INVENTARIO.REPUESTOS.EDITAR');
+  const puedeEditar = tienePermiso('INVENTARIO.REPUESTOS.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.REPUESTOS.EDITAR');
+
   const [unidades, setUnidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
@@ -104,13 +113,15 @@ export default function UnidadesPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">Unidades de Medida</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={20} />} 
-          onClick={() => handleOpenModal()}
-        >
-          Nueva Unidad
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+          >
+            Nueva Unidad
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
@@ -143,12 +154,16 @@ export default function UnidadesPage() {
                       <TableCell>{row.abreviatura}</TableCell>
                       <TableCell>{row.permite_decimales ? 'Sí' : 'No'}</TableCell>
                       <TableCell align="center">
-                        <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                          <Edit size={18} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(row.id)}>
-                          <Trash2 size={18} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                            <Edit size={18} />
+                          </IconButton>
+                        )}
+                        {puedeEliminar && (
+                          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                            <Trash2 size={18} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

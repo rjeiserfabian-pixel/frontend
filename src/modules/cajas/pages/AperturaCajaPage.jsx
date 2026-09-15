@@ -8,11 +8,14 @@ import {
 import { Unlock, ArrowLeft, Banknote } from 'lucide-react';
 import { getCajas, abrirCaja } from '../services/cajas.service';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function AperturaCajaPage() {
   const navigate             = useNavigate();
   const [params]             = useSearchParams();
   const { activeSucursalId } = useSucursal();
+  const { tienePermiso }     = usePermisos();
+  const puedeAbrir           = tienePermiso('CAJAS.SESION.ABRIR');
 
   const [cajas, setCajas]               = useState([]);
   const [cajaId, setCajaId]             = useState(params.get('caja_id') || '');
@@ -184,6 +187,11 @@ export default function AperturaCajaPage() {
               registrados para <strong>auditoría</strong>.
             </Alert>
 
+            {!puedeAbrir && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                No tienes permiso para abrir una caja.
+              </Alert>
+            )}
             {/* Botón principal */}
             <Button
               variant="contained"
@@ -195,7 +203,7 @@ export default function AperturaCajaPage() {
                   : <Unlock size={18} />
               }
               onClick={handleAbrir}
-              disabled={loading}
+              disabled={loading || !puedeAbrir}
               sx={{
                 mt: 2,
                 py: 1.5,

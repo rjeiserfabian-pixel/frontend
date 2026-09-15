@@ -8,6 +8,7 @@ import { Plus, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ESTADOS = [
   'RECEPCIONADO', 'INSPECCION', 'ESPERANDO_APROBACION', 'APROBADO',
@@ -15,6 +16,9 @@ const ESTADOS = [
 ];
 
 export default function OrdenesTrabajoPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
+
   const [ordenes, setOrdenes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mecanicos, setMecanicos] = useState([]);
@@ -107,13 +111,15 @@ export default function OrdenesTrabajoPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" fontWeight="600">Órdenes de Trabajo</Typography>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={18} />}
-          onClick={() => navigate('/taller/ordenes/nueva')}
-        >
-          Nueva Orden
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() => navigate('/taller/ordenes/nueva')}
+          >
+            Nueva Orden
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ p: 2, mb: 3, borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>

@@ -9,8 +9,13 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useClientes } from '../hooks/useClientes';
 import ClientesForm from '../components/ClientesForm';
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ClientesPage = () => {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CONTACTOS.CLIENTES.CREAR');
+  const puedeEditar = tienePermiso('CONTACTOS.CLIENTES.EDITAR');
+
   const { clientes, loading, totalCount, cargarClientes } = useClientes();
   const [page, setPage] = useState(0); // 0-indexed para TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -41,13 +46,15 @@ const ClientesPage = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">Gestión de Clientes</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={20} />}
-          onClick={() => handleOpenModal()}
-        >
-          Nuevo Cliente
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+          >
+            Nuevo Cliente
+          </Button>
+        )}
       </Box>
 
       {/* BARRA DE BÚSQUEDA */}
@@ -102,9 +109,11 @@ const ClientesPage = () => {
                         <TableCell>{row.telefono || '-'}</TableCell>
                         <TableCell>{row.direccion || '-'}</TableCell>
                         <TableCell align="center">
-                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                            <Edit size={18} />
-                          </IconButton>
+                          {puedeEditar && (
+                            <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                              <Edit size={18} />
+                            </IconButton>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

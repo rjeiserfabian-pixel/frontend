@@ -9,8 +9,15 @@ import { Plus, Edit, Trash2, CreditCard } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function CuentasBancariasPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CUENTAS_BANCARIAS.CREAR');
+  const puedeEditar = tienePermiso('CUENTAS_BANCARIAS.EDITAR');
+  // No existe ELIMINAR dedicado; el backend reutiliza EDITAR para el DELETE.
+  const puedeEliminar = tienePermiso('CUENTAS_BANCARIAS.EDITAR');
+
   const [activeTab, setActiveTab] = useState('cuentas'); // 'cuentas' o 'tipos'
   
   // Data states
@@ -192,14 +199,16 @@ export default function CuentasBancariasPage() {
             <Typography variant="h6" className="font-semibold text-slate-800">
               {activeTab === 'cuentas' ? 'Listado de Cuentas' : 'Tipos de Cuenta Bancaria'}
             </Typography>
-            <Button 
-              variant="contained" 
-              startIcon={<Plus size={20} />} 
-              onClick={() => handleOpenModal()}
-              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
-            >
-              Nuevo Registro
-            </Button>
+            {puedeCrear && (
+              <Button
+                variant="contained"
+                startIcon={<Plus size={20} />}
+                onClick={() => handleOpenModal()}
+                className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+              >
+                Nuevo Registro
+              </Button>
+            )}
           </Box>
 
           <Paper className="w-full overflow-hidden border border-slate-200 rounded-xl shadow-none">
@@ -257,12 +266,16 @@ export default function CuentasBancariasPage() {
                           )}
 
                           <TableCell align="right">
-                            <IconButton color="primary" onClick={() => handleOpenModal(row)} className="hover:bg-blue-50">
-                              <Edit size={18} />
-                            </IconButton>
-                            <IconButton color="error" onClick={() => handleDelete(row.id)} className="hover:bg-red-50">
-                              <Trash2 size={18} />
-                            </IconButton>
+                            {puedeEditar && (
+                              <IconButton color="primary" onClick={() => handleOpenModal(row)} className="hover:bg-blue-50">
+                                <Edit size={18} />
+                              </IconButton>
+                            )}
+                            {puedeEliminar && (
+                              <IconButton color="error" onClick={() => handleDelete(row.id)} className="hover:bg-red-50">
+                                <Trash2 size={18} />
+                              </IconButton>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))

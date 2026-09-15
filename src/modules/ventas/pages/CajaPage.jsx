@@ -12,8 +12,13 @@ import {
   TableHead, TableRow, Chip, TablePagination
 } from '@mui/material';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export const CajaPage = () => {
+  const { tienePermiso } = usePermisos();
+  const puedeAbrir = tienePermiso('CAJAS.SESION.ABRIR');
+  const puedeCerrar = tienePermiso('CAJAS.SESION.CERRAR');
+
   const [isCajaAbierta, setIsCajaAbierta] = useState(false);
   const [cajaActual, setCajaActual] = useState(null);
   const [cajaActualSesionId, setCajaActualSesionId] = useState(null);
@@ -213,12 +218,14 @@ export const CajaPage = () => {
         
         <div>
           {!isCajaAbierta ? (
-            <button 
-              onClick={aperturarCaja}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all"
-            >
-              <DoorOpen size={20} /> Aperturar Turno
-            </button>
+            puedeAbrir && (
+              <button
+                onClick={aperturarCaja}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all"
+              >
+                <DoorOpen size={20} /> Aperturar Turno
+              </button>
+            )
           ) : (
              <div className="flex items-center gap-4">
                <div className="flex flex-col text-blue-800 bg-blue-50 px-5 py-2.5 rounded-2xl border border-blue-100">
@@ -227,12 +234,14 @@ export const CajaPage = () => {
                  </div>
                  <span className="text-xs font-bold uppercase">{cajaActual?.nombre || 'Caja'}</span>
                </div>
-               <button 
+               {puedeCerrar && (
+               <button
                 onClick={cerrarCaja}
                 className="bg-white hover:bg-red-50 text-red-600 border border-red-200 px-6 py-3 rounded-2xl font-medium flex items-center gap-2 transition-all shadow-sm"
               >
                 <Lock size={20} /> Cerrar Caja
               </button>
+               )}
              </div>
           )}
         </div>

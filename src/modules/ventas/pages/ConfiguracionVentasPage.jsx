@@ -6,10 +6,19 @@ import {
   TextField, Button, FormControlLabel, Checkbox, Box,
   FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
-import api from '../../../core/api/axios'; 
+import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ConfiguracionVentasPage = () => {
   const [activeTab, setActiveTab] = useState('metodos'); // metodos, tipos, series, cajas
+
+  const { tienePermiso } = usePermisos();
+  // Métodos/Tipos/Series comparten VENTAS.CONFIGURACION.EDITAR para crear/editar/eliminar
+  // (no hay códigos dedicados). La pestaña "Cajas" usa un ViewSet distinto que reutiliza
+  // CAJAS.VER también para escritura (ver CajaViewSet en apps/ventas/views.py).
+  const puedeGestionarTab = activeTab === 'cajas'
+    ? tienePermiso('CAJAS.VER')
+    : tienePermiso('VENTAS.CONFIGURACION.EDITAR');
   
   // States para Métodos de Pago
   const [metodos, setMetodos] = useState([]);
@@ -251,12 +260,14 @@ const ConfiguracionVentasPage = () => {
               {activeTab === 'cajas' && 'Cajas Registradoras'}
               {activeTab === 'series' && 'Series de Comprobante'}
             </h2>
-            <button 
-              onClick={handleOpenModal}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-            >
-              <Plus size={20} /> Nuevo Registro
-            </button>
+            {puedeGestionarTab && (
+              <button
+                onClick={handleOpenModal}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              >
+                <Plus size={20} /> Nuevo Registro
+              </button>
+            )}
           </div>
 
           <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -281,8 +292,12 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4 font-medium text-slate-800">{m.nombre}</td>
                     <td className="p-4">{m.requiere_referencia ? 'Sí' : 'No'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(m, 'metodos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                      <button onClick={() => handleEliminar(m.id, 'metodos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                      {puedeGestionarTab && (
+                        <>
+                          <button onClick={() => handleEditar(m, 'metodos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                          <button onClick={() => handleEliminar(m.id, 'metodos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -293,8 +308,12 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4 font-medium text-slate-800">{t.nombre}</td>
                     <td className="p-4">{t.codigo_sunat || '-'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(t, 'tipos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                      <button onClick={() => handleEliminar(t.id, 'tipos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                      {puedeGestionarTab && (
+                        <>
+                          <button onClick={() => handleEditar(t, 'tipos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                          <button onClick={() => handleEliminar(t.id, 'tipos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -306,8 +325,12 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4">{s.tipo_comprobante_nombre} (Act: {s.correlativo_actual})</td>
                     <td className="p-4">{s.sucursal_nombre || 'Sede Principal / Global'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(s, 'series')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                      <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                      {puedeGestionarTab && (
+                        <>
+                          <button onClick={() => handleEditar(s, 'series')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                          <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -319,8 +342,12 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4">{c.sucursal_nombre}</td>
                     <td className="p-4">{c.almacen_nombre || '-'}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleEditar(c, 'cajas')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                      <button onClick={() => handleEliminar(c.id, 'cajas')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                      {puedeGestionarTab && (
+                        <>
+                          <button onClick={() => handleEditar(c, 'cajas')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                          <button onClick={() => handleEliminar(c.id, 'cajas')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

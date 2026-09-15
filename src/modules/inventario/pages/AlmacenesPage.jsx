@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 // Custom hook: separa la lógica de la vista
 function useAlmacenes() {
@@ -47,6 +48,12 @@ function useAlmacenes() {
 }
 
 export default function AlmacenesPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('INVENTARIO.ALMACENES.CREAR');
+  const puedeEditar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
+  // No existe INVENTARIO.ALMACENES.ELIMINAR dedicado; el backend reutiliza EDITAR.
+  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
+
   const { almacenes, sucursales, loading, fetchData, page, setPage, rowsPerPage, totalCount } = useAlmacenes();
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -118,13 +125,15 @@ export default function AlmacenesPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">Almacenes</Typography>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={20} />}
-          onClick={() => handleOpenModal()}
-        >
-          Nuevo Almacén
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+          >
+            Nuevo Almacén
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
@@ -167,12 +176,16 @@ export default function AlmacenesPage() {
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
-                          <Edit size={18} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(row.id, row.nombre)} title="Desactivar">
-                          <Trash2 size={18} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
+                            <Edit size={18} />
+                          </IconButton>
+                        )}
+                        {puedeEliminar && (
+                          <IconButton color="error" onClick={() => handleDelete(row.id, row.nombre)} title="Desactivar">
+                            <Trash2 size={18} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

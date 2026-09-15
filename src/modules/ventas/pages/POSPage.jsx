@@ -23,6 +23,7 @@ import TicketImpresion from '../components/TicketImpresion';
 
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 // ...
 
 // -------------------------------------------------------------
@@ -531,6 +532,8 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
 // VISTA 2: CHECKOUT KIOSKO (SOLO LECTURA DE ITEMS)
 // -------------------------------------------------------------
 const PosCheckout = ({ order, onBack, onComplete }) => {
+  const { tienePermiso } = usePermisos();
+  const puedeCobrar = tienePermiso('VENTAS.POS.CREAR');
   const [condicionPago, setCondicionPago] = useState('CONTADO');
   const [procesando, setProcesando] = useState(false);
   const total = parseFloat(order.total) || 0;
@@ -831,7 +834,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button variant="outlined" color="inherit" fullWidth size="large" onClick={onBack}>Cancelar</Button>
-                  <Button variant="contained" color="primary" fullWidth size="large" onClick={handleConfirm} disabled={procesando}>
+                  <Button variant="contained" color="primary" fullWidth size="large" onClick={handleConfirm} disabled={procesando || !puedeCobrar} title={!puedeCobrar ? 'No tienes permiso para registrar ventas en el POS' : undefined}>
                     {procesando ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Venta'}
                   </Button>
                 </Box>
@@ -849,6 +852,8 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 // -------------------------------------------------------------
 const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   const { activeSucursalId } = useSucursal();
+  const { tienePermiso } = usePermisos();
+  const puedeCobrar = tienePermiso('VENTAS.POS.CREAR');
   // Si estamos cobrando un ticket ya existente (Kiosko/OT), su sucursal quedó
   // fijada al crearlo — se respeta esa, no la que el cajero tenga activa en
   // su pantalla en este momento (antes se sobreescribía, causando que el
@@ -1797,7 +1802,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button variant="outlined" color="inherit" fullWidth size="large" onClick={onBack}>Cancelar</Button>
-                  <Button variant="contained" color="primary" fullWidth size="large" onClick={handleConfirm} disabled={procesando || carrito.length === 0}>
+                  <Button variant="contained" color="primary" fullWidth size="large" onClick={handleConfirm} disabled={procesando || carrito.length === 0 || !puedeCobrar} title={!puedeCobrar ? 'No tienes permiso para registrar ventas en el POS' : undefined}>
                     {procesando ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Venta Directa'}
                   </Button>
                 </Box>

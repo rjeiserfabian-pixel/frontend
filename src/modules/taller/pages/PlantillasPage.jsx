@@ -9,8 +9,14 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function PlantillasPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('PLANTILLAS_TALLER.CREAR');
+  const puedeEditar = tienePermiso('PLANTILLAS_TALLER.EDITAR');
+  const puedeEliminar = tienePermiso('PLANTILLAS_TALLER.ELIMINAR');
+
   const [plantillas, setPlantillas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -152,13 +158,15 @@ export default function PlantillasPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">Plantillas de Servicio Preventivo</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={20} />}
-          onClick={() => handleOpenModal()}
-        >
-          Nueva Plantilla
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+          >
+            Nueva Plantilla
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
@@ -202,12 +210,16 @@ export default function PlantillasPage() {
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <IconButton onClick={() => handleOpenModal(plantilla)} color="primary" size="small">
-                        <Edit size={18} />
-                      </IconButton>
-                      <IconButton onClick={() => handleDelete(plantilla.id)} color="error" size="small">
-                        <Trash2 size={18} />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton onClick={() => handleOpenModal(plantilla)} color="primary" size="small">
+                          <Edit size={18} />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
+                        <IconButton onClick={() => handleDelete(plantilla.id)} color="error" size="small">
+                          <Trash2 size={18} />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

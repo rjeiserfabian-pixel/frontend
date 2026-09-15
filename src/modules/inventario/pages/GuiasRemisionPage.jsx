@@ -12,8 +12,13 @@ import ModalSalidaGuia from '../components/ModalSalidaGuia';
 import ModalDetalleGuiaRemision from '../components/ModalDetalleGuiaRemision';
 import PrintGuiaRemisionA4 from '../components/PrintGuiaRemisionA4';
 import { useReactToPrint } from 'react-to-print';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function GuiasRemisionPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('INVENTARIO.TRASLADOS.CREAR');
+  const puedeAprobar = tienePermiso('INVENTARIO.TRASLADOS.APROBAR');
+
   const [guias, setGuias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModalNueva, setOpenModalNueva] = useState(false);
@@ -115,14 +120,16 @@ export default function GuiasRemisionPage() {
         <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
           Guías de Remisión
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<Truck size={18} />}
-          onClick={() => setOpenModalNueva(true)}
-        >
-          Nueva Guía
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Truck size={18} />}
+            onClick={() => setOpenModalNueva(true)}
+          >
+            Nueva Guía
+          </Button>
+        )}
       </Box>
 
       <TableContainer component={Paper}>
@@ -157,12 +164,12 @@ export default function GuiasRemisionPage() {
                   <TableCell>{item.ubigeo_llegada_nombre}</TableCell>
                   <TableCell>{getStatusChip(item.estado)}</TableCell>
                   <TableCell align="center">
-                    {item.estado === 'CREADA' && (
+                    {item.estado === 'CREADA' && puedeAprobar && (
                       <IconButton color="success" onClick={() => handleDarSalida(item)} title="Dar Salida" sx={{ mr: 1 }}>
                         <Play size={18} />
                       </IconButton>
                     )}
-                    {item.estado === 'EN_TRASLADO' && (
+                    {item.estado === 'EN_TRASLADO' && puedeAprobar && (
                       <IconButton color="primary" onClick={() => handleCompletarTraslado(item)} title="Confirmar llegada / Completar" sx={{ mr: 1 }}>
                         <CheckCircle size={18} />
                       </IconButton>

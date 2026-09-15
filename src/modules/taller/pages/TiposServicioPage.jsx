@@ -9,8 +9,15 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function TiposServicioPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('TIPOS_SERVICIO.CREAR');
+  // No existe ELIMINAR dedicado; el backend reutiliza EDITAR para editar y borrar.
+  const puedeEditar = tienePermiso('TIPOS_SERVICIO.EDITAR');
+  const puedeEliminar = tienePermiso('TIPOS_SERVICIO.EDITAR');
+
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -125,19 +132,21 @@ export default function TiposServicioPage() {
         <Typography variant="h5" sx={{ fontWeight: 600, color: '#0f172a' }}>
           Tipos de Servicio
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={20} />}
-          onClick={() => handleOpenModal()}
-          sx={{
-            bgcolor: '#2563eb',
-            '&:hover': { bgcolor: '#1d4ed8' },
-            textTransform: 'none',
-            borderRadius: 2
-          }}
-        >
-          Nuevo Tipo
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+            sx={{
+              bgcolor: '#2563eb',
+              '&:hover': { bgcolor: '#1d4ed8' },
+              textTransform: 'none',
+              borderRadius: 2
+            }}
+          >
+            Nuevo Tipo
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
@@ -181,20 +190,24 @@ export default function TiposServicioPage() {
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenModal(row)}
-                        sx={{ color: '#2563eb', mr: 1 }}
-                      >
-                        <Edit size={18} />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(row.id)}
-                        sx={{ color: '#ef4444' }}
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenModal(row)}
+                          sx={{ color: '#2563eb', mr: 1 }}
+                        >
+                          <Edit size={18} />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(row.id)}
+                          sx={{ color: '#ef4444' }}
+                        >
+                          <Trash2 size={18} />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft, Scale, Lock } from 'lucide-react';
 import { calcularArqueo, cerrarCaja } from '../services/cajas.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const fmtMoney = (v) =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v ?? 0);
@@ -13,6 +14,8 @@ const fmtMoney = (v) =>
 export default function ArqueoYCierrePage() {
   const { id }  = useParams();
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeCerrar = tienePermiso('CAJAS.SESION.CERRAR');
 
   const [arqueo, setArqueo]   = useState(null);
   const [contado, setContado] = useState('');
@@ -184,10 +187,15 @@ export default function ArqueoYCierrePage() {
               : 'Al confirmar, la sesión quedará bloqueada y no se podrán realizar más movimientos.'}
           </Alert>
 
+          {!puedeCerrar && (
+            <Alert severity="warning" sx={{ mb: 2.5, borderRadius: 2 }}>
+              No tienes permiso para cerrar esta caja.
+            </Alert>
+          )}
           <Button
             fullWidth variant="contained" color="error" size="large"
             startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <Lock size={18} />}
-            onClick={handleCerrar} disabled={loading}
+            onClick={handleCerrar} disabled={loading || !puedeCerrar}
             sx={{ 
               py: 1.5, 
               borderRadius: 2, 

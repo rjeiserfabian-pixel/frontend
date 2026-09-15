@@ -6,6 +6,7 @@ import {
   TextField, Button, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const TIPOS_DOCUMENTO = {
   RECIBO_INGRESO: 'Recibo de Ingreso',
@@ -16,6 +17,13 @@ const TIPOS_DOCUMENTO = {
 };
 
 const SeriesInternasPage = () => {
+  const { tienePermiso } = usePermisos();
+  // SerieDocumentoInternoViewSet solo declara permiso_ver/permiso_editar (no hay
+  // CREAR/ELIMINAR dedicados) — el mixin exige EDITAR también para crear y borrar.
+  const puedeCrear = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
+  const puedeEditar = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
+  const puedeEliminar = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
+
   const [series, setSeries] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   
@@ -139,14 +147,16 @@ const SeriesInternasPage = () => {
           <h2 className="text-lg font-semibold text-slate-800">
             Listado de Series
           </h2>
-          <Button 
-            variant="contained" 
-            startIcon={<Plus size={20} />} 
-            onClick={() => handleOpenModal()}
-            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
-          >
-            Nueva Serie
-          </Button>
+          {puedeCrear && (
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => handleOpenModal()}
+              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+            >
+              Nueva Serie
+            </Button>
+          )}
         </div>
 
         <div className="w-full overflow-hidden border border-slate-200 rounded-xl shadow-none">
@@ -179,12 +189,16 @@ const SeriesInternasPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => handleOpenModal(serie)} className="text-blue-600 hover:text-blue-800 mx-3 transition-colors" title="Editar">
-                        <Edit size={18} />
-                      </button>
+                      {puedeEditar && (
+                        <button onClick={() => handleOpenModal(serie)} className="text-blue-600 hover:text-blue-800 mx-3 transition-colors" title="Editar">
+                          <Edit size={18} />
+                        </button>
+                      )}
+                      {puedeEliminar && (
                       <button onClick={() => handleDelete(serie.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Eliminar">
                         <Trash2 size={18} />
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}

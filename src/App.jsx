@@ -28,7 +28,6 @@ import TransportistasPage from './modules/clientes/pages/TransportistasPage';
 import VehiculosTransportePage from './modules/vehiculos/pages/VehiculosTransportePage';
 import KioskoPage from './modules/ventas/pages/KioskoPage';
 import KioskosPage from './modules/ventas/pages/KioskosPage';
-import CajaPage from './modules/ventas/pages/CajaPage';
 import POSPage from './modules/ventas/pages/POSPage';
 import ConfiguracionVentasPage from './modules/ventas/pages/ConfiguracionVentasPage';
 import ConfiguracionIgvPage from './modules/inventario/pages/ConfiguracionIgvPage';
@@ -70,10 +69,12 @@ import ArqueoYCierrePage from './modules/cajas/pages/ArqueoYCierrePage';
 import HistorialCajasPage from './modules/cajas/pages/HistorialCajasPage';
 
 import { SucursalProvider } from './shared/contexts/SucursalContext';
+import { PermisosProvider } from './shared/contexts/PermisosContext';
 
 function App() {
   return (
     <SucursalProvider>
+      <PermisosProvider>
       <BrowserRouter>
       <Routes>
         {/* Rutas Públicas / Kiosko (Full Screen) */}
@@ -116,7 +117,6 @@ function App() {
           <Route path="/contactos/transportistas" element={<TransportistasPage />} />
           <Route path="/configuracion/vehiculos-transporte" element={<VehiculosTransportePage />} />
           <Route path="/configuracion/kioskos" element={<KioskosPage />} />
-          <Route path="/caja" element={<CajaPage />} />
           <Route path="/ventas/pos" element={<POSPage />} />
           <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
           <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
@@ -154,6 +154,7 @@ function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       </BrowserRouter>
+      </PermisosProvider>
     </SucursalProvider>
   );
 }

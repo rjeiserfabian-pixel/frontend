@@ -12,8 +12,14 @@ import { useForm } from 'react-hook-form';
 import api from '../../../core/api/axios';
 
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function RolesPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('SEGURIDAD.ROLES.CREAR');
+  const puedeEditar = tienePermiso('SEGURIDAD.ROLES.EDITAR');
+  const puedeEliminar = tienePermiso('SEGURIDAD.ROLES.ELIMINAR');
+
   const [roles, setRoles] = useState([]);
   const [todosPermisos, setTodosPermisos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -240,14 +246,16 @@ export default function RolesPage() {
         <Typography variant="h5" fontWeight="bold" color="slate.800">
           Gestión de Roles y Permisos
         </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={18} />}
-          onClick={() => handleOpen()}
-          sx={{ borderRadius: '8px', textTransform: 'none' }}
-        >
-          Nuevo Rol
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() => handleOpen()}
+            sx={{ borderRadius: '8px', textTransform: 'none' }}
+          >
+            Nuevo Rol
+          </Button>
+        )}
       </Box>
 
       <Grid container spacing={4}>
@@ -302,12 +310,16 @@ export default function RolesPage() {
                         </Box>
                       </TableCell>
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <IconButton color="primary" onClick={() => handleOpen(rol)} size="small" sx={{ mr: 1 }}>
-                          <Edit size={18} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(rol.id_rol || rol.id)} size="small" disabled={rol.es_sistema}>
-                          <Trash2 size={18} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton color="primary" onClick={() => handleOpen(rol)} size="small" sx={{ mr: 1 }}>
+                            <Edit size={18} />
+                          </IconButton>
+                        )}
+                        {puedeEliminar && (
+                          <IconButton color="error" onClick={() => handleDelete(rol.id_rol || rol.id)} size="small" disabled={rol.es_sistema}>
+                            <Trash2 size={18} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -360,15 +372,17 @@ export default function RolesPage() {
                       Activa los módulos y define el nivel de alcance.
                     </Typography>
                   </Box>
-                  <Button
-                    variant="contained"
-                    startIcon={guardandoPermisos ? <CircularProgress size={16} color="inherit" /> : <Save size={18} />}
-                    onClick={guardarPermisos}
-                    disabled={guardandoPermisos || rolSeleccionado.es_sistema}
-                    sx={{ borderRadius: '8px', textTransform: 'none' }}
-                  >
-                    Guardar
-                  </Button>
+                  {puedeEditar && (
+                    <Button
+                      variant="contained"
+                      startIcon={guardandoPermisos ? <CircularProgress size={16} color="inherit" /> : <Save size={18} />}
+                      onClick={guardarPermisos}
+                      disabled={guardandoPermisos || rolSeleccionado.es_sistema}
+                      sx={{ borderRadius: '8px', textTransform: 'none' }}
+                    >
+                      Guardar
+                    </Button>
+                  )}
                 </Box>
                 
                 <Box sx={{ px: 3, pt: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>

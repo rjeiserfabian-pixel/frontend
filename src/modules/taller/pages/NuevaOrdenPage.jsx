@@ -11,9 +11,13 @@ import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
 import VehiculosForm from '../../vehiculos/components/VehiculosForm';
 import ClientesForm from '../../clientes/components/ClientesForm';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function NuevaOrdenPage() {
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
+  const puedeCrearTipoServicio = tienePermiso('TIPOS_SERVICIO.CREAR');
   const [loading, setLoading] = useState(false);
   const [vehiculos, setVehiculos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -324,13 +328,16 @@ export default function NuevaOrdenPage() {
                     renderInput={(params) => <TextField {...params} label="Tipo de Servicio *" error={!!formErrors.tipo_servicio} helperText={formErrors.tipo_servicio} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
                   />
                 </div>
-                <Button 
-                  variant="contained" 
-                  onClick={() => setTipoServicioModalOpen(true)}
-                  sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
-                >
-                  <Plus size={24} />
-                </Button>
+                {puedeCrearTipoServicio && (
+                  <Button
+                    variant="contained"
+                    onClick={() => setTipoServicioModalOpen(true)}
+                    title="Nuevo tipo de servicio"
+                    sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
+                  >
+                    <Plus size={24} />
+                  </Button>
+                )}
               </div>
             </div>
           </section>
@@ -422,7 +429,8 @@ export default function NuevaOrdenPage() {
               type="submit"
               variant="contained"
               size="large"
-              disabled={loading}
+              disabled={loading || !puedeCrear}
+              title={!puedeCrear ? 'No tienes permiso para crear órdenes de trabajo' : undefined}
               startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save size={20} />}
               sx={{ borderRadius: '12px', bgcolor: 'slate.900', px: 4, py: 1.5, boxShadow: 'none', textTransform: 'none', fontSize: '1rem', '&:hover': { bgcolor: 'slate.800', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' } }}
             >

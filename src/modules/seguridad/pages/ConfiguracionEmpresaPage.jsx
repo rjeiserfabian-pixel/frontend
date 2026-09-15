@@ -6,8 +6,12 @@ import {
 import { Save, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export const ConfiguracionEmpresaPage = () => {
+  const { tienePermiso } = usePermisos();
+  const puedeEditar = tienePermiso('EMPRESA.EDITAR');
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -183,13 +187,14 @@ export const ConfiguracionEmpresaPage = () => {
           <p className="text-slate-500 mt-1">Gestione los datos generales y la ubicación de su negocio.</p>
         </div>
         <div>
-          <Button 
+          <Button
             onClick={handleSubmit}
-            variant="contained" 
-            color="primary" 
+            variant="contained"
+            color="primary"
             size="large"
             startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save size={20} />}
-            disabled={saving}
+            disabled={saving || !puedeEditar}
+            title={!puedeEditar ? 'No tienes permiso para editar los datos de la empresa' : undefined}
             sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 'bold' }}
           >
             {saving ? 'Guardando...' : 'Guardar Cambios'}

@@ -7,9 +7,12 @@ import {
 import { ArrowLeft, Save, TrendingDown, TrendingUp, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { registrarMovimiento, getMetodosPago } from '../services/cajas.service';
 import Swal from 'sweetalert2';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function NuevoMovimientoPage() {
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CAJAS.MOVIMIENTOS.CREAR');
   const [searchParams] = useSearchParams();
   const sesionId = searchParams.get('sesion');
 
@@ -272,13 +275,16 @@ export default function NuevoMovimientoPage() {
 
               <Divider sx={{ my: 1 }} />
 
+              {!puedeCrear && (
+                <Alert severity="warning">No tienes permiso para registrar movimientos de caja.</Alert>
+              )}
               {/* Botón */}
               <Button
                 type="submit"
                 variant="contained"
                 size="large"
                 color={esEgreso ? 'error' : 'primary'}
-                disabled={loading}
+                disabled={loading || !puedeCrear}
                 startIcon={
                   loading
                     ? <CircularProgress size={18} color="inherit" />

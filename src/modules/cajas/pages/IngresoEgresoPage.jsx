@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { getSesiones, registrarMovimiento, getMetodosPago } from '../services/cajas.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const CONCEPTOS_INGRESO = [
   { value: 'ANTICIPO',       label: 'Anticipo' },
@@ -24,6 +25,8 @@ const CONCEPTOS_EGRESO = [
 
 export default function IngresoEgresoPage() {
   const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('CAJAS.MOVIMIENTOS.CREAR');
   const [params] = useSearchParams();
   const sesionParam = params.get('sesion') || '';
 
@@ -166,11 +169,16 @@ export default function IngresoEgresoPage() {
               </Alert>
             )}
 
+            {!puedeCrear && (
+              <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                No tienes permiso para registrar movimientos de caja.
+              </Alert>
+            )}
             <Button
               variant="contained" size="large"
               color={tipo === 'INGRESO' ? 'success' : 'error'}
               startIcon={loading ? <CircularProgress size={18} color="inherit" /> : (tipo === 'INGRESO' ? <TrendingUp size={18} /> : <TrendingDown size={18} />)}
-              onClick={handleSubmit} disabled={loading}
+              onClick={handleSubmit} disabled={loading || !puedeCrear}
             >
               {loading ? 'Registrando...' : `Registrar ${tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}`}
             </Button>

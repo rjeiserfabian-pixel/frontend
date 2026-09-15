@@ -11,8 +11,13 @@ import ModalNuevoTraslado from '../components/ModalNuevoTraslado';
 import ModalDetalleTraslado from '../components/ModalDetalleTraslado';
 import { useReactToPrint } from 'react-to-print';
 import PrintTrasladoComponent from '../components/PrintTrasladoComponent';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function TrasladosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('INVENTARIO.TRASLADOS.CREAR');
+  const puedeAprobar = tienePermiso('INVENTARIO.TRASLADOS.APROBAR');
+
   const [traslados, setTraslados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
@@ -138,14 +143,16 @@ export default function TrasladosPage() {
         <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
           Movimientos de Almacén
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<ArrowRightLeft size={18} />}
-          onClick={() => setOpenModal(true)}
-        >
-          Nuevo Movimiento
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<ArrowRightLeft size={18} />}
+            onClick={() => setOpenModal(true)}
+          >
+            Nuevo Movimiento
+          </Button>
+        )}
       </Box>
 
       <TableContainer component={Paper}>
@@ -184,7 +191,7 @@ export default function TrasladosPage() {
                   <TableCell>{item.observaciones || '-'}</TableCell>
                   <TableCell align="center">{getStatusChip(item.estado)}</TableCell>
                   <TableCell align="center">
-                    {item.estado === 'PENDIENTE' && (
+                    {item.estado === 'PENDIENTE' && puedeAprobar && (
                       <>
                         <IconButton color="success" onClick={() => handleConfirmar(item)} title="Confirmar recepción" sx={{ mr: 1 }}>
                           <CheckCircle size={18} />

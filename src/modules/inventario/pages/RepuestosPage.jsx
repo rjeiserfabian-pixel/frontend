@@ -11,8 +11,14 @@ import { Plus, Edit, Trash2, X, Warehouse, Tag, Download, FileText, Search } fro
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function RepuestosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeCrear = tienePermiso('INVENTARIO.REPUESTOS.CREAR');
+  const puedeEditar = tienePermiso('INVENTARIO.REPUESTOS.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.REPUESTOS.ELIMINAR');
+
   const [repuestos, setRepuestos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [marcas, setMarcas] = useState([]);
@@ -411,13 +417,15 @@ export default function RepuestosPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">Catálogo de Repuestos</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={20} />} 
-          onClick={() => handleOpenModal()}
-        >
-          Nuevo Repuesto
-        </Button>
+        {puedeCrear && (
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleOpenModal()}
+          >
+            Nuevo Repuesto
+          </Button>
+        )}
       </Box>
 
       {/* --- BARRA DE HERRAMIENTAS (BUSCADOR Y FILTROS) --- */}
@@ -572,12 +580,16 @@ export default function RepuestosPage() {
                             <Warehouse size={18} />
                           </IconButton>
                         </Tooltip>
-                        <IconButton color="primary" onClick={() => handleOpenModal(row)}>
-                          <Edit size={18} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDelete(row.id)}>
-                          <Trash2 size={18} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                            <Edit size={18} />
+                          </IconButton>
+                        )}
+                        {puedeEliminar && (
+                          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                            <Trash2 size={18} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                     );
