@@ -15,8 +15,7 @@ export default function CuentasBancariasPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('CUENTAS_BANCARIAS.CREAR');
   const puedeEditar = tienePermiso('CUENTAS_BANCARIAS.EDITAR');
-  // No existe ELIMINAR dedicado; el backend reutiliza EDITAR para el DELETE.
-  const puedeEliminar = tienePermiso('CUENTAS_BANCARIAS.EDITAR');
+  const puedeEliminar = tienePermiso('CUENTAS_BANCARIAS.ELIMINAR');
 
   const [activeTab, setActiveTab] = useState('cuentas'); // 'cuentas' o 'tipos'
   

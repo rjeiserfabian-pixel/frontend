@@ -83,6 +83,18 @@ export const useClientes = () => {
     }
   };
 
+  const eliminarCliente = async (id) => {
+    try {
+      await clienteService.eliminar(id);
+      Swal.fire('Eliminado', 'Cliente eliminado exitosamente', 'success');
+      return true;
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo eliminar el cliente', 'error');
+      return false;
+    }
+  };
+
   const consultarDni = async (dni, signal) => {
     try {
       const result = await clienteService.consultarDni(dni, signal);
@@ -111,6 +123,7 @@ export const useClientes = () => {
     totalCount,
     cargarClientes,
     guardarCliente,
+    eliminarCliente,
     consultarDni,
   };
 };

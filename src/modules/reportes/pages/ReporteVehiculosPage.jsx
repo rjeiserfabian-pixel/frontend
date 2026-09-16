@@ -7,6 +7,7 @@ import { Car, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteVehiculos, exportarVehiculos } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 function useReporteVehiculos() {
   const [filtros, setFiltros] = useState({ placa: '', cliente_id: '', page: 1, page_size: 50 });
@@ -38,6 +39,8 @@ function useReporteVehiculos() {
 }
 
 export default function ReporteVehiculosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.VEHICULO.EXPORTAR');
   const { filtros, setFiltros, result, loading, buscado, error, buscar, exportar } = useReporteVehiculos();
 
   return (
@@ -46,7 +49,7 @@ export default function ReporteVehiculosPage() {
       subtitulo="Padrón de vehículos atendidos, propietarios y frecuencia de visitas"
       icono={Car}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons onExport={exportar} filename="Reporte_Vehiculos" />
       )}
       filtros={

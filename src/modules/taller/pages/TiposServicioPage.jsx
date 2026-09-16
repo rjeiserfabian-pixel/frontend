@@ -14,9 +14,8 @@ import { usePermisos } from '../../../shared/contexts/PermisosContext';
 export default function TiposServicioPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('TIPOS_SERVICIO.CREAR');
-  // No existe ELIMINAR dedicado; el backend reutiliza EDITAR para editar y borrar.
   const puedeEditar = tienePermiso('TIPOS_SERVICIO.EDITAR');
-  const puedeEliminar = tienePermiso('TIPOS_SERVICIO.EDITAR');
+  const puedeEliminar = tienePermiso('TIPOS_SERVICIO.ELIMINAR');
 
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);

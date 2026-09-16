@@ -10,9 +10,9 @@ import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const ConfiguracionIgvPage = () => {
   const { tienePermiso } = usePermisos();
-  // ImpuestoViewSet solo declara VER/EDITAR — el mixin exige EDITAR también
-  // para crear y eliminar (no hay CREAR/ELIMINAR dedicados).
-  const puedeGestionar = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
+  const puedeCrear = tienePermiso('INVENTARIO.IMPUESTOS.CREAR');
+  const puedeEditar = tienePermiso('INVENTARIO.IMPUESTOS.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.IMPUESTOS.ELIMINAR');
 
   const [impuestos, setImpuestos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
@@ -122,7 +122,7 @@ const ConfiguracionIgvPage = () => {
           <h2 className="text-xl font-semibold text-slate-800">
             Listado de Impuestos
           </h2>
-          {puedeGestionar && (
+          {puedeCrear && (
             <button
               onClick={handleOpenModal}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
@@ -151,11 +151,11 @@ const ConfiguracionIgvPage = () => {
                   <td className="p-4">{i.tasa}%</td>
                   <td className="p-4">{i.codigo_sunat || '-'}</td>
                   <td className="p-4 text-right">
-                    {puedeGestionar && (
-                      <>
-                        <button onClick={() => handleOpenEditModal(i)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
-                        <button onClick={() => handleEliminar(i.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
-                      </>
+                    {puedeEditar && (
+                      <button onClick={() => handleOpenEditModal(i)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                    )}
+                    {puedeEliminar && (
+                      <button onClick={() => handleEliminar(i.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
                     )}
                   </td>
                 </tr>

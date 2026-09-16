@@ -7,6 +7,7 @@ import { Users, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteClientes, exportarClientes } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 function useReporteClientes() {
   const today = new Date().toISOString().split('T')[0];
@@ -41,6 +42,8 @@ function useReporteClientes() {
 }
 
 export default function ReporteClientesPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.CLIENTES.EXPORTAR');
   const { filtros, setFiltros, result, loading, buscado, error, buscar, exportar } = useReporteClientes();
 
   return (
@@ -49,7 +52,7 @@ export default function ReporteClientesPage() {
       subtitulo="Ranking de clientes, saldos pendientes y volumen de compras"
       icono={Users}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons onExport={exportar} filename="Reporte_Clientes" />
       )}
       filtros={

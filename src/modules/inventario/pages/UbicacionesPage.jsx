@@ -51,7 +51,7 @@ export default function UbicacionesPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('INVENTARIO.ALMACENES.CREAR');
   const puedeEditar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
-  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.ELIMINAR');
 
   const { ubicaciones, almacenes, loading, fetchData, page, setPage, rowsPerPage, totalCount } = useUbicaciones();
   const [openModal, setOpenModal] = useState(false);

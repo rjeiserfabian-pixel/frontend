@@ -8,6 +8,7 @@ import { ShoppingCart, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteVentas, exportarVentas, getFiltrosAuxiliares } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 // ── Custom Hook ──────────────────────────────────────────────────────────────
 function useReporteVentas() {
@@ -56,6 +57,8 @@ function useReporteVentas() {
 
 // ── Componente ───────────────────────────────────────────────────────────────
 export default function ReporteVentasPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.VENTAS.EXPORTAR');
   const { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar } = useReporteVentas();
 
   const estadoBadge = (estado) => {
@@ -69,7 +72,7 @@ export default function ReporteVentasPage() {
       subtitulo="Historial de comprobantes emitidos con totales y estado"
       icono={ShoppingCart}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons onExport={exportar} filename="Reporte_Ventas" />
       )}
       filtros={

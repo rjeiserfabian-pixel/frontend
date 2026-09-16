@@ -8,6 +8,7 @@ import { Landmark, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteCaja, exportarCaja, getFiltrosAuxiliares } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 // ── Custom Hook ──────────────────────────────────────────────────────────────
 function useReporteCaja() {
@@ -56,6 +57,8 @@ function useReporteCaja() {
 
 // ── Componente ───────────────────────────────────────────────────────────────
 export default function ReporteCajaPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.CAJA.EXPORTAR');
   const { filtros, setFiltros, cajas, result, loading, buscado, error, buscar, exportar } = useReporteCaja();
 
   const estadoBadge = (estado) => {
@@ -69,7 +72,7 @@ export default function ReporteCajaPage() {
       subtitulo="Sesiones de apertura y cierre con detalle por método de pago"
       icono={Landmark}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons
           onExport={exportar}
           filename="Reporte_Caja"

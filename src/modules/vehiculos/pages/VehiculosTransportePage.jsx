@@ -13,8 +13,7 @@ const VehiculosTransportePage = () => {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('VEHICULOS_TRANSPORTE.CREAR');
   const puedeEditar = tienePermiso('VEHICULOS_TRANSPORTE.EDITAR');
-  // No existe ELIMINAR dedicado; el backend reutiliza EDITAR para el DELETE.
-  const puedeEliminar = tienePermiso('VEHICULOS_TRANSPORTE.EDITAR');
+  const puedeEliminar = tienePermiso('VEHICULOS_TRANSPORTE.ELIMINAR');
 
   const {
     vehiculos, loading, cargarVehiculos, eliminarVehiculo,

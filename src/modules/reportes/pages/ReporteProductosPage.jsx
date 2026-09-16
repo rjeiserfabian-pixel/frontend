@@ -7,6 +7,7 @@ import { Package, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteProductos, exportarProductos, getFiltrosAuxiliares } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 function useReporteProductos() {
   const [filtros, setFiltros] = useState({ categoria_id: '', marca_id: '', stock_estado: '', page: 1, page_size: 50 });
@@ -45,6 +46,8 @@ function useReporteProductos() {
 }
 
 export default function ReporteProductosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.PRODUCTOS.EXPORTAR');
   const { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar } = useReporteProductos();
 
   return (
@@ -53,7 +56,7 @@ export default function ReporteProductosPage() {
       subtitulo="Stock actual, precios y estado de inventario"
       icono={Package}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons onExport={exportar} filename="Reporte_Productos" />
       )}
       filtros={

@@ -46,7 +46,7 @@ export default function SucursalesPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('INVENTARIO.ALMACENES.CREAR');
   const puedeEditar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
-  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.ELIMINAR');
 
   const { sucursales, loading, fetchSucursales, page, setPage, rowsPerPage, totalCount } = useSucursales();
   const [openModal, setOpenModal] = useState(false);

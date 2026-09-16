@@ -10,9 +10,9 @@ import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export const UbigeoPage = () => {
   const { tienePermiso } = usePermisos();
-  // Departamento/Provincia/DistritoViewSet exigen UBIGEO.VER también para
-  // crear/editar/eliminar (no hay CREAR/EDITAR/ELIMINAR dedicados en el catálogo).
-  const puedeGestionar = tienePermiso('UBIGEO.VER');
+  const puedeCrear = tienePermiso('UBIGEO.CREAR');
+  const puedeEditar = tienePermiso('UBIGEO.EDITAR');
+  const puedeEliminar = tienePermiso('UBIGEO.ELIMINAR');
 
   const [activeTab, setActiveTab] = useState('departamentos');
 
@@ -274,7 +274,7 @@ export const UbigeoPage = () => {
                 <td className="p-4 text-slate-800">{index + 1}</td>
                 <td className="p-4 text-slate-800">{item.nombre}</td>
                 <td className="p-4 text-right space-x-2">
-                  {puedeGestionar && (
+                  {puedeEditar && (
                     <button
                       onClick={() => openModal(type, item)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -283,7 +283,7 @@ export const UbigeoPage = () => {
                       <Edit size={18} />
                     </button>
                   )}
-                  {puedeGestionar && (
+                  {puedeEliminar && (
                     <button
                       onClick={() => handleDelete(type, item.id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -344,7 +344,7 @@ export const UbigeoPage = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-700">Listado de Departamentos</h2>
-                {puedeGestionar && (
+                {puedeCrear && (
                   <button
                     onClick={() => openModal('dep')}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
@@ -361,7 +361,7 @@ export const UbigeoPage = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-700">Listado de Provincias</h2>
-                {puedeGestionar && (
+                {puedeCrear && (
                   <button
                     onClick={() => openModal('prov')}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"
@@ -378,7 +378,7 @@ export const UbigeoPage = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-700">Listado de Distritos</h2>
-                {puedeGestionar && (
+                {puedeCrear && (
                   <button
                     onClick={() => openModal('dist')}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm font-medium"

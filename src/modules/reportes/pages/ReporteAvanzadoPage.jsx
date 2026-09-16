@@ -8,6 +8,7 @@ import { BarChart2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteAvanzado, exportarAvanzado, getFiltrosAuxiliares } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const TIPOS = [
   { value: 'ventas_general',     label: 'Reporte General de Ventas' },
@@ -111,6 +112,8 @@ function RenderTabla({ data, columns, filtros, total, onPage }) {
 }
 
 export default function ReporteAvanzadoPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.AVANZADO.EXPORTAR');
   const { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar } = useReporteAvanzado();
 
   const renderContenido = () => {
@@ -183,7 +186,7 @@ export default function ReporteAvanzadoPage() {
       subtitulo="Análisis gerencial y reportes cruzados de operaciones"
       icono={BarChart2}
       loading={loading}
-      exportar={buscado && result && (
+      exportar={buscado && result && puedeExportar && (
         <ExportButtons onExport={exportar} filename={`Reporte_Avanzado_${filtros.tipo}`} />
       )}
       filtros={

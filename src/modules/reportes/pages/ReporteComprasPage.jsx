@@ -7,6 +7,7 @@ import { Truck, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteCompras, exportarCompras, getFiltrosAuxiliares } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 function useReporteCompras() {
   const today = new Date().toISOString().split('T')[0];
@@ -50,6 +51,8 @@ function useReporteCompras() {
 }
 
 export default function ReporteComprasPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.COMPRAS.EXPORTAR');
   const { filtros, setFiltros, proveedores, result, loading, buscado, error, buscar, exportar } = useReporteCompras();
 
   const estadoPagoBadge = (estado) => {
@@ -63,7 +66,7 @@ export default function ReporteComprasPage() {
       subtitulo="Historial de compras a proveedores y estado de pago"
       icono={Truck}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons onExport={exportar} filename="Reporte_Compras" />
       )}
       filtros={

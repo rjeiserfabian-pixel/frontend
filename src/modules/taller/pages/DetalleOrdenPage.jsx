@@ -34,6 +34,8 @@ export default function DetalleOrdenPage() {
   const { activeSucursalId } = useSucursal();
   const { tienePermiso } = usePermisos();
   const puedeAprobar = tienePermiso('ORDENES_TRABAJO.APROBAR');
+  const puedeFinalizar = tienePermiso('ORDENES_TRABAJO.FINALIZAR');
+  const puedeCobrarPos = tienePermiso('VENTAS.POS.CREAR');
   const puedeCambiarEstado = tienePermiso('ORDENES_TRABAJO.CAMBIAR_ESTADO');
   const puedeEditar = tienePermiso('ORDENES_TRABAJO.EDITAR');
   const [orden, setOrden] = useState(null);
@@ -186,6 +188,7 @@ export default function DetalleOrdenPage() {
 
   const handleConvertirAServicio = (hallazgo) => {
     setHallazgoOrigenId(hallazgo.id);
+    setEditingServicioId(null);
     setNuevoServicio({ descripcion: hallazgo.descripcion, precio: 0 });
     setServicioModal(true);
   };
@@ -202,6 +205,13 @@ export default function DetalleOrdenPage() {
     setEditingServicioId(servicio.id);
     setNuevoServicio({ descripcion: servicio.descripcion, precio: servicio.precio_estimado });
     setServicioModal(true);
+  };
+
+  const handleCloseServicioModal = () => {
+    setServicioModal(false);
+    setHallazgoOrigenId(null);
+    setEditingServicioId(null);
+    setNuevoServicio({ descripcion: '', precio: 0 });
   };
 
   const handleAddServicio = async () => {
@@ -536,6 +546,7 @@ export default function DetalleOrdenPage() {
   const hayMecanicoAsignado = !!orden.mecanico_asignado;
   const puedeAgregarHallazgo = esEditable && hayMecanicoAsignado && puedeEditar;
   const puedeEditarSubrecursos = esEditable && puedeEditar;
+  const puedeEliminarSubrecursos = esEditable && tienePermiso('ORDENES_TRABAJO.ELIMINAR');
   const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
   const historialCancelacion = estaCancelada
     ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')
@@ -833,7 +844,7 @@ export default function DetalleOrdenPage() {
                 <Typography variant="body2" color="#e11d48">Asigna un mecánico para iniciar la inspección técnica o genera la cotización directamente si ya hay servicios.</Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                {(orden.servicios.length > 0 || orden.repuestos.length > 0) && puedeEditar && (
+                {(orden.servicios.length > 0 || orden.repuestos.length > 0) && puedeAprobar && (
                   <Button
                     variant="outlined"
                     size="large"
@@ -904,7 +915,7 @@ export default function DetalleOrdenPage() {
                   <Chip label={`Total Aprobado: S/ ${totalAprobado.toFixed(2)}`} size="small" color="primary" sx={{ fontWeight: 700 }} />
                 </Typography>
 
-                {puedeAprobar && (
+                {puedeFinalizar && (
                   <Button
                     variant="contained"
                     onClick={handleFinalizarOrden}
@@ -1028,7 +1039,7 @@ export default function DetalleOrdenPage() {
                 <Typography variant="h6" fontWeight="700" color="#1e3a8a" mb={0.5}>Orden de Trabajo Finalizada</Typography>
                 <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja.</Typography>
               </Box>
-              {puedeAprobar && (
+              {puedeCobrarPos && (
                 <Button
                   variant="contained"
                   size="large"
@@ -1098,14 +1109,18 @@ export default function DetalleOrdenPage() {
                                   <Chip label="Cotizado" size="small" color="success" variant="outlined" sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700 }} />
                                 )}
                               </Typography>
-                              {puedeEditarSubrecursos && (
+                              {(puedeEditarSubrecursos || puedeEliminarSubrecursos) && (
                                 <Box sx={{ display: 'flex', gap: 0.25 }}>
-                                  <IconButton size="small" onClick={() => handleOpenEditarHallazgo(h)} title="Editar hallazgo">
-                                    <Pencil size={14} />
-                                  </IconButton>
-                                  <IconButton size="small" onClick={() => handleDeleteHallazgo(h)} title="Eliminar hallazgo">
-                                    <X size={14} className="text-red-500" />
-                                  </IconButton>
+                                  {puedeEditarSubrecursos && (
+                                    <IconButton size="small" onClick={() => handleOpenEditarHallazgo(h)} title="Editar hallazgo">
+                                      <Pencil size={14} />
+                                    </IconButton>
+                                  )}
+                                  {puedeEliminarSubrecursos && (
+                                    <IconButton size="small" onClick={() => handleDeleteHallazgo(h)} title="Eliminar hallazgo">
+                                      <X size={14} className="text-red-500" />
+                                    </IconButton>
+                                  )}
                                 </Box>
                               )}
                             </Box>
@@ -1178,14 +1193,18 @@ export default function DetalleOrdenPage() {
                           )}
                         </TableCell>
                         <TableCell align="center">
-                          {puedeEditarSubrecursos && (
+                          {(puedeEditarSubrecursos || puedeEliminarSubrecursos) && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
-                              <IconButton size="small" onClick={() => handleOpenEditarServicio(s)} title="Editar servicio">
-                                <Pencil size={14} />
-                              </IconButton>
-                              <IconButton size="small" onClick={() => handleDeleteServicio(s)} title="Eliminar servicio">
-                                <X size={14} className="text-red-500" />
-                              </IconButton>
+                              {puedeEditarSubrecursos && (
+                                <IconButton size="small" onClick={() => handleOpenEditarServicio(s)} title="Editar servicio">
+                                  <Pencil size={14} />
+                                </IconButton>
+                              )}
+                              {puedeEliminarSubrecursos && (
+                                <IconButton size="small" onClick={() => handleDeleteServicio(s)} title="Eliminar servicio">
+                                  <X size={14} className="text-red-500" />
+                                </IconButton>
+                              )}
                             </Box>
                           )}
                         </TableCell>
@@ -1257,14 +1276,18 @@ export default function DetalleOrdenPage() {
                           S/ {(parseFloat(r.cantidad) * parseFloat(r.precio_unitario)).toFixed(2)}
                         </TableCell>
                         <TableCell align="center">
-                          {puedeEditarSubrecursos && (
+                          {(puedeEditarSubrecursos || puedeEliminarSubrecursos) && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
-                              <IconButton size="small" onClick={() => handleEditarCantidadRepuesto(r)} title="Editar cantidad">
-                                <Pencil size={14} />
-                              </IconButton>
-                              <IconButton size="small" onClick={() => handleDeleteRepuesto(r)} title="Eliminar repuesto">
-                                <X size={14} className="text-red-500" />
-                              </IconButton>
+                              {puedeEditarSubrecursos && (
+                                <IconButton size="small" onClick={() => handleEditarCantidadRepuesto(r)} title="Editar cantidad">
+                                  <Pencil size={14} />
+                                </IconButton>
+                              )}
+                              {puedeEliminarSubrecursos && (
+                                <IconButton size="small" onClick={() => handleDeleteRepuesto(r)} title="Eliminar repuesto">
+                                  <X size={14} className="text-red-500" />
+                                </IconButton>
+                              )}
                             </Box>
                           )}
                         </TableCell>
@@ -1287,7 +1310,7 @@ export default function DetalleOrdenPage() {
             </Paper>
 
             {/* Acciones Generales (Enviar Cotizacion) */}
-            {orden.estado === 'INSPECCION' && puedeEditar && (
+            {orden.estado === 'INSPECCION' && puedeAprobar && (
               <Box sx={{ p: 3, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" sx={{ bgcolor: 'slate.900', color: 'white', '&:hover': { bgcolor: 'slate.800' }, borderRadius: '10px', px: 4, py: 1.5, fontWeight: 600 }} onClick={handleGenerarCotizacion}>
                   Enviar Cotización a Cliente (Simular PDF)
@@ -1372,7 +1395,7 @@ export default function DetalleOrdenPage() {
       </Dialog>
 
       {/* Modal Servicio */}
-      <Dialog open={servicioModal} onClose={() => setServicioModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+      <Dialog open={servicioModal} onClose={handleCloseServicioModal} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
         <DialogTitle><Typography variant="h6" fontWeight="700">{editingServicioId ? 'Editar Servicio' : 'Agregar Servicio a Cotizar'}</Typography></DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           {hallazgoOrigenId && (
@@ -1389,7 +1412,7 @@ export default function DetalleOrdenPage() {
           />
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={() => setServicioModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
+          <Button onClick={handleCloseServicioModal} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
           <Button onClick={handleAddServicio} variant="contained" disabled={!nuevoServicio.descripcion} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>
             {editingServicioId ? 'Guardar Cambios' : 'Agregar'}
           </Button>

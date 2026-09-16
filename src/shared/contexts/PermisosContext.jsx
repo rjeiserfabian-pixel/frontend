@@ -21,23 +21,50 @@ export const PermisosProvider = ({ children }) => {
       return;
     }
 
-    const controller = new AbortController();
+    let activo = true;
 
-    const fetchPermisos = async () => {
+    const fetchPermisos = async ({ mostrarCarga } = {}) => {
+      if (mostrarCarga) setLoadingPermisos(true);
       try {
-        const response = await api.get('seguridad/mis-permisos/', { signal: controller.signal });
+        const response = await api.get('seguridad/mis-permisos/');
+        if (!activo) return;
         setCodigos(new Set(response.data?.data?.codigos || []));
       } catch (error) {
         if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
           console.error('Error al cargar permisos del usuario:', error);
         }
       } finally {
-        setLoadingPermisos(false);
+        if (activo) setLoadingPermisos(false);
       }
     };
 
-    fetchPermisos();
-    return () => controller.abort();
+    fetchPermisos({ mostrarCarga: true });
+
+    // Refresco en vivo: si un administrador cambia los permisos del rol
+    // mientras el usuario ya tiene la sesión abierta, no debe tener que
+    // cerrar sesión para que el cambio surta efecto.
+    const handleFocusOrVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchPermisos({ mostrarCarga: false });
+      }
+    };
+    window.addEventListener('focus', handleFocusOrVisibility);
+    document.addEventListener('visibilitychange', handleFocusOrVisibility);
+
+    // Respaldo por si la pestaña queda visible y en foco por horas sin
+    // cambiar de ventana (caso común en un solo monitor en el taller).
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchPermisos({ mostrarCarga: false });
+      }
+    }, 60000);
+
+    return () => {
+      activo = false;
+      window.removeEventListener('focus', handleFocusOrVisibility);
+      document.removeEventListener('visibilitychange', handleFocusOrVisibility);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const tienePermiso = useCallback((codigo) => codigos.has(codigo), [codigos]);

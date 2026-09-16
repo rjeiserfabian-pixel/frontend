@@ -139,6 +139,16 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
           <Typography variant="body2" sx={{ fontSize: '11px' }}>
             <strong>CONDICIÓN DE PAGO:</strong> {venta.estado === 'AL_CREDITO' ? 'AL CRÉDITO' : 'AL CONTADO'}
           </Typography>
+          {venta.pagos && venta.pagos.length > 0 && (
+            <>
+              <Typography variant="body2" sx={{ fontSize: '11px' }}>
+                <strong>FORMA DE PAGO:</strong> {venta.pagos.length > 1 ? 'Múltiple' : venta.pagos[0].metodo_pago}
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '11px' }}>
+                <strong>DETALLE:</strong> {venta.pagos.map(p => `${p.metodo_pago}${p.referencia ? ` (Op:${p.referencia})` : ''}: S/ ${parseFloat(p.monto).toFixed(2)}`).join(' | ')}
+              </Typography>
+            </>
+          )}
           {venta.caja_nombre && (
             <Typography variant="body2" sx={{ fontSize: '11px' }}>
               <strong>CAJA:</strong> {venta.caja_nombre}

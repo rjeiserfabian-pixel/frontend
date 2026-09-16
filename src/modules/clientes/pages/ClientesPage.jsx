@@ -15,8 +15,9 @@ const ClientesPage = () => {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('CONTACTOS.CLIENTES.CREAR');
   const puedeEditar = tienePermiso('CONTACTOS.CLIENTES.EDITAR');
+  const puedeEliminar = tienePermiso('CONTACTOS.CLIENTES.ELIMINAR');
 
-  const { clientes, loading, totalCount, cargarClientes } = useClientes();
+  const { clientes, loading, totalCount, cargarClientes, eliminarCliente } = useClientes();
   const [page, setPage] = useState(0); // 0-indexed para TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState('');
@@ -40,6 +41,27 @@ const ClientesPage = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setClienteEdit(null);
+  };
+
+  // Regla 5.1: Confirmación explícita para acciones destructivas
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "El cliente se eliminará del listado.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const success = await eliminarCliente(id);
+        if (success) {
+          cargarClientes(page + 1, search);
+        }
+      }
+    });
   };
 
   return (
@@ -112,6 +134,11 @@ const ClientesPage = () => {
                           {puedeEditar && (
                             <IconButton color="primary" onClick={() => handleOpenModal(row)}>
                               <Edit size={18} />
+                            </IconButton>
+                          )}
+                          {puedeEliminar && (
+                            <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                              <Trash2 size={18} />
                             </IconButton>
                           )}
                         </TableCell>

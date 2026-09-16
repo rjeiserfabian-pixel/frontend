@@ -51,8 +51,7 @@ export default function AlmacenesPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('INVENTARIO.ALMACENES.CREAR');
   const puedeEditar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
-  // No existe INVENTARIO.ALMACENES.ELIMINAR dedicado; el backend reutiliza EDITAR.
-  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.EDITAR');
+  const puedeEliminar = tienePermiso('INVENTARIO.ALMACENES.ELIMINAR');
 
   const { almacenes, sucursales, loading, fetchData, page, setPage, rowsPerPage, totalCount } = useAlmacenes();
   const [openModal, setOpenModal] = useState(false);

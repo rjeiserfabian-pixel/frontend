@@ -181,7 +181,7 @@ export const PerfilPage = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-800">{usuario?.username}</h2>
-            <p className="text-slate-500">Rol: Usuario</p>
+            <p className="text-slate-500">Rol: {usuario?.rol_nombre || 'Usuario'}</p>
           </div>
         </div>
 

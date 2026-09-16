@@ -7,6 +7,7 @@ import { LayoutDashboard, Search } from 'lucide-react';
 import ReporteLayout from '../components/ReporteLayout';
 import ExportButtons from '../components/ExportButtons';
 import { getReporteKioskos, exportarKioskos, getFiltrosAuxiliares } from '../services/reportes.service';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 function useReporteKioskos() {
   const today = new Date().toISOString().split('T')[0];
@@ -49,6 +50,8 @@ function useReporteKioskos() {
 }
 
 export default function ReporteKioskosPage() {
+  const { tienePermiso } = usePermisos();
+  const puedeExportar = tienePermiso('REPORTES.KIOSKOS.EXPORTAR');
   const { filtros, setFiltros, auxiliares, result, loading, buscado, error, buscar, exportar } = useReporteKioskos();
 
   return (
@@ -57,7 +60,7 @@ export default function ReporteKioskosPage() {
       subtitulo="Ventas generadas por cada terminal de autoservicio"
       icono={LayoutDashboard}
       loading={loading}
-      exportar={buscado && result.data.length > 0 && (
+      exportar={buscado && result.data.length > 0 && puedeExportar && (
         <ExportButtons onExport={exportar} filename="Reporte_Kioskos" />
       )}
       filtros={

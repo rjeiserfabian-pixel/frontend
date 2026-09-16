@@ -18,11 +18,9 @@ const TIPOS_DOCUMENTO = {
 
 const SeriesInternasPage = () => {
   const { tienePermiso } = usePermisos();
-  // SerieDocumentoInternoViewSet solo declara permiso_ver/permiso_editar (no hay
-  // CREAR/ELIMINAR dedicados) — el mixin exige EDITAR también para crear y borrar.
-  const puedeCrear = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
-  const puedeEditar = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
-  const puedeEliminar = tienePermiso('VENTAS.CONFIGURACION.EDITAR');
+  const puedeCrear = tienePermiso('SERIES_INTERNAS.CREAR');
+  const puedeEditar = tienePermiso('SERIES_INTERNAS.EDITAR');
+  const puedeEliminar = tienePermiso('SERIES_INTERNAS.ELIMINAR');
 
   const [series, setSeries] = useState([]);
   const [sucursales, setSucursales] = useState([]);
