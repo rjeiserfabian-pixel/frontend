@@ -1,11 +1,9 @@
 import axios from 'axios';
 import { authStorage } from '../../../core/auth/authStorage';
 
-// Usar variable de entorno si existe, de lo contrario localhost para dev local
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
+// Usa ruta relativa para que el proxy de Vite la redirija al backend
 const apiClient = axios.create({
-  baseURL: `${API_URL}/ventas`,
+  baseURL: '/api/ventas',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

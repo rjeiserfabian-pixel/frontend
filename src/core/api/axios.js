@@ -2,7 +2,7 @@ import axios from 'axios';
 import { authStorage } from '../auth/authStorage';
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/', // Cambiar en producción con variable de entorno
+  baseURL: '/api/', // Proxy de Vite redirige al backend (ver vite.config.js)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,7 +44,7 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error('No refresh token');
 
         // Intenta renovar el access token
-        const res = await axios.post('http://127.0.0.1:8000/api/seguridad/token/refresh/', {
+        const res = await axios.post('/api/seguridad/token/refresh/', {
           refresh: refreshToken,
         });
 

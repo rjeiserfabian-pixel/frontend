@@ -7,6 +7,7 @@ import { Save, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 export const ConfiguracionEmpresaPage = () => {
   const { tienePermiso } = usePermisos();
@@ -64,7 +65,7 @@ export const ConfiguracionEmpresaPage = () => {
         });
         
         if (data.logo) {
-          setPreviewUrl(data.logo.startsWith('http') ? data.logo : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${data.logo}`);
+          setPreviewUrl(getMediaUrl(data.logo));
         }
 
         // Cargar provincias y distritos iniciales si existen guardados

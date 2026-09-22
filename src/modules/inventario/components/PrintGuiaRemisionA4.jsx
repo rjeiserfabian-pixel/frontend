@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../../core/api/axios';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 const ESTADO_LABELS = {
   CREADA: 'Creada',
@@ -25,9 +26,7 @@ const PrintGuiaRemisionA4 = React.forwardRef(({ guia }, ref) => {
 
   if (!guia) return null;
 
-  const empresaLogo = empresa?.logo
-    ? (empresa.logo.startsWith('http') ? empresa.logo : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresa.logo}`)
-    : null;
+  const empresaLogo = getMediaUrl(empresa?.logo);
   const direccionEmpresa = [empresa?.direccion, empresa?.distrito, empresa?.provincia, empresa?.departamento]
     .filter(Boolean).join(' - ');
   const numeroDocumento = `${guia.serie_prefijo || 'GR'}-${String(guia.correlativo).padStart(6, '0')}`;

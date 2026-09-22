@@ -6,6 +6,7 @@ import { Save, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { authStorage } from '../../../core/auth/authStorage';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 export const PerfilPage = () => {
   const [loading, setLoading] = useState(true);
@@ -45,8 +46,7 @@ export const PerfilPage = () => {
         });
         
         if (data.avatar_url) {
-          setPreviewUrl(data.avatar_url.startsWith('http') ? data.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${data.avatar_url}`);
-        }
+          setPreviewUrl(getMediaUrl(data.avatar_url));        }
       } catch (error) {
         console.error("Error al cargar perfil", error);
         Swal.fire('Error', 'No se pudo cargar la información del perfil.', 'error');

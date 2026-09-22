@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../../core/api/axios';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 const ESTADO_LABELS = {
   PENDIENTE: 'Pendiente de confirmación',
@@ -25,9 +26,7 @@ const PrintTrasladoComponent = React.forwardRef(({ traslado }, ref) => {
 
   if (!traslado) return null;
 
-  const empresaLogo = empresa?.logo
-    ? (empresa.logo.startsWith('http') ? empresa.logo : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresa.logo}`)
-    : null;
+  const empresaLogo = getMediaUrl(empresa?.logo);
   const direccionEmpresa = [empresa?.direccion, empresa?.distrito, empresa?.provincia, empresa?.departamento]
     .filter(Boolean).join(' - ');
   const numeroDocumento = traslado.numero_documento || `TR-${String(traslado.id).padStart(6, '0')}`;

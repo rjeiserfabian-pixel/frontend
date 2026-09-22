@@ -60,14 +60,11 @@ export default function NuevaOrdenPage() {
     }
   };
 
-  const fetchTiposServicio = async (selectId = null) => {
+  const fetchTiposServicio = async () => {
     try {
       const res = await tallerService.getTiposServicio({ estado: true });
       const data = res.results || res;
       setTiposServicio(data);
-      if (selectId) {
-        setFormData(prev => ({ ...prev, tipo_servicio_id: selectId }));
-      }
     } catch (err) {
       console.error('Error cargando tipos de servicio:', err);
     }
@@ -85,7 +82,13 @@ export default function NuevaOrdenPage() {
       Swal.fire('Éxito', 'Tipo de Servicio registrado', 'success');
       setTipoServicioModalOpen(false);
       setNuevoTipoNombre('');
-      await fetchTiposServicio(nuevo.id);
+      // Se inyecta directo en la lista local y se selecciona; no depende de que el
+      // tipo recién creado caiga dentro de la página que devuelva el listado (mismo
+      // problema que afectaba a clientes y vehículos).
+      if (nuevo?.id) {
+        setTiposServicio(prev => prev.some(t => t.id === nuevo.id) ? prev : [nuevo, ...prev]);
+        setFormData(prev => ({ ...prev, tipo_servicio_id: nuevo.id }));
+      }
     } catch (err) {
       Swal.fire('Error', err.response?.data?.nombre?.[0] || 'Error al guardar', 'error');
     } finally {
@@ -94,37 +97,24 @@ export default function NuevaOrdenPage() {
   };
 
   const [clienteBusqueda, setClienteBusqueda] = useState('');
-  const fetchClientes = async (query = '', selectId = null) => {
+  const fetchClientes = async (query = '') => {
     if (query.length === 1) return;
     try {
       const res = await api.get('clientes/', { params: { search: query } });
       const data = res.data.results || res.data;
       setClientes(data);
-      if (selectId) {
-        setFormData(prev => ({ ...prev, cliente_id: selectId }));
-      }
     } catch (err) {
       console.error('Error cargando clientes:', err);
     }
   };
 
   const [vehiculoBusqueda, setVehiculoBusqueda] = useState('');
-  const fetchVehiculos = async (query = '', selectId = null) => {
+  const fetchVehiculos = async (query = '') => {
     if (query.length === 1) return;
     try {
       const res = await api.get('vehiculos/', { params: { search: query } });
       const data = res.data.results || res.data;
       setVehiculos(data);
-      if (selectId) {
-        const newlyCreated = data.find(v => v.id === selectId);
-        if (newlyCreated) {
-          setFormData(prev => ({
-            ...prev,
-            vehiculo_id: newlyCreated.id,
-            kilometraje: newlyCreated.kilometraje_actual || ''
-          }));
-        }
-      }
     } catch (err) {
       console.error('Error cargando vehículos:', err);
     }
@@ -446,7 +436,16 @@ export default function NuevaOrdenPage() {
           open={vehicleModalOpen}
           onClose={() => setVehicleModalOpen(false)}
           onSuccess={(createdVehicle) => {
-            fetchVehiculos(createdVehicle?.id);
+            if (!createdVehicle?.id) return;
+            // Se inyecta directo en la lista local y se selecciona; no depende de que
+            // el vehículo recién creado caiga dentro de la página que devuelva el fetch.
+            setVehiculos(prev => prev.some(v => v.id === createdVehicle.id) ? prev : [createdVehicle, ...prev]);
+            setFormData(prev => ({
+              ...prev,
+              vehiculo_id: createdVehicle.id,
+              kilometraje: createdVehicle.kilometraje_actual || prev.kilometraje,
+            }));
+            setVehiculoBusqueda(`${createdVehicle.placa} - ${createdVehicle.marca} ${createdVehicle.modelo}`);
           }}
         />
       )}
@@ -457,7 +456,12 @@ export default function NuevaOrdenPage() {
           open={clientModalOpen}
           onClose={() => setClientModalOpen(false)}
           onSuccess={(createdClient) => {
-            fetchClientes(createdClient?.id);
+            if (!createdClient?.id) return;
+            // Igual que con vehículos: se agrega directo a la lista local y se
+            // selecciona, sin depender del paginado del listado de clientes.
+            setClientes(prev => prev.some(c => c.id === createdClient.id) ? prev : [createdClient, ...prev]);
+            setFormData(prev => ({ ...prev, cliente_id: createdClient.id }));
+            setClienteBusqueda(`${createdClient.dni} - ${createdClient.nombres} ${createdClient.apellidos || ''}`.trim());
           }}
         />
       )}

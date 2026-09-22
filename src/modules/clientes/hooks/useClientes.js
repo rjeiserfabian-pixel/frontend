@@ -57,7 +57,7 @@ export const useClientes = () => {
       if (error.response && error.response.data) {
         const errData = error.response.data.errores || error.response.data;
         if (errData.dni) {
-          errorMessage = 'Ya existe un cliente registrado con este DNI.';
+          errorMessage = 'Ya existe un cliente registrado con este número de documento.';
         } else if (errData.error) {
           errorMessage = errData.error;
         } else if (typeof errData === 'object') {
@@ -102,8 +102,29 @@ export const useClientes = () => {
     } catch (error) {
       // Ignorar errores de cancelación de AbortController
       if (error.name === 'CanceledError') return null;
-      
+
       const msg = error.response?.data?.error || 'Error al consultar DNI';
+      Swal.fire({
+        icon: 'warning',
+        title: 'Error',
+        text: msg,
+        didOpen: () => {
+          const container = document.querySelector('.swal2-container');
+          if (container) container.style.zIndex = '9999';
+        }
+      });
+      return null;
+    }
+  };
+
+  const consultarRuc = async (ruc, signal) => {
+    try {
+      const result = await clienteService.consultarRuc(ruc, signal);
+      return result.data;
+    } catch (error) {
+      if (error.name === 'CanceledError') return null;
+
+      const msg = error.response?.data?.error || 'Error al consultar RUC';
       Swal.fire({
         icon: 'warning',
         title: 'Error',
@@ -125,5 +146,6 @@ export const useClientes = () => {
     guardarCliente,
     eliminarCliente,
     consultarDni,
+    consultarRuc,
   };
 };

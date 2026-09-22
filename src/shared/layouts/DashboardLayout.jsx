@@ -12,6 +12,7 @@ import {
 import * as Icons from 'lucide-react';
 import api from '../../core/api/axios';
 import { authStorage } from '../../core/auth/authStorage';
+import { getMediaUrl } from '../../core/utils/mediaUrl';
 import { useSucursal } from '../contexts/SucursalContext';
 import { useIdleLogout } from '../hooks/useIdleLogout';
 import { Select, FormControl } from '@mui/material';
@@ -118,11 +119,7 @@ export default function DashboardLayout() {
         if (empresaInfo) {
           setEmpresaData({
             razon_social: empresaInfo.razon_social || 'Sistema',
-            logo: empresaInfo.logo
-              ? (empresaInfo.logo.startsWith('http')
-                  ? empresaInfo.logo
-                  : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresaInfo.logo}`)
-              : null,
+            logo: getMediaUrl(empresaInfo.logo),
           });
         }
 
@@ -293,7 +290,7 @@ export default function DashboardLayout() {
               color="inherit"
             >
               <Avatar 
-                src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.avatar_url}`) : undefined}
+                src={getMediaUrl(user?.avatar_url)}
                 sx={{ bgcolor: theme.palette.primary.main, width: 36, height: 36 }}
               >
                 {!user?.avatar_url && (user?.nombre?.charAt(0) || 'A')}

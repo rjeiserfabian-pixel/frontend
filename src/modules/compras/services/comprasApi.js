@@ -1,10 +1,9 @@
 import axios from 'axios';
 import { authStorage } from '../../../core/auth/authStorage';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
+// Usa rutas relativas para que el proxy de Vite las redirija al backend
 const apiClient = axios.create({
-  baseURL: `${API_URL}/compras`,
+  baseURL: '/api/compras',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -19,9 +18,9 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Para cuentas por pagar, corrigiendo la ruta para que apunte correctamente a /compras/cuentas-por-pagar
+// Para cuentas por pagar
 const cuentasApiClient = axios.create({
-  baseURL: `${API_URL}/compras/cuentas-por-pagar`,
+  baseURL: '/api/compras/cuentas-por-pagar',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -36,7 +35,7 @@ cuentasApiClient.interceptors.request.use((config) => {
 });
 
 const pagosApiClient = axios.create({
-  baseURL: `${API_URL}/compras/pagos-cuenta`,
+  baseURL: '/api/compras/pagos-cuenta',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

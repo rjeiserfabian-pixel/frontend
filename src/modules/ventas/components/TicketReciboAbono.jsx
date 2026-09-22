@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import api from '../../../core/api/axios';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) => {
   const [empresa, setEmpresa] = useState(null);
@@ -62,7 +63,7 @@ const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) =
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           {empresaLogo && (
             <img 
-              src={empresaLogo.startsWith('http') ? empresaLogo : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${empresaLogo}`} 
+              src={getMediaUrl(empresaLogo)} 
               alt="Logo" 
               style={{ display: 'block', margin: '0 auto 8px auto', maxWidth: '60%', maxHeight: '80px' }} 
             />

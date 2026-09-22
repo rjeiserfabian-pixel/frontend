@@ -82,7 +82,7 @@ const ClientesPage = () => {
       {/* BARRA DE BÚSQUEDA */}
       <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
         <TextField
-          label="Buscar (DNI/Nombre)"
+          label="Buscar (DNI/RUC/Nombre)"
           variant="outlined"
           size="small"
           value={search}
@@ -107,7 +107,7 @@ const ClientesPage = () => {
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
-                    <TableCell><strong>DNI</strong></TableCell>
+                    <TableCell><strong>Documento</strong></TableCell>
                     <TableCell><strong>Cliente</strong></TableCell>
                     <TableCell><strong>Teléfono</strong></TableCell>
                     <TableCell><strong>Dirección</strong></TableCell>
@@ -127,7 +127,7 @@ const ClientesPage = () => {
                     clientes.map((row) => (
                       <TableRow key={row.id} hover>
                         <TableCell>{row.dni}</TableCell>
-                        <TableCell>{`${row.nombres} ${row.apellidos}`}</TableCell>
+                        <TableCell>{`${row.nombres} ${row.apellidos || ''}`.trim()}</TableCell>
                         <TableCell>{row.telefono || '-'}</TableCell>
                         <TableCell>{row.direccion || '-'}</TableCell>
                         <TableCell align="center">
