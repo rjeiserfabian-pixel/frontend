@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Button, Paper, Grid, TextField, MenuItem, 
+import {
+  Box, Typography, Button, Paper, Grid, TextField, MenuItem,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  IconButton, Autocomplete, CircularProgress, Divider, InputAdornment
+  IconButton, Autocomplete, CircularProgress, Divider, InputAdornment,
+  FormControlLabel, Switch
 } from '@mui/material';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 import { comprasService } from '../services/comprasApi';
 import { proveedorService } from '../../clientes/services/proveedorService';
 import { inventarioService } from '../../inventario/services/inventarioService';
+import { ventasService } from '../../ventas/services/ventasApi';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import ModalNuevoProveedor from '../components/ModalNuevoProveedor';
@@ -43,7 +45,16 @@ const NuevaCompraPage = () => {
   });
 
   const [detalles, setDetalles] = useState([]);
-  
+
+  // Pago inicial (adelanto al proveedor), solo aplica cuando tipo_pago = Credito
+  const [pagoInicial, setPagoInicial] = useState({
+    monto: '',
+    metodo_pago_id: '',
+    afecta_caja: true,
+    referencia: ''
+  });
+  const [metodosPagoList, setMetodosPagoList] = useState([]);
+
   // Autocomplete states
   const [proveedores, setProveedores] = useState([]);
   const [repuestos, setRepuestos] = useState([]);
@@ -60,10 +71,25 @@ const NuevaCompraPage = () => {
     fetchRepuestos();
     fetchTiposComprobante();
     fetchImpuestos();
+    fetchMetodosPago();
     if (activeSucursalId) {
       fetchAlmacenes(activeSucursalId);
     }
   }, [activeSucursalId]);
+
+  const fetchMetodosPago = async () => {
+    try {
+      const data = await ventasService.getMetodosPago();
+      const list = Array.isArray(data) ? data : (data.results || []);
+      const activos = list.filter(m => m.estado);
+      setMetodosPagoList(activos);
+      if (activos.length > 0) {
+        setPagoInicial(prev => ({ ...prev, metodo_pago_id: activos[0].id }));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const fetchTiposComprobante = async () => {
     try {
@@ -196,12 +222,23 @@ const NuevaCompraPage = () => {
        return;
     }
 
+    const montoInicial = parseFloat(pagoInicial.monto) || 0;
+
     if (formData.tipo_pago === 'Credito') {
       const emision = new Date(formData.fecha_emision);
       const vencimiento = new Date(formData.fecha_vencimiento);
-      
+
       if (vencimiento <= emision) {
         Swal.fire('Error', 'Para compras al crédito, la fecha de vencimiento debe ser posterior a la fecha de emisión.', 'warning');
+        return;
+      }
+
+      if (montoInicial < 0 || montoInicial > totalGeneral) {
+        Swal.fire('Error', 'El pago inicial no puede ser mayor al total de la compra.', 'warning');
+        return;
+      }
+      if (montoInicial > 0 && !pagoInicial.metodo_pago_id) {
+        Swal.fire('Error', 'Seleccione el método de pago del inicial.', 'warning');
         return;
       }
     }
@@ -227,6 +264,15 @@ const NuevaCompraPage = () => {
           precio_unitario: d.precio_unitario
         }))
       };
+
+      if (formData.tipo_pago === 'Credito' && montoInicial > 0) {
+        const metodoSel = metodosPagoList.find(m => m.id === pagoInicial.metodo_pago_id);
+        payload.monto_inicial = montoInicial;
+        payload.metodo_pago_inicial_id = pagoInicial.metodo_pago_id;
+        payload.metodo_pago_inicial = metodoSel ? metodoSel.nombre : undefined;
+        payload.afecta_caja_inicial = pagoInicial.afecta_caja;
+        payload.referencia_inicial = pagoInicial.referencia;
+      }
 
       await comprasService.crearCompra(payload);
       
@@ -334,10 +380,16 @@ const NuevaCompraPage = () => {
               </div>
               
               <div>
-                <TextField 
-                  fullWidth select label="Tipo de pago" 
+                <TextField
+                  fullWidth select label="Tipo de pago"
                   value={formData.tipo_pago}
-                  onChange={(e) => setFormData({ ...formData, tipo_pago: e.target.value })}
+                  onChange={(e) => {
+                    const nuevoTipo = e.target.value;
+                    setFormData({ ...formData, tipo_pago: nuevoTipo });
+                    if (nuevoTipo === 'Contado') {
+                      setPagoInicial(prev => ({ ...prev, monto: '', referencia: '' }));
+                    }
+                  }}
                   InputProps={{ sx: { borderRadius: '12px' } }}
                 >
                   <MenuItem value="Contado">Al contado</MenuItem>
@@ -378,7 +430,7 @@ const NuevaCompraPage = () => {
 
               {formData.tipo_pago === 'Credito' && (
                 <div>
-                  <TextField 
+                  <TextField
                     fullWidth type="date" label="Vencimiento"
                     value={formData.fecha_vencimiento}
                     onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
@@ -387,7 +439,71 @@ const NuevaCompraPage = () => {
                   />
                 </div>
               )}
-              
+
+              {formData.tipo_pago === 'Credito' && (
+                <div className="md:col-span-3">
+                  <Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <Wallet size={18} color="#1e293b" />
+                      <Typography variant="subtitle2" fontWeight="bold" color="#1e293b">
+                        Pago Inicial (Opcional)
+                      </Typography>
+                    </Box>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Monto del inicial"
+                        value={pagoInicial.monto}
+                        onChange={(e) => setPagoInicial({ ...pagoInicial, monto: e.target.value })}
+                        InputProps={{
+                          sx: { borderRadius: '12px', bgcolor: 'white' },
+                          startAdornment: <InputAdornment position="start">S/</InputAdornment>,
+                          inputProps: { min: 0, step: 0.1, max: totalGeneral }
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        select
+                        label="Método de pago"
+                        value={pagoInicial.metodo_pago_id}
+                        onChange={(e) => setPagoInicial({ ...pagoInicial, metodo_pago_id: e.target.value })}
+                        InputProps={{ sx: { borderRadius: '12px', bgcolor: 'white' } }}
+                        disabled={!pagoInicial.monto || parseFloat(pagoInicial.monto) <= 0}
+                      >
+                        {metodosPagoList.map(m => (
+                          <MenuItem key={m.id} value={m.id}>{m.nombre}</MenuItem>
+                        ))}
+                        {metodosPagoList.length === 0 && <MenuItem value="">Sin métodos configurados</MenuItem>}
+                      </TextField>
+                      <TextField
+                        fullWidth
+                        label="Referencia (Opcional)"
+                        value={pagoInicial.referencia}
+                        onChange={(e) => setPagoInicial({ ...pagoInicial, referencia: e.target.value })}
+                        InputProps={{ sx: { borderRadius: '12px', bgcolor: 'white' } }}
+                        disabled={!pagoInicial.monto || parseFloat(pagoInicial.monto) <= 0}
+                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', pt: 1 }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={pagoInicial.afecta_caja}
+                              onChange={(e) => setPagoInicial({ ...pagoInicial, afecta_caja: e.target.checked })}
+                              disabled={!pagoInicial.monto || parseFloat(pagoInicial.monto) <= 0}
+                            />
+                          }
+                          label="Afecta a Caja"
+                        />
+                      </Box>
+                    </div>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                      Si el proveedor recibe un adelanto al momento de la compra, regístralo aquí. El saldo pendiente en la cuenta por pagar se calculará automáticamente.
+                    </Typography>
+                  </Box>
+                </div>
+              )}
+
               <div className="md:col-span-3">
                 <TextField 
                   fullWidth multiline rows={2} label="Observaciones"
@@ -500,14 +616,31 @@ const NuevaCompraPage = () => {
                     </Box>
                   )}
                   <Divider sx={{ my: 1.5 }} />
-                  <Box display="flex" justifyContent="space-between" mb={3}>
+                  <Box display="flex" justifyContent="space-between" mb={formData.tipo_pago === 'Credito' && parseFloat(pagoInicial.monto) > 0 ? 1 : 3}>
                     <Typography variant="subtitle1" fontWeight="bold">Total General:</Typography>
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
                       S/ {totalGeneral.toFixed(2)}
                     </Typography>
                   </Box>
 
-                  <Button 
+                  {formData.tipo_pago === 'Credito' && parseFloat(pagoInicial.monto) > 0 && (
+                    <>
+                      <Box display="flex" justifyContent="space-between" mb={1}>
+                        <Typography variant="body2" color="text.secondary">Pago Inicial:</Typography>
+                        <Typography variant="body2" fontWeight="medium" color="success.main">
+                          - S/ {(parseFloat(pagoInicial.monto) || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" mb={3}>
+                        <Typography variant="body2" fontWeight="bold">Saldo Pendiente:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          S/ {(totalGeneral - (parseFloat(pagoInicial.monto) || 0)).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </>
+                  )}
+
+                  <Button
                     variant="contained" 
                     color="primary" 
                     fullWidth 
