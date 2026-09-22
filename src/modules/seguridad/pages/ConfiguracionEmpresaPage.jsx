@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Paper, Grid, TextField, Button, CircularProgress, 
-  Select, MenuItem, FormControl, InputLabel, Divider 
+import {
+  Box, Typography, Paper, Grid, TextField, Button, CircularProgress,
+  Select, MenuItem, FormControl, InputLabel, Divider, InputAdornment,
+  IconButton, Chip, Switch, FormControlLabel
 } from '@mui/material';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, Eye, EyeOff, ReceiptText, CheckCircle2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
@@ -32,8 +33,23 @@ export const ConfiguracionEmpresaPage = () => {
     email: '',
     web: '',
     dias_validez_cotizacion: 15,
-    logo: null
+    logo: null,
+    // Facturación electrónica (SUNAT / GRE)
+    sunat_modo: 'BETA',
+    sunat_usuario_secundario: '',
+    sunat_clave_secundaria: '',
+    sunat_gre_client_id: '',
+    sunat_gre_client_secret: '',
   });
+
+  // Los secretos nunca vienen del backend (son write_only); solo llega si
+  // ya hay uno guardado, para mostrar "Configurado" sin exponer el valor.
+  const [secretosConfigurados, setSecretosConfigurados] = useState({
+    sunat_clave_secundaria: false,
+    sunat_gre_client_secret: false,
+  });
+  const [mostrarClaveSecundaria, setMostrarClaveSecundaria] = useState(false);
+  const [mostrarGreSecret, setMostrarGreSecret] = useState(false);
 
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -61,9 +77,19 @@ export const ConfiguracionEmpresaPage = () => {
           email: data.email || '',
           web: data.web || '',
           dias_validez_cotizacion: data.dias_validez_cotizacion ?? 15,
-          logo: null 
+          logo: null,
+          sunat_modo: data.sunat_modo || 'BETA',
+          sunat_usuario_secundario: data.sunat_usuario_secundario || '',
+          sunat_clave_secundaria: '',
+          sunat_gre_client_id: data.sunat_gre_client_id || '',
+          sunat_gre_client_secret: '',
         });
-        
+
+        setSecretosConfigurados({
+          sunat_clave_secundaria: !!data.sunat_clave_secundaria_configurada,
+          sunat_gre_client_secret: !!data.sunat_gre_client_secret_configurada,
+        });
+
         if (data.logo) {
           setPreviewUrl(getMediaUrl(data.logo));
         }
@@ -158,11 +184,29 @@ export const ConfiguracionEmpresaPage = () => {
         payload.append('logo', formData.logo);
       }
 
-      await api.put('/seguridad/empresa/', payload, {
+      payload.append('sunat_modo', formData.sunat_modo);
+      payload.append('sunat_usuario_secundario', formData.sunat_usuario_secundario);
+      payload.append('sunat_gre_client_id', formData.sunat_gre_client_id);
+      // Los secretos solo se mandan si el usuario escribió uno nuevo; en
+      // blanco significa "no lo toques" (el backend también lo protege).
+      if (formData.sunat_clave_secundaria) {
+        payload.append('sunat_clave_secundaria', formData.sunat_clave_secundaria);
+      }
+      if (formData.sunat_gre_client_secret) {
+        payload.append('sunat_gre_client_secret', formData.sunat_gre_client_secret);
+      }
+
+      const res = await api.put('/seguridad/empresa/', payload, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
+      const data = res.data.data;
+      setSecretosConfigurados({
+        sunat_clave_secundaria: !!data.sunat_clave_secundaria_configurada,
+        sunat_gre_client_secret: !!data.sunat_gre_client_secret_configurada,
+      });
+      setFormData(prev => ({ ...prev, sunat_clave_secundaria: '', sunat_gre_client_secret: '' }));
       Swal.fire('Éxito', 'Configuración de la empresa actualizada.', 'success');
     } catch (error) {
       console.error(error);
@@ -345,6 +389,115 @@ export const ConfiguracionEmpresaPage = () => {
                 variant="outlined"
                 helperText="Días por defecto antes de que expire una proforma"
                 inputProps={{ min: 1 }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* FACTURACIÓN ELECTRÓNICA (SUNAT / GRE) */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+            <p className="text-base font-bold text-blue-600 flex items-center gap-2">
+              <ReceiptText size={18} />
+              Facturación Electrónica (SUNAT)
+            </p>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.sunat_modo === 'PRODUCCION'}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    sunat_modo: e.target.checked ? 'PRODUCCION' : 'BETA'
+                  }))}
+                  color="success"
+                />
+              }
+              label={
+                <Chip
+                  label={formData.sunat_modo === 'PRODUCCION' ? 'Producción' : 'Pruebas (Beta)'}
+                  size="small"
+                  color={formData.sunat_modo === 'PRODUCCION' ? 'success' : 'warning'}
+                  sx={{ fontWeight: 600 }}
+                />
+              }
+              sx={{ ml: 0 }}
+            />
+          </div>
+          <hr className="border-slate-200 mb-2" />
+          <p className="text-sm text-slate-500 mb-6">
+            Credenciales usadas para emitir Guías de Remisión Electrónica ante SUNAT.
+            En "Pruebas (Beta)" se usa el ambiente de homologación de SUNAT; actívalo
+            en "Producción" recién cuando tengas las credenciales reales.
+          </p>
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-12 md:col-span-6">
+              <TextField
+                label="Usuario Secundario SUNAT"
+                name="sunat_usuario_secundario"
+                fullWidth
+                value={formData.sunat_usuario_secundario}
+                onChange={handleChange}
+                variant="outlined"
+                placeholder="Ej: SISTEMA2"
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <TextField
+                label="Clave del Usuario Secundario"
+                name="sunat_clave_secundaria"
+                type={mostrarClaveSecundaria ? 'text' : 'password'}
+                fullWidth
+                value={formData.sunat_clave_secundaria}
+                onChange={handleChange}
+                variant="outlined"
+                placeholder={secretosConfigurados.sunat_clave_secundaria ? '•••••••• (dejar en blanco para no cambiar)' : 'Sin configurar'}
+                helperText={secretosConfigurados.sunat_clave_secundaria ? (
+                  <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 size={13} /> Configurada</span>
+                ) : 'Aún no configurada'}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setMostrarClaveSecundaria(v => !v)} edge="end" size="small">
+                        {mostrarClaveSecundaria ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <TextField
+                label="GRE Client ID"
+                name="sunat_gre_client_id"
+                fullWidth
+                value={formData.sunat_gre_client_id}
+                onChange={handleChange}
+                variant="outlined"
+                placeholder="Ej: 4a9958d8-f4ed-46e6-9f61-06b492141a4d"
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <TextField
+                label="GRE Client Secret"
+                name="sunat_gre_client_secret"
+                type={mostrarGreSecret ? 'text' : 'password'}
+                fullWidth
+                value={formData.sunat_gre_client_secret}
+                onChange={handleChange}
+                variant="outlined"
+                placeholder={secretosConfigurados.sunat_gre_client_secret ? '•••••••• (dejar en blanco para no cambiar)' : 'Sin configurar'}
+                helperText={secretosConfigurados.sunat_gre_client_secret ? (
+                  <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 size={13} /> Configurado</span>
+                ) : 'Aún no configurado'}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setMostrarGreSecret(v => !v)} edge="end" size="small">
+                        {mostrarGreSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
               />
             </div>
           </div>
