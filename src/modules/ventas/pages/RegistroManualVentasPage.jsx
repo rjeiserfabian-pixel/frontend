@@ -433,7 +433,7 @@ const RegistroManualVentasPage = () => {
           Fecha y Hora de la Venta a Regularizar
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               type="datetime-local"
               label="Fecha/Hora de la Venta"
@@ -444,7 +444,7 @@ const RegistroManualVentasPage = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={8}>
+          <Grid size={{ xs: 12, sm: 8 }}>
             <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
               * Este campo sobreescribirá la fecha real de la venta. Esta operación NO afectará el saldo de la caja actual del día, pero sí descontará inventario (Kardex).
             </Typography>
@@ -454,7 +454,7 @@ const RegistroManualVentasPage = () => {
 
       <Grid container spacing={3}>
         {/* LADO IZQUIERDO: CLIENTE Y COMPROBANTE */}
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ p: 3, mb: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>1</span>
@@ -462,7 +462,7 @@ const RegistroManualVentasPage = () => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField 
                   label="DNI / RUC" 
                   fullWidth 
@@ -481,16 +481,16 @@ const RegistroManualVentasPage = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField label={dni.length === 11 ? "Razón Social" : "Nombres"} fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField label="Apellidos" fullWidth value={clienteApellidos} onChange={(e) => setClienteApellidos(e.target.value)} size="small" disabled={dni.length === 11} />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Dirección" fullWidth value={clienteDireccion} onChange={(e) => setClienteDireccion(e.target.value)} size="small" />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Teléfono" fullWidth value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} size="small" />
               </Grid>
             </Grid>
@@ -562,9 +562,9 @@ const RegistroManualVentasPage = () => {
         </Grid>
 
         {/* LADO DERECHO: CONDICION DE PAGO Y MONEDA */}
-        <Grid item xs={12} md={5}>
+        <Grid size={{ xs: 12, md: 5 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={12}>
+            <Grid size={{ xs: 12, sm: 6, md: 12 }}>
               <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
@@ -579,7 +579,7 @@ const RegistroManualVentasPage = () => {
             </Box>
             {condicionPago === 'CREDITO' ? (
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField 
                     type="date" 
                     label="Fecha Límite" 
@@ -590,7 +590,7 @@ const RegistroManualVentasPage = () => {
                     onChange={(e) => setFechaLimite(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}><TextField label="Monto a Crédito" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><TextField label="Monto a Crédito" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
               </Grid>
             ) : (
               <Box>
@@ -683,7 +683,7 @@ const RegistroManualVentasPage = () => {
             </Grid>
 
             {/* SECCION 4: MONEDA Y TIPO DE CAMBIO */}
-            <Grid item xs={12} sm={6} md={12}>
+            <Grid size={{ xs: 12, sm: 6, md: 12 }}>
               <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>4</span>

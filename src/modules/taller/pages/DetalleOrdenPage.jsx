@@ -935,7 +935,7 @@ export default function DetalleOrdenPage() {
               </Box>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   {(() => {
                     const aprobados = orden.servicios.filter(s => s.aprobado_cliente);
                     const completados = aprobados.filter(s => s.completado).length;
@@ -981,7 +981,7 @@ export default function DetalleOrdenPage() {
                   })()}
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   {(() => {
                     const aprobados = orden.repuestos.filter(r => r.aprobado_cliente);
                     const instalados = aprobados.filter(r => r.instalado).length;
@@ -1095,7 +1095,7 @@ export default function DetalleOrdenPage() {
                       const yaCotizado = (orden.servicios || []).some(s => s.hallazgo_origen === h.id);
                       const sev = SEVERIDAD_CONFIG[h.severidad] || SEVERIDAD_CONFIG.MEDIA;
                       return (
-                        <Grid item xs={12} sm={6} key={h.id}>
+                        <Grid size={{ xs: 12, sm: 6 }} key={h.id}>
                           <Box sx={{ p: 2, border: '1px solid', borderColor: sev.border, borderLeft: '4px solid', borderLeftColor: sev.color, borderRadius: '12px', bgcolor: sev.bg }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                               <Typography variant="caption" color="text.secondary" fontWeight="600" display="flex" alignItems="center" gap={1}>

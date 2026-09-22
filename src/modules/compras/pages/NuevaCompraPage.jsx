@@ -12,12 +12,16 @@ import { comprasService } from '../services/comprasApi';
 import { proveedorService } from '../../clientes/services/proveedorService';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import ModalNuevoProveedor from '../components/ModalNuevoProveedor';
+import ModalNuevoRepuesto from '../../inventario/components/ModalNuevoRepuesto';
 import api from '../../../core/api/axios';
 
 const NuevaCompraPage = () => {
   const navigate = useNavigate();
   const { activeSucursalId } = useSucursal();
+  const { tienePermiso } = usePermisos();
+  const puedeCrearRepuesto = tienePermiso('INVENTARIO.REPUESTOS.CREAR');
 
   const getLocalDate = () => {
     const d = new Date();
@@ -49,6 +53,7 @@ const NuevaCompraPage = () => {
   const [impuestoSeleccionado, setImpuestoSeleccionado] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalProveedorOpen, setModalProveedorOpen] = useState(false);
+  const [modalRepuestoOpen, setModalRepuestoOpen] = useState(false);
 
   useEffect(() => {
     fetchProveedores();
@@ -130,22 +135,23 @@ const NuevaCompraPage = () => {
     }
   };
 
-  const handleAddRepuesto = (event, newValue) => {
-    if (newValue) {
-      // Check if already in details
-      if (detalles.find(d => d.repuesto.id === newValue.id)) {
-         Swal.fire('Atención', 'El repuesto ya está en la lista', 'warning');
-         return;
-      }
-      
-      const precioBase = parseFloat(newValue.precio_compra) || 0;
-      setDetalles([...detalles, {
-        repuesto: newValue,
-        cantidad: 1,
-        precio_unitario: precioBase,
-        subtotal: precioBase
-      }]);
+  const agregarRepuestoADetalle = (repuesto) => {
+    if (detalles.find(d => d.repuesto.id === repuesto.id)) {
+       Swal.fire('Atención', 'El repuesto ya está en la lista', 'warning');
+       return;
     }
+
+    const precioBase = parseFloat(repuesto.precio_compra) || 0;
+    setDetalles(prev => [...prev, {
+      repuesto,
+      cantidad: 1,
+      precio_unitario: precioBase,
+      subtotal: precioBase
+    }]);
+  };
+
+  const handleAddRepuesto = (event, newValue) => {
+    if (newValue) agregarRepuestoADetalle(newValue);
   };
 
   const updateDetalle = (index, field, value) => {
@@ -397,8 +403,9 @@ const NuevaCompraPage = () => {
           {/* Detalles */}
           <Paper sx={{ p: 3 }}>
              <Typography variant="h6" mb={2} fontWeight="bold">Detalle de Repuestos</Typography>
-             <Box mb={2}>
+             <Box mb={2} sx={{ display: 'flex', gap: 1 }}>
                <Autocomplete
+                  fullWidth
                   options={repuestos}
                   getOptionLabel={(option) => `${option.codigo} - ${option.nombre}`}
                   onChange={handleAddRepuesto}
@@ -413,6 +420,16 @@ const NuevaCompraPage = () => {
                   }}
                   renderInput={(params) => <TextField {...params} label="Buscar repuesto para agregar..." />}
                 />
+                {puedeCrearRepuesto && (
+                  <Button
+                    variant="contained"
+                    onClick={() => setModalRepuestoOpen(true)}
+                    title="Registrar un repuesto que no existe en el catálogo"
+                    sx={{ minWidth: '56px', px: 0, bgcolor: '#1e293b', '&:hover': { bgcolor: '#0f172a' }, boxShadow: 'none' }}
+                  >
+                    <Plus size={24} />
+                  </Button>
+                )}
              </Box>
              
              <TableContainer>
@@ -507,13 +524,27 @@ const NuevaCompraPage = () => {
            </Paper>
         </div>
       
-      <ModalNuevoProveedor 
+      <ModalNuevoProveedor
         open={modalProveedorOpen}
         onClose={() => setModalProveedorOpen(false)}
         onSuccess={(nuevoProv) => {
           setProveedores([...proveedores, nuevoProv]);
           setFormData({ ...formData, proveedor: nuevoProv });
           setModalProveedorOpen(false);
+        }}
+      />
+
+      <ModalNuevoRepuesto
+        open={modalRepuestoOpen}
+        onClose={() => setModalRepuestoOpen(false)}
+        onSuccess={(nuevoRepuesto) => {
+          // Se agrega directo a la lista local y al detalle de la compra; no
+          // depende de que el repuesto recién creado caiga dentro de la
+          // página que devuelva un refetch (mismo criterio ya aplicado a
+          // clientes/vehículos en Órdenes de Trabajo).
+          setRepuestos(prev => prev.some(r => r.id === nuevoRepuesto.id) ? prev : [nuevoRepuesto, ...prev]);
+          agregarRepuestoADetalle(nuevoRepuesto);
+          setModalRepuestoOpen(false);
         }}
       />
     </div>

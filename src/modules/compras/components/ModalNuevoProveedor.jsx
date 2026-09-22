@@ -122,7 +122,7 @@ const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
       <DialogTitle fontWeight="bold">Nuevo Proveedor Rápido</DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
              <TextField
                fullWidth select label="Documento" name="tipo_documento"
                value={formData.tipo_documento} onChange={handleChange}
@@ -131,7 +131,7 @@ const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
                <MenuItem value="DNI">DNI</MenuItem>
              </TextField>
           </Grid>
-          <Grid item xs={12} sm={8}>
+          <Grid size={{ xs: 12, sm: 8 }}>
              <Box sx={{ display: 'flex', gap: 1 }}>
                <TextField
                  fullWidth label="Número de Documento" name="numero_documento" required
@@ -149,25 +149,25 @@ const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
                </Button>
              </Box>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
              <TextField
                fullWidth label="Nombre o Razón Social" name="nombre_o_razon_social" required
                value={formData.nombre_o_razon_social} onChange={handleChange}
              />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
              <TextField
                fullWidth label="Dirección" name="direccion"
                value={formData.direccion} onChange={handleChange}
              />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
              <TextField
                fullWidth label="Teléfono" name="telefono"
                value={formData.telefono} onChange={handleChange}
              />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
              <TextField
                fullWidth label="Email" name="email" type="email"
                value={formData.email} onChange={handleChange}

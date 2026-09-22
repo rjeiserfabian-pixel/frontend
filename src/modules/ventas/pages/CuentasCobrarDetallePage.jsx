@@ -10,6 +10,7 @@ import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { useReactToPrint } from 'react-to-print';
 import TicketReciboAbono from '../components/TicketReciboAbono';
+import { notificarCobroRegistrado } from '../../../shared/utils/vencidasEvents';
 
 // Helper de Iconos de Método
 const getMetodoIcon = (metodo) => {
@@ -227,6 +228,7 @@ export default function CuentasCobrarDetallePage() {
       const response = await api.post(`/ventas/cuentas-por-cobrar/pagar-cuota/${selectedCuota.id}/`, {
         pagos: pagosActuales
       });
+      notificarCobroRegistrado();
       Swal.fire('Éxito', 'Pago registrado correctamente', 'success');
       const nuevosPagos = response.data.pagos || [];
       const agrupadosNuevos = getPagosAgrupados(nuevosPagos);
@@ -314,7 +316,7 @@ export default function CuentasCobrarDetallePage() {
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Sección: Datos del Cliente */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <InfoCard icon={<User size={18} />} title="Datos del Cliente" accent="#2563eb">
             <InfoField icon={<User size={15} />} label="Nombre Completo">
               {cuenta.cliente_nombre} {cuenta.cliente_apellidos}
@@ -326,7 +328,7 @@ export default function CuentasCobrarDetallePage() {
         </Grid>
 
         {/* Sección: Datos de Venta */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <InfoCard icon={<Receipt size={18} />} title="Datos de la Venta" accent="#7c3aed">
             <InfoField label="Nro Comprobante">{cuenta.venta_serie || 'N/A'}</InfoField>
             <InfoField icon={<Calendar size={15} />} label="Fecha y Hora">
@@ -345,7 +347,7 @@ export default function CuentasCobrarDetallePage() {
         </Grid>
 
         {/* Sección: Repuestos */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <InfoCard icon={<Package size={18} />} title="Repuestos" accent="#16a34a">
             {repuestos.length > 0 ? (
               repuestos.map((detalle, index) => (
@@ -388,7 +390,7 @@ export default function CuentasCobrarDetallePage() {
           </Typography>
           <Grid container spacing={3}>
             {servicios.map((detalle) => (
-              <Grid item xs={12} sm={6} md={4} key={detalle.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={detalle.id}>
                 <Box sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <FileText size={18} color="#10b981" style={{ marginRight: 8 }} />

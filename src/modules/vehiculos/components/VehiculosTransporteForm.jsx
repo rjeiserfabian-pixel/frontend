@@ -88,7 +88,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
         <DialogContent dividers>
           <Grid container spacing={2}>
             
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Controller
                   name="placa"
@@ -116,7 +116,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
               </Box>
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="marca"
                 control={control}
@@ -132,7 +132,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="modelo"
                 control={control}
@@ -149,7 +149,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="certificado_inscripcion"
                 control={control}
@@ -166,7 +166,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="configuracion_vehicular"
                 control={control}
@@ -183,7 +183,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="carga_util"
                 control={control}
@@ -199,7 +199,7 @@ const VehiculosTransporteForm = ({ open, onClose, onSuccess, vehiculoEdit }) => 
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="peso_bruto"
                 control={control}

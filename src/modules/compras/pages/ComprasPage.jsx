@@ -382,7 +382,7 @@ const ComprasPage = () => {
             <Box>
               {/* PROVEEDOR Y COMPRA */}
               <Grid container spacing={2} sx={{ mb: 2.5 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
                     <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                       <Truck size={15} /> Proveedor
@@ -395,7 +395,7 @@ const ComprasPage = () => {
                     </Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
@@ -446,7 +446,7 @@ const ComprasPage = () => {
                   <Wallet size={15} /> Pago y Totales
                 </Typography>
                 <Grid container spacing={2.5}>
-                  <Grid item xs={12} sm={7}>
+                  <Grid size={{ xs: 12, sm: 7 }}>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip
                         size="small"
@@ -466,7 +466,7 @@ const ComprasPage = () => {
                       </Box>
                     )}
                   </Grid>
-                  <Grid item xs={12} sm={5}>
+                  <Grid size={{ xs: 12, sm: 5 }}>
                     <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2.5, p: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="body2" color="text.secondary">Subtotal</Typography>

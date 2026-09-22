@@ -210,7 +210,7 @@ export default function UbicacionesPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent dividers>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                   <Controller
                     name="almacen"
                     control={control}
@@ -234,7 +234,7 @@ export default function UbicacionesPage() {
                     )}
                   />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   label="Código *  (Ej: A-12-3)"
                   fullWidth
@@ -243,16 +243,16 @@ export default function UbicacionesPage() {
                   helperText={errors.codigo?.message || 'Debe ser único dentro del almacén'}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField label="Pasillo" fullWidth {...register('pasillo')} />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField label="Estante" fullWidth {...register('estante')} />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField label="Casillero" fullWidth {...register('casillero')} />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField label="Descripción (opcional)" fullWidth {...register('descripcion')} />
               </Grid>
             </Grid>

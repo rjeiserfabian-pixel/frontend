@@ -354,7 +354,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
         <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
           {/* CLIENTE Y VENTA */}
           <Grid container spacing={2} sx={{ mb: 2.5 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
                 <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                   <User size={15} /> Cliente
@@ -367,7 +367,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
@@ -435,7 +435,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
               const esCredito = selectedSaleDetails?.estado === 'AL_CREDITO';
               return (
                 <Grid container spacing={2.5}>
-                  <Grid item xs={12} sm={7}>
+                  <Grid size={{ xs: 12, sm: 7 }}>
                     <Chip
                       size="small"
                       icon={esCredito ? <CreditCard size={14} /> : <Banknote size={14} />}
@@ -478,7 +478,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                       </Box>
                     )}
                   </Grid>
-                  <Grid item xs={12} sm={5}>
+                  <Grid size={{ xs: 12, sm: 5 }}>
                     <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2.5, p: 2 }}>
                       {!esCredito && (
                         <>
@@ -612,7 +612,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
 
       <Grid container spacing={3}>
         {/* LADO IZQUIERDO: CLIENTE Y COMPROBANTE */}
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ p: 3, mb: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>1</span>
@@ -620,16 +620,16 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Nombre completo" fullWidth value={order.cliente_nombre || ''} size="small" InputProps={{ readOnly: true }} />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="DNI / RUC" fullWidth size="small" />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Vehículo (Placa)" fullWidth value={order.vehiculo_placa || ''} size="small" InputProps={{ readOnly: true }} />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Teléfono" fullWidth value={order.cliente_telefono || ''} size="small" InputProps={{ readOnly: true }} />
               </Grid>
             </Grid>
@@ -685,7 +685,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
         </Grid>
 
         {/* LADO DERECHO: PAGO */}
-        <Grid item xs={12} md={5}>
+        <Grid size={{ xs: 12, md: 5 }}>
           <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
@@ -700,8 +700,8 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
             </Box>
             {condicionPago === 'CREDITO' ? (
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}><TextField type="date" label="Fecha Límite" InputLabelProps={{ shrink: true }} fullWidth size="small" /></Grid>
-                <Grid item xs={12} sm={6}><TextField label="Monto a Crédito" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><TextField type="date" label="Fecha Límite" InputLabelProps={{ shrink: true }} fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><TextField label="Monto a Crédito" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
               </Grid>
             ) : (
               <Box>
@@ -1351,7 +1351,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
 
       <Grid container spacing={3}>
         {/* LADO IZQUIERDO: CLIENTE Y COMPROBANTE */}
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ p: 3, mb: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>1</span>
@@ -1359,7 +1359,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField 
                   label="DNI / RUC" 
                   fullWidth 
@@ -1378,16 +1378,16 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField label={(dni || '').length === 11 ? "Razón Social" : "Nombres"} fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField label="Apellidos" fullWidth value={clienteApellidos} onChange={(e) => setClienteApellidos(e.target.value)} size="small" disabled={(dni || '').length === 11} />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Dirección" fullWidth value={clienteDireccion} onChange={(e) => setClienteDireccion(e.target.value)} size="small" />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Teléfono" fullWidth value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} size="small" />
               </Grid>
             </Grid>
@@ -1459,9 +1459,9 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             </Paper>
           </Grid>
         {/* LADO DERECHO: CONDICION DE PAGO Y MONEDA */}
-        <Grid item xs={12} md={5}>
+        <Grid size={{ xs: 12, md: 5 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={12}>
+            <Grid size={{ xs: 12, sm: 6, md: 12 }}>
               <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
@@ -1481,7 +1481,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             </Box>
             {condicionPago === 'CREDITO' ? (
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     type="date"
                     label="Fecha Límite"
@@ -1494,7 +1494,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                     helperText="No puede ser hoy: debe ser al menos mañana"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}><TextField label="Monto a Crédito (S/)" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><TextField label="Monto a Crédito (S/)" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
               </Grid>
             ) : (
               <Box>
@@ -1593,7 +1593,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             </Grid>
 
             {/* SECCION 4: MONEDA Y TIPO DE CAMBIO */}
-            <Grid item xs={12} sm={6} md={12}>
+            <Grid size={{ xs: 12, sm: 6, md: 12 }}>
               <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>4</span>

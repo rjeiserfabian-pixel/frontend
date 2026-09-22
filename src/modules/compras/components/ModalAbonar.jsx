@@ -8,6 +8,7 @@ import { X, Wallet } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
 import { ventasService } from '../../ventas/services/ventasApi';
+import { notificarPagoRegistrado } from '../../../shared/utils/vencidasEvents';
 
 export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -89,6 +90,7 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
       };
 
       await comprasService.registrarPago(payload);
+      notificarPagoRegistrado();
 
       Swal.fire({
         icon: 'success',

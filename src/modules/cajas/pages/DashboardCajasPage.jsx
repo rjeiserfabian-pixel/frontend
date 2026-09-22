@@ -186,7 +186,7 @@ export default function DashboardCajasPage() {
           { label: 'Total de Cajas',    value: cajas.length,     icon: <Wallet size={24} />,      color: '#8b5cf6' },
           { label: 'Cajas Cerradas',    value: cajas.length - totalAbiertas, icon: <TrendingDown size={24} />, color: '#f59e0b' },
         ].map((k) => (
-          <Grid item xs={12} sm={6} md={3} key={k.label}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={k.label}>
             <Card elevation={0} sx={{
               border: '1px solid', borderColor: 'divider', borderRadius: 3,
               boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
@@ -214,12 +214,12 @@ export default function DashboardCajasPage() {
       {!loading && (
         <Grid container spacing={4} mb={4}>
           {cajas.length === 0 ? (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Alert severity="info">No hay cajas configuradas. Crea la primera caja para comenzar.</Alert>
             </Grid>
           ) : (
             cajas.map((item) => (
-              <Grid item xs={12} sm={6} md={4} key={item.caja_id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.caja_id}>
                 <CajaCard item={item} onAbrir={handleAbrir} />
               </Grid>
             ))

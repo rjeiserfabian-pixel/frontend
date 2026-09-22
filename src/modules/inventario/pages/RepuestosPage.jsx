@@ -621,13 +621,13 @@ export default function RepuestosPage() {
           <DialogContent dividers>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Datos Generales</Typography>
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField label="Código/SKU" fullWidth {...register('codigo', { required: true })} error={!!errors.codigo} />
               </Grid>
-              <Grid item xs={12} md={8}>
+              <Grid size={{ xs: 12, md: 8 }}>
                 <TextField label="Nombre del Repuesto" fullWidth {...register('nombre', { required: true })} error={!!errors.nombre} />
               </Grid>
-              <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
+              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 200 }}>
                 <Controller
                   name="categoria"
                   control={control}
@@ -650,7 +650,7 @@ export default function RepuestosPage() {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
+              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 200 }}>
                 <Controller
                   name="marca"
                   control={control}
@@ -673,7 +673,7 @@ export default function RepuestosPage() {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
+              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 200 }}>
                 <Controller
                   name="unidad_medida"
                   control={control}
@@ -697,7 +697,7 @@ export default function RepuestosPage() {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} md={4} sx={{ minWidth: 200 }}>
+              <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 200 }}>
                 <Controller
                   name="tipo_igv"
                   control={control}
@@ -723,7 +723,7 @@ export default function RepuestosPage() {
 
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Especificaciones (Opcional)</Typography>
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField 
                   label="Viscosidad (Ej. 5W-30)" 
                   fullWidth 
@@ -735,16 +735,16 @@ export default function RepuestosPage() {
 
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Precios (S/)</Typography>
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField label="P. Compra" type="number" inputProps={{ step: "0.01" }} fullWidth {...register('precio_compra', { required: true })} error={!!errors.precio_compra} />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField label="P. Por Mayor" type="number" inputProps={{ step: "0.01" }} fullWidth {...register('precio_por_mayor', { required: true })} error={!!errors.precio_por_mayor} />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField label="P. Cash" type="number" inputProps={{ step: "0.01" }} fullWidth {...register('precio_cash', { required: true })} error={!!errors.precio_cash} />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField label="P. Lista" type="number" inputProps={{ step: "0.01" }} fullWidth {...register('precio_lista', { required: true })} error={!!errors.precio_lista} />
               </Grid>
             </Grid>
@@ -925,7 +925,7 @@ export default function RepuestosPage() {
               </Select>
             </FormControl>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   label="Stock inicial disponible *"
                   type="number"
@@ -935,7 +935,7 @@ export default function RepuestosPage() {
                   onChange={(e) => setAsignarForm((prev) => ({ ...prev, cantidad: e.target.value }))}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   label="Motivo *"
                   fullWidth

@@ -60,7 +60,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
       <DialogContent sx={{ p: 3 }}>
         <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <MapPin size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Punto de Partida</Typography>
@@ -72,7 +72,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
                 {guia.punto_partida}
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <MapPin size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Punto de Llegada</Typography>
@@ -85,7 +85,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <User size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Cliente / Destinatario</Typography>
@@ -94,7 +94,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
                 {guia.cliente_nombre || '-'}
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Calendar size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Estado</Typography>
@@ -104,7 +104,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
               </Box>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Truck size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Transportista</Typography>
@@ -113,7 +113,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
                 {guia.transportista_nombre || 'Aún no asignado'}
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Package size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Vehículo / Placa</Typography>
@@ -123,11 +123,11 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Motivo del traslado</Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>{guia.motivo_traslado || '-'}</Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Fecha de traslado</Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 {guia.fecha_traslado ? new Date(guia.fecha_traslado + 'T00:00').toLocaleDateString() : '-'}
@@ -135,7 +135,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
             </Grid>
 
             {guia.observaciones && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mb: 1 }}>Observaciones:</Typography>
                 <Typography variant="body2" sx={{ bgcolor: '#f1f5f9', p: 1.5, borderRadius: 1 }}>

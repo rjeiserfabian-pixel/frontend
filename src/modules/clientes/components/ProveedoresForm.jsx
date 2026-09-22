@@ -106,7 +106,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
         <DialogContent dividers>
           <Grid container spacing={2}>
             
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
                <FormControl fullWidth size="small" error={!!errors.tipo_documento}>
                 <InputLabel>Tipo</InputLabel>
                 <Controller
@@ -122,7 +122,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={8}>
+            <Grid size={{ xs: 12, sm: 8 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Controller
                   name="numero_documento"
@@ -149,7 +149,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
               </Box>
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="nombre_o_razon_social"
                 control={control}
@@ -165,7 +165,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="telefono"
                 control={control}
@@ -181,7 +181,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="email"
                 control={control}
@@ -198,7 +198,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="direccion"
                 control={control}

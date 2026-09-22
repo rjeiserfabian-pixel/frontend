@@ -120,7 +120,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent dividers>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <FormControl fullWidth error={!!errors.tipo_documento}>
                 <InputLabel>Tipo</InputLabel>
                 <Controller
@@ -135,7 +135,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={9}>
+            <Grid size={{ xs: 12, sm: 9 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Controller
                   name="dni"
@@ -160,7 +160,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
                 </Button>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={tipoDocWatch === 'RUC' ? 12 : 6}>
+            <Grid size={{ xs: 12, sm: tipoDocWatch === 'RUC' ? 12 : 6 }}>
               <Controller
                 name="nombres"
                 control={control}
@@ -176,7 +176,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
               />
             </Grid>
             {tipoDocWatch !== 'RUC' && (
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="apellidos"
                   control={control}
@@ -186,7 +186,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
                 />
               </Grid>
             )}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="telefono"
                 control={control}
@@ -195,7 +195,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="direccion"
                 control={control}
@@ -204,7 +204,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="email"
                 control={control}

@@ -85,6 +85,11 @@ export const comprasService = {
     return response.data;
   },
 
+  getCuentasPorPagarVencidas: async () => {
+    const response = await cuentasApiClient.get('/vencidas/');
+    return response.data;
+  },
+
   // Pagos
   getPagosPorCuenta: async (cuentaId) => {
     const response = await pagosApiClient.get(`/?cuenta_id=${cuentaId}`);

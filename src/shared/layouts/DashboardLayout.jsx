@@ -15,7 +15,11 @@ import { authStorage } from '../../core/auth/authStorage';
 import { getMediaUrl } from '../../core/utils/mediaUrl';
 import { useSucursal } from '../contexts/SucursalContext';
 import { useIdleLogout } from '../hooks/useIdleLogout';
+import { usePermisos } from '../contexts/PermisosContext';
 import { Select, FormControl } from '@mui/material';
+import OverdueAccountsBell from '../components/OverdueAccountsBell';
+import { comprasService } from '../../modules/compras/services/comprasApi';
+import { EVENTO_COBRAR_VENCIDAS_CAMBIO, EVENTO_PAGAR_VENCIDAS_CAMBIO } from '../utils/vencidasEvents';
 
 const DRAWER_WIDTH = 280;
 const DRAWER_MINI_WIDTH = 80;
@@ -72,10 +76,44 @@ export default function DashboardLayout() {
   const [empresaData, setEmpresaData] = useState(null);
 
   const { sucursales, activeSucursalId, changeSucursal, loadingContext } = useSucursal();
+  const { tienePermiso } = usePermisos();
 
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Campanitas de alertas de vencimiento (Cuentas por Cobrar / Pagar)
+  const fetchCuotasCobrarVencidas = useCallback(async () => {
+    const params = activeSucursalId ? { sucursal_id: activeSucursalId } : {};
+    const res = await api.get('/ventas/cuentas-por-cobrar/cuotas-vencidas/', { params });
+    const { total, results } = res.data;
+    return {
+      total,
+      results: results.map(r => ({
+        id: r.id,
+        titulo: r.cliente_nombre,
+        subtitulo: `${r.codigo_credito} · Cuota ${r.numero_cuota}`,
+        monto: r.saldo_pendiente,
+        diasVencido: r.dias_vencido,
+        to: `/cuentas/por-cobrar/credito/${r.cuenta_cobrar_id}`,
+      })),
+    };
+  }, [activeSucursalId]);
+
+  const fetchCuentasPagarVencidas = useCallback(async () => {
+    const data = await comprasService.getCuentasPorPagarVencidas();
+    return {
+      total: data.total,
+      results: data.results.map(r => ({
+        id: r.id,
+        titulo: r.proveedor_nombre,
+        subtitulo: 'Cuenta por pagar',
+        monto: r.saldo_pendiente,
+        diasVencido: r.dias_vencido,
+        to: `/compras/cuentas-por-pagar/proveedor/${r.proveedor_id}`,
+      })),
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController(); // AbortController para evitar memory leaks
@@ -277,6 +315,25 @@ export default function DashboardLayout() {
                 </Select>
               </FormControl>
             </Box>
+          )}
+
+          {/* Campanitas de alertas: cuentas vencidas */}
+          {tienePermiso('CUENTAS.POR_COBRAR.VER') && (
+            <OverdueAccountsBell
+              label="Cuotas por Cobrar vencidas"
+              color="error"
+              fetchVencidas={fetchCuotasCobrarVencidas}
+              refreshKey={activeSucursalId}
+              refreshEvent={EVENTO_COBRAR_VENCIDAS_CAMBIO}
+            />
+          )}
+          {tienePermiso('CUENTAS.POR_PAGAR.VER') && (
+            <OverdueAccountsBell
+              label="Cuentas por Pagar vencidas"
+              color="warning"
+              fetchVencidas={fetchCuentasPagarVencidas}
+              refreshEvent={EVENTO_PAGAR_VENCIDAS_CAMBIO}
+            />
           )}
 
           {/* User Profile Menu */}

@@ -59,7 +59,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
       <DialogContent sx={{ p: 3 }}>
         <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Package size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Almacén Origen</Typography>
@@ -68,7 +68,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
                 {traslado.almacen_origen_nombre}
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <ArrowRightLeft size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Almacén Destino</Typography>
@@ -78,7 +78,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
               </Typography>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <User size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Realizado por</Typography>
@@ -87,7 +87,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
                 {traslado.usuario_nombre}
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Calendar size={16} color="#64748b" />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Estado</Typography>
@@ -98,7 +98,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
             </Grid>
 
             {traslado.estado === 'COMPLETADO' && traslado.confirmado_por_nombre && (
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Confirmado por</Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
                   {traslado.confirmado_por_nombre}
@@ -108,7 +108,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
             )}
 
             {traslado.estado === 'RECHAZADO' && (
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Motivo del rechazo</Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: '#dc2626' }}>
                   {traslado.motivo_rechazo || '-'}
@@ -117,7 +117,7 @@ export default function ModalDetalleTraslado({ open, onClose, traslado }) {
             )}
 
             {traslado.observaciones && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mb: 1 }}>Observaciones:</Typography>
                 <Typography variant="body2" sx={{ bgcolor: '#f1f5f9', p: 1.5, borderRadius: 1 }}>

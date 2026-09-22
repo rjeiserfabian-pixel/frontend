@@ -255,7 +255,7 @@ export default function MovimientosPage() {
           { label: 'Egresos',       value: fmtMoney(resumen?.egresos),       color: '#dc2626', bg: '#fef2f2' },
           { label: 'Saldo Actual',  value: fmtMoney(resumen?.saldo_actual),  color: '#2563eb', bg: '#eff6ff' },
         ].map(k => (
-          <Grid item xs={12} sm={6} md={3} key={k.label}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={k.label}>
             <Card elevation={0} sx={{
               border: '1px solid', borderColor: 'divider', borderRadius: 3,
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',

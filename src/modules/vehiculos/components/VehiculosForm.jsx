@@ -187,7 +187,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent dividers>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Controller
                   name="placa"
@@ -212,59 +212,59 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
                 </Button>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller name="marca" control={control} render={({ field }) => (
                 <TextField {...field} label="Marca" fullWidth error={!!errors.marca} helperText={errors.marca?.message} />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller name="modelo" control={control} render={({ field }) => (
                 <TextField {...field} label="Modelo" fullWidth error={!!errors.modelo} helperText={errors.modelo?.message} />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller name="color" control={control} render={({ field }) => (
                 <TextField {...field} label="Color" fullWidth />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller name="numero_motor" control={control} render={({ field }) => (
                 <TextField {...field} label="N° Motor" fullWidth />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller name="numero_serie" control={control} render={({ field }) => (
                 <TextField {...field} label="N° Serie" fullWidth />
               )}/>
             </Grid>
             
             {/* Campos de Yupay */}
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="clase" control={control} render={({ field }) => (
                 <TextField {...field} label="Clase" fullWidth />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="tipo" control={control} render={({ field }) => (
                 <TextField {...field} label="Tipo" fullWidth />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="uso" control={control} render={({ field }) => (
                 <TextField {...field} label="Uso" fullWidth />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="anio_fabricacion" control={control} render={({ field }) => (
                 <TextField {...field} label="Año Fabricación" fullWidth type="number" />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="numero_asientos" control={control} render={({ field }) => (
                 <TextField {...field} label="N° Asientos" fullWidth type="number" />
               )}/>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="kilometraje_actual" control={control} render={({ field }) => (
                 <TextField {...field} label="Kilometraje Actual" fullWidth type="number" />
               )}/>
