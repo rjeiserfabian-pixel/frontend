@@ -38,6 +38,8 @@ export default function DetalleOrdenPage() {
   const puedeCobrarPos = tienePermiso('VENTAS.POS.CREAR');
   const puedeCambiarEstado = tienePermiso('ORDENES_TRABAJO.CAMBIAR_ESTADO');
   const puedeEditar = tienePermiso('ORDENES_TRABAJO.EDITAR');
+  const puedeExtenderVencimiento = tienePermiso('ORDENES_TRABAJO.EXTENDER_VENCIMIENTO');
+  const puedePrometerEntrega = tienePermiso('ORDENES_TRABAJO.PROMETER_ENTREGA');
   const [orden, setOrden] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -818,7 +820,7 @@ export default function DetalleOrdenPage() {
                     {orden.fecha_estimada_entrega ? new Date(orden.fecha_estimada_entrega).toLocaleDateString('es-PE') : 'Sin definir'}
                   </Typography>
                 </Box>
-                {!estaCancelada && orden.estado !== 'FACTURADO' && (
+                {!estaCancelada && orden.estado !== 'FACTURADO' && puedePrometerEntrega && (
                   <IconButton size="small" onClick={handleEditarFechaEntrega} title="Editar fecha de entrega prometida">
                     <Pencil size={16} />
                   </IconButton>
@@ -882,7 +884,7 @@ export default function DetalleOrdenPage() {
                 </Typography>
               </Box>
               <Box display="flex" gap={2}>
-                {puedeEditar && (
+                {puedeExtenderVencimiento && (
                   <Button
                     variant="outlined"
                     size="large"

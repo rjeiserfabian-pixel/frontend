@@ -36,6 +36,14 @@ const ETIQUETA_ACCION = {
   APROBAR: 'Aprobar', CAMBIAR_ESTADO: 'Cambiar estado', REGISTRAR_PAGO: 'Registrar pago',
   ABRIR: 'Abrir', CERRAR: 'Cerrar', RECHAZAR: 'Rechazar', TRANSFERIR: 'Transferir',
   EXPORTAR: 'Exportar',
+  // "Ver" (arriba) da acceso a los datos desde cualquier pantalla (ej. los
+  // desplegables de Nueva Orden); "Ver en menú" es solo si el módulo aparece
+  // como opción propia en el menú lateral. Se pueden combinar de forma
+  // independiente: útil para, por ejemplo, dejar que un Mecánico use el
+  // desplegable de Vehículos sin que "Vehículos" le aparezca como módulo aparte.
+  VER_MENU: 'Ver en menú',
+  EXTENDER_VENCIMIENTO: 'Extender vencimiento',
+  PROMETER_ENTREGA: 'Prometer entrega',
 };
 
 export default function RolPermisosPage() {
