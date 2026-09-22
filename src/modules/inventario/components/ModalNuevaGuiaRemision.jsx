@@ -5,10 +5,11 @@ import {
   Select, MenuItem, FormControl, InputLabel, CircularProgress, Autocomplete,
   Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Plus } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import ClientesForm from '../../clientes/components/ClientesForm';
 
 export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
   const { activeSucursalId } = useSucursal();
@@ -64,6 +65,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
   };
 
   const [clienteBusqueda, setClienteBusqueda] = useState('');
+  const [clientModalOpen, setClientModalOpen] = useState(false);
   const buscarClientes = async (query = '') => {
     if (query.length === 1) return;
     try {
@@ -221,28 +223,39 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <Autocomplete
-                fullWidth
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Autocomplete
+                  fullWidth
+                  size="small"
+                  options={clientes}
+                  getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
+                  value={clientes.find(c => c.id === formData.cliente) || null}
+                  inputValue={clienteBusqueda}
+                  onOpen={() => {
+                    if (clientes.length === 0) buscarClientes('');
+                  }}
+                  onInputChange={(e, newInputValue, reason) => {
+                    setClienteBusqueda(newInputValue);
+                    if (reason === 'input' || reason === 'clear') {
+                      buscarClientes(newInputValue);
+                    }
+                  }}
+                  onChange={(e, newValue) => {
+                    setFormData({...formData, cliente: newValue ? newValue.id : ''});
+                  }}
+                  renderInput={(params) => <TextField {...params} label="Cliente * (Nombre, RUC o DNI)" />}
+                />
+                <IconButton
+                  onClick={() => setClientModalOpen(true)}
+                  title="Registrar cliente rápido"
+                  sx={{ bgcolor: '#1e3a5f', color: 'white', borderRadius: 1.5, '&:hover': { bgcolor: '#16304d' } }}
+                >
+                  <Plus size={20} />
+                </IconButton>
+              </Box>
+              <TextField
+                label="Motivo del Traslado"
                 size="small"
-                options={clientes}
-                getOptionLabel={(option) => `${option.nombres} ${option.apellidos}`}
-                value={clientes.find(c => c.id === formData.cliente) || null}
-                inputValue={clienteBusqueda}
-                onOpen={() => {
-                  if (clientes.length === 0) buscarClientes('');
-                }}
-                onInputChange={(e, newInputValue) => {
-                  setClienteBusqueda(newInputValue);
-                  buscarClientes(newInputValue);
-                }}
-                onChange={(e, newValue) => {
-                  setFormData({...formData, cliente: newValue ? newValue.id : ''});
-                }}
-                renderInput={(params) => <TextField {...params} label="Cliente *" />}
-              />
-              <TextField 
-                label="Motivo del Traslado" 
-                size="small" 
                 value={formData.motivo_traslado}
                 onChange={e => setFormData({...formData, motivo_traslado: e.target.value})}
               />
@@ -382,6 +395,19 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
           {saving ? <CircularProgress size={22} color="inherit" /> : 'Crear Guía'}
         </Button>
       </DialogActions>
+
+      {clientModalOpen && (
+        <ClientesForm
+          open={clientModalOpen}
+          onClose={() => setClientModalOpen(false)}
+          onSuccess={(createdClient) => {
+            if (!createdClient?.id) return;
+            setClientes(prev => prev.some(c => c.id === createdClient.id) ? prev : [createdClient, ...prev]);
+            setFormData(prev => ({ ...prev, cliente: createdClient.id }));
+            setClienteBusqueda(`${createdClient.dni} - ${createdClient.nombres} ${createdClient.apellidos || ''}`.trim());
+          }}
+        />
+      )}
     </Dialog>
   );
 }

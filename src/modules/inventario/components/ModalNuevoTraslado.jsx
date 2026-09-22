@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, DialogTitle, DialogContent, DialogActions, Button, 
-  Grid, TextField, Autocomplete, Table, TableBody, TableCell, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button,
+  Grid, TextField, Autocomplete, Table, TableBody, TableCell,
   TableHead, TableRow, IconButton, Typography, CircularProgress,
   Box, Paper, Divider, Select, MenuItem, InputAdornment
 } from '@mui/material';
 import { Trash2, Plus, X, Search, Package, Info, Calendar } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import { useReactToPrint } from 'react-to-print';
+import PrintTrasladoComponent from './PrintTrasladoComponent';
 
 export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
   const [almacenes, setAlmacenes] = useState([]);
@@ -24,6 +26,24 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
   
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const [trasladoCreado, setTrasladoCreado] = useState(null);
+  const printRef = useRef();
+
+  const handlePrintAction = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: 'Nota_de_Traslado',
+    onAfterPrint: () => {
+      setTrasladoCreado(null);
+      onSuccess();
+    },
+  });
+
+  useEffect(() => {
+    if (trasladoCreado) {
+      handlePrintAction();
+    }
+  }, [trasladoCreado, handlePrintAction]);
 
   useEffect(() => {
     if (open) {
@@ -172,9 +192,9 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
         }))
       };
 
-      await api.post('/inventario/traslados/', payload);
-      Swal.fire('Éxito', 'Traslado registrado correctamente', 'success');
-      onSuccess();
+      const res = await api.post('/inventario/traslados/', payload);
+      await Swal.fire('Éxito', 'Traslado registrado correctamente', 'success');
+      setTrasladoCreado(res.data);
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.error || 'Error al guardar el traslado';
@@ -554,6 +574,10 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
           {submitting ? 'Procesando...' : 'Guardar Movimiento'}
         </Button>
       </Box>
+
+      <div style={{ display: 'none' }}>
+        <PrintTrasladoComponent ref={printRef} traslado={trasladoCreado} />
+      </div>
     </Dialog>
   );
 }

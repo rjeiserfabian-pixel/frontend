@@ -30,12 +30,20 @@ const ComprasPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Fechas por defecto: primer día del mes actual → hoy (igual que en Ventas/POS)
+  const _now = new Date();
+  const _yy = _now.getFullYear();
+  const _mm = String(_now.getMonth() + 1).padStart(2, '0');
+  const _dd = String(_now.getDate()).padStart(2, '0');
+  const defaultDesde = `${_yy}-${_mm}-01`;
+  const defaultHasta = `${_yy}-${_mm}-${_dd}`;
+
   // Filtros
   const [filtroProveedor, setFiltroProveedor] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroTipoPago, setFiltroTipoPago] = useState('');
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(defaultDesde);
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(defaultHasta);
 
   // Detalle
   const [detalleOpen, setDetalleOpen] = useState(false);
@@ -88,11 +96,17 @@ const ComprasPage = () => {
     setFiltroProveedor(null);
     setFiltroEstado('');
     setFiltroTipoPago('');
-    setFiltroFechaDesde('');
-    setFiltroFechaHasta('');
+    setFiltroFechaDesde(defaultDesde);
+    setFiltroFechaHasta(defaultHasta);
   };
 
-  const hayFiltrosActivos = !!(filtroProveedor || filtroEstado || filtroTipoPago || filtroFechaDesde || filtroFechaHasta);
+  const hayFiltrosActivos = !!(
+    filtroProveedor ||
+    filtroEstado ||
+    filtroTipoPago ||
+    filtroFechaDesde !== defaultDesde ||
+    filtroFechaHasta !== defaultHasta
+  );
 
   const verDetalle = async (compra) => {
     setDetalleOpen(true);

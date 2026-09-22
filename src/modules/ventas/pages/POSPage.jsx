@@ -1181,7 +1181,9 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
       } else {
         setClienteId(null); // Nuevo cliente
         if (dni.length === 11) {
-          setClienteNombre(res.data.razon_social || res.data.nombre_o_razon_social || '');
+          // El backend mapea la razón social al campo 'nombres' para normalizar
+          // la respuesta de SUNAT con el modelo de BD local (campo dni/nombres).
+          setClienteNombre(res.data.razon_social || res.data.nombre_o_razon_social || res.data.nombres || '');
           setClienteApellidos('-');
         } else {
           setClienteNombre(res.data.nombres || '');
@@ -1360,23 +1362,28 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField 
-                  label="DNI / RUC" 
-                  fullWidth 
-                  size="small" 
-                  value={dni}
-                  onChange={(e) => setDni(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleBuscarCliente()}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton size="small" color="primary" onClick={handleBuscarCliente} disabled={buscandoCliente}>
-                          {buscandoCliente ? <CircularProgress size={16} /> : <Search size={18} />}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField 
+                    label="DNI / RUC" 
+                    fullWidth 
+                    size="small" 
+                    value={dni}
+                    onChange={(e) => setDni(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleBuscarCliente()}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleBuscarCliente}
+                    disabled={buscandoCliente || !dni}
+                    title="Consultar en BD / RENIEC / SUNAT"
+                    sx={{ minWidth: 44, px: 1.5, flexShrink: 0, boxShadow: 'none' }}
+                  >
+                    {buscandoCliente
+                      ? <CircularProgress size={16} color="inherit" />
+                      : <Search size={18} />}
+                  </Button>
+                </Box>
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField label={(dni || '').length === 11 ? "Razón Social" : "Nombres"} fullWidth value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} size="small" />
