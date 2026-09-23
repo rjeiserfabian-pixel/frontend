@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   Search, Car, Wrench, CheckCircle, ArrowLeft, ArrowRight,
-  User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete, Trash2, Monitor
+  User, ShieldCheck, Award, Truck, HeadphonesIcon, Delete, Trash2, Monitor, X
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { useParams } from "react-router-dom";
@@ -69,6 +69,34 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
         <KeyButton onClick={() => onKeyPress("0")}>/</KeyButton>
         <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-2"><Delete size={20} /> Borrar</KeyButton>
         <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-2"><CheckCircle size={20} /> Buscar</KeyButton>
+      </div>
+    </div>
+  );
+};
+
+// Teclado en pantalla para el buscador de repuestos del paso 3: a diferencia
+// del de Placa, necesita espacio (búsquedas de varias palabras, ej. "filtro
+// de aceite") y no tiene límite de longitud ni botón "Confirmar" — la
+// búsqueda ya filtra en vivo mientras se escribe, así que solo cierra el
+// teclado cuando el cliente toca "Listo".
+const TecladoBusqueda = ({ onKeyPress, onSpace, onBackspace, onClose }) => {
+  const rows = [
+    ["1","2","3","4","5","6","7","8","9","0"],
+    ["Q","W","E","R","T","Y","U","I","O","P"],
+    ["A","S","D","F","G","H","J","K","L","Ñ"],
+    ["Z","X","C","V","B","N","M","-","/","."],
+  ];
+  return (
+    <div className="flex flex-col gap-2 w-full bg-[#121826] border border-slate-800 rounded-2xl p-4">
+      {rows.map((row, i) => (
+        <div key={i} className="grid grid-cols-10 gap-1.5 h-12">
+          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)} className="text-base">{k}</KeyButton>)}
+        </div>
+      ))}
+      <div className="grid grid-cols-6 gap-1.5 h-12">
+        <KeyButton onClick={onSpace} className="col-span-3 text-base">Espacio</KeyButton>
+        <KeyButton onClick={onBackspace} variant="red" className="col-span-1 flex gap-2"><Delete size={18} /></KeyButton>
+        <KeyButton onClick={onClose} variant="red" className="col-span-2 flex gap-2 text-base"><CheckCircle size={18} /> Listo</KeyButton>
       </div>
     </div>
   );
@@ -142,6 +170,38 @@ export const KioskoPage = () => {
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
   const [kilometraje, setKilometraje] = useState("");
 
+  // Búsqueda y categorías del catálogo del kiosko (paso 3). Ambas siempre se
+  // aplican DENTRO de los repuestos ya compatibles con el vehículo elegido
+  // (lo garantiza el backend) — nunca puede aparecer algo que no le sirva.
+  // El campo no es un <input> editable directamente: en el kiosko físico
+  // (touchscreen sin teclado propio) no hay garantía de que el teclado táctil
+  // del sistema operativo aparezca solo, igual que ya se resolvió para DNI y
+  // Placa con TecladoNumerico/TecladoAlfanumerico. Se usa el mismo criterio
+  // aquí: un teclado en pantalla propio (TecladoBusqueda) que se abre al tocar.
+  const [busquedaRepuesto, setBusquedaRepuestoRaw] = useState("");
+  const [busquedaDebounced, setBusquedaDebounced] = useState("");
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState([]);
+  const [tecladoBusquedaAbierto, setTecladoBusquedaAbierto] = useState(false);
+  const debounceBusquedaRef = React.useRef(null);
+
+  // Acepta un valor directo o un actualizador funcional (prev => nuevo), igual
+  // que setState de React, para que las pulsaciones rápidas del teclado en
+  // pantalla no se pisen entre sí por closures desactualizados.
+  const setBusquedaRepuesto = (valorOActualizador) => {
+    setBusquedaRepuestoRaw(prev => {
+      const nuevo = typeof valorOActualizador === "function" ? valorOActualizador(prev) : valorOActualizador;
+      if (debounceBusquedaRef.current) clearTimeout(debounceBusquedaRef.current);
+      debounceBusquedaRef.current = setTimeout(() => setBusquedaDebounced(nuevo), 350);
+      return nuevo;
+    });
+  };
+
+  const onKeyPressBusqueda = (k) => setBusquedaRepuesto(prev => prev + k);
+  const onSpaceBusqueda = () => setBusquedaRepuesto(prev => prev + " ");
+  const onBackspaceBusqueda = () => setBusquedaRepuesto(prev => prev.slice(0, -1));
+  const onLimpiarBusqueda = () => setBusquedaRepuesto("");
+
   const actualizarCantidad = (productoId, cantidad, stockMaximo) => {
     let valor = cantidad;
     if (stockMaximo != null && valor !== '' && parseFloat(valor) > stockMaximo) {
@@ -174,6 +234,14 @@ export const KioskoPage = () => {
     fetchEmpresa();
   }, []);
 
+  // Si el cliente vuelve atrás y elige otro vehículo, la búsqueda/categoría
+  // del vehículo anterior no debe arrastrarse al nuevo catálogo.
+  React.useEffect(() => {
+    setBusquedaRepuesto("");
+    setBusquedaDebounced("");
+    setCategoriaSeleccionada(null);
+  }, [vehiculo]);
+
   React.useEffect(() => {
     if (step === 3 && vehiculo) {
       const marca = vehiculo.marca || "";
@@ -181,13 +249,18 @@ export const KioskoPage = () => {
       const anio = vehiculo.anio_fabricacion || vehiculo.anio || null;
       if (!marca) return;
       setLoadingRepuestos(true);
-      setRepuestosCompatibles([]);
-      inventarioService.getRepuestosCompatibles(marca, modelo, anio, null, kioskoConfig?.token)
-        .then(data => setRepuestosCompatibles(Array.isArray(data) ? data : (data.results || [])))
-        .catch(() => setRepuestosCompatibles([]))
+      inventarioService.getRepuestosCompatibles(marca, modelo, anio, null, kioskoConfig?.token, {
+        search: busquedaDebounced,
+        categoria: categoriaSeleccionada,
+      })
+        .then(data => {
+          setRepuestosCompatibles(Array.isArray(data) ? data : (data.results || []));
+          setCategoriasDisponibles(Array.isArray(data) ? [] : (data.categorias_disponibles || []));
+        })
+        .catch(() => { setRepuestosCompatibles([]); setCategoriasDisponibles([]); })
         .finally(() => setLoadingRepuestos(false));
     }
-  }, [step, vehiculo, kioskoConfig]);
+  }, [step, vehiculo, kioskoConfig, busquedaDebounced, categoriaSeleccionada]);
 
   const handleNext = () => setStep(p => p + 1);
   const handleBack = () => setStep(p => p - 1);
@@ -272,7 +345,12 @@ export const KioskoPage = () => {
     );
   };
 
-  const resetAll = () => { setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]); setRepuestosCompatibles([]); setKilometraje(""); };
+  const resetAll = () => {
+    setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]);
+    setRepuestosCompatibles([]); setKilometraje("");
+    setBusquedaRepuesto(""); setBusquedaDebounced(""); setCategoriaSeleccionada(null); setCategoriasDisponibles([]);
+    setTecladoBusquedaAbierto(false);
+  };
 
   const generarTicket = async () => {
     if (!kioskoConfig?.token) {
@@ -651,6 +729,58 @@ export const KioskoPage = () => {
                     Ver Carrito ({carrito.length}) <ArrowRight size={20} />
                   </button>
                 </div>
+
+                {/* Buscador + categorías: siempre acotados a lo compatible con este vehiculo.
+                    El campo no es un <input> editable directamente: en el kiosko fisico
+                    (touchscreen sin teclado) se usa el mismo criterio que DNI/Placa, un
+                    teclado propio en pantalla que se abre al tocar el campo. */}
+                <div className="mb-6 flex flex-col gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                    <div
+                      onClick={() => setTecladoBusquedaAbierto(true)}
+                      className={"w-full bg-[#121826] border-2 text-white text-lg py-3.5 pl-12 pr-12 rounded-xl cursor-pointer select-none transition-colors " + (tecladoBusquedaAbierto ? "border-[#e50914]" : "border-slate-800")}
+                    >
+                      {busquedaRepuesto || <span className="text-slate-500">Toca aqui para buscar por nombre o codigo...</span>}
+                    </div>
+                    {busquedaRepuesto && (
+                      <button
+                        onClick={() => { onLimpiarBusqueda(); setBusquedaDebounced(""); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#e50914]"
+                      >
+                        <X size={20} />
+                      </button>
+                    )}
+                  </div>
+                  {tecladoBusquedaAbierto && (
+                    <TecladoBusqueda
+                      onKeyPress={onKeyPressBusqueda}
+                      onSpace={onSpaceBusqueda}
+                      onBackspace={onBackspaceBusqueda}
+                      onClose={() => setTecladoBusquedaAbierto(false)}
+                    />
+                  )}
+                  {categoriasDisponibles.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setCategoriaSeleccionada(null)}
+                        className={"px-4 py-2 rounded-full text-sm font-bold border transition-all " + (categoriaSeleccionada === null ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#121826] border-slate-700 text-slate-300 hover:border-slate-500")}
+                      >
+                        Todos ({categoriasDisponibles.reduce((acc, c) => acc + c.total, 0)})
+                      </button>
+                      {categoriasDisponibles.map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setCategoriaSeleccionada(cat.id)}
+                          className={"px-4 py-2 rounded-full text-sm font-bold border transition-all " + (categoriaSeleccionada === cat.id ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#121826] border-slate-700 text-slate-300 hover:border-slate-500")}
+                        >
+                          {cat.nombre} ({cat.total})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {loadingRepuestos ? (
                   <div className="flex flex-col items-center justify-center h-64 gap-4">
                     <div className="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin" />
@@ -659,8 +789,23 @@ export const KioskoPage = () => {
                 ) : repuestosCompatibles.length === 0 ? (
                   <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-12 rounded-3xl flex flex-col items-center justify-center text-center">
                     <Wrench size={56} className="text-slate-600 mb-4" />
-                    <p className="text-slate-400 text-lg font-medium">No encontramos repuestos registrados para este vehiculo.</p>
-                    <p className="text-slate-500 text-sm mt-2">Consulta con nuestro personal.</p>
+                    {(busquedaDebounced || categoriaSeleccionada) ? (
+                      <React.Fragment>
+                        <p className="text-slate-400 text-lg font-medium">No encontramos repuestos compatibles con tu busqueda.</p>
+                        <p className="text-slate-500 text-sm mt-2">Prueba con otro termino o revisa todas las categorias.</p>
+                        <button
+                          onClick={() => { setBusquedaRepuesto(""); setBusquedaDebounced(""); setCategoriaSeleccionada(null); }}
+                          className="mt-4 text-[#e50914] font-bold hover:underline"
+                        >
+                          Limpiar busqueda
+                        </button>
+                      </React.Fragment>
+                    ) : (
+                      <React.Fragment>
+                        <p className="text-slate-400 text-lg font-medium">No encontramos repuestos registrados para este vehiculo.</p>
+                        <p className="text-slate-500 text-sm mt-2">Consulta con nuestro personal.</p>
+                      </React.Fragment>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2" style={{ maxHeight: "50vh" }}>

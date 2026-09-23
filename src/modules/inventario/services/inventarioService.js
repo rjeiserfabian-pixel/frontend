@@ -97,7 +97,11 @@ export const inventarioService = {
   },
 
   // --- Busqueda Dinamica por Compatibilidad de Vehículo ---
-  getRepuestosCompatibles: async (marca, modelo, anio, motor, kioskoToken) => {
+  // opciones: { search, categoria, pageSize } — search/categoria siempre se
+  // aplican DENTRO del subconjunto compatible con el vehículo (lo garantiza
+  // el backend), nunca sobre el catálogo completo.
+  getRepuestosCompatibles: async (marca, modelo, anio, motor, kioskoToken, opciones = {}) => {
+    const { search, categoria, pageSize } = opciones;
     let query = `?marca=${encodeURIComponent(marca)}`;
     if (modelo) query += `&modelo=${encodeURIComponent(modelo)}`;
     if (anio)   query += `&anio=${encodeURIComponent(anio)}`;
@@ -106,6 +110,12 @@ export const inventarioService = {
     // el stock real de ESA sucursal (stock_disponible_sucursal) en vez del
     // stock global de toda la empresa.
     if (kioskoToken) query += `&kiosko_token=${encodeURIComponent(kioskoToken)}`;
+    if (search)    query += `&search=${encodeURIComponent(search)}`;
+    if (categoria) query += `&categoria=${encodeURIComponent(categoria)}`;
+    // El endpoint pagina de a 10 por defecto; el kiosko necesita ver TODOS los
+    // compatibles con el vehículo de una vez (no tiene controles de "página
+    // siguiente"), así que pide el máximo permitido por el backend.
+    query += `&page_size=${pageSize || 100}`;
 
     const response = await api.get(`${URL_REPUESTOS}compatibles/${query}`);
     return response.data;
