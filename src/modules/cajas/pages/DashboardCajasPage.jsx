@@ -8,7 +8,7 @@ import {
 import {
   Banknote, TrendingUp, TrendingDown,
   Plus, Eye, ArrowRightLeft, Lock,
-  RefreshCw, Wallet, Landmark
+  RefreshCw, Wallet, Landmark, History
 } from 'lucide-react';
 import { getDashboardCajas } from '../services/cajas.service';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
@@ -173,6 +173,13 @@ export default function DashboardCajasPage() {
             onClick={() => navigate('/cajas/transferencias')}
           >
             Transferencias
+          </Button>
+          <Button
+            variant="outlined" size="small" color="inherit"
+            startIcon={<History size={16} />}
+            onClick={() => navigate('/cajas/transferencias/historial')}
+          >
+            Historial Transferencias
           </Button>
         </Stack>
       </Box>

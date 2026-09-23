@@ -68,6 +68,7 @@ import TransferenciasPage from './modules/cajas/pages/TransferenciasPage';
 import NuevoMovimientoPage from './modules/cajas/pages/NuevoMovimientoPage';
 import ArqueoYCierrePage from './modules/cajas/pages/ArqueoYCierrePage';
 import HistorialCajasPage from './modules/cajas/pages/HistorialCajasPage';
+import HistorialTransferenciasPage from './modules/cajas/pages/HistorialTransferenciasPage';
 
 import { SucursalProvider } from './shared/contexts/SucursalContext';
 import { PermisosProvider } from './shared/contexts/PermisosContext';
@@ -147,6 +148,7 @@ function App() {
           <Route path="/cajas/sesion/:id"               element={<MovimientosPage />} />
           <Route path="/cajas/movimiento/nuevo"         element={<NuevoMovimientoPage />} />
           <Route path="/cajas/transferencias"           element={<TransferenciasPage />} />
+          <Route path="/cajas/transferencias/historial" element={<HistorialTransferenciasPage />} />
           <Route path="/cajas/historial"                element={<HistorialCajasPage />} />
           <Route path="/cajas/cierre/:id"               element={<ArqueoYCierrePage />} />
         </Route>

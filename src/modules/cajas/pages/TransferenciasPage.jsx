@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, TextField, Button,
   MenuItem, Alert, CircularProgress, InputAdornment, Divider
 } from '@mui/material';
-import { ArrowLeft, ArrowRightLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, History } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
 import { getSesiones, crearTransferencia } from '../services/cajas.service';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import PrintTransferenciaComponent from '../components/PrintTransferenciaComponent';
 
 export default function TransferenciasPage() {
   const navigate = useNavigate();
@@ -24,6 +26,24 @@ export default function TransferenciasPage() {
   const [loadingInit, setLoadingInit] = useState(true);
   const [error,   setError]     = useState(null);
   const [success, setSuccess]   = useState(null);
+
+  const [transferenciaCreada, setTransferenciaCreada] = useState(null);
+  const printRef = useRef();
+
+  const handlePrintAction = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: 'Comprobante_Transferencia_Caja',
+    onAfterPrint: () => {
+      setTransferenciaCreada(null);
+      navigate('/cajas');
+    },
+  });
+
+  useEffect(() => {
+    if (transferenciaCreada) {
+      handlePrintAction();
+    }
+  }, [transferenciaCreada, handlePrintAction]);
 
   useEffect(() => {
     getSesiones({ estado: 'ABIERTA' })
@@ -44,14 +64,14 @@ export default function TransferenciasPage() {
     setLoading(true);
     setError(null);
     try {
-      await crearTransferencia({
+      const res = await crearTransferencia({
         sesion_origen:  sesionOrigen,
         sesion_destino: sesionDestino,
         monto:          parseFloat(monto),
         motivo,
       });
       setSuccess(`Transferencia de S/ ${monto} realizada exitosamente.`);
-      setTimeout(() => navigate('/cajas'), 2000);
+      setTransferenciaCreada(res.data);
     } catch (e) {
       setError(e.response?.data?.error || 'Error al realizar la transferencia.');
     } finally {
@@ -66,9 +86,14 @@ export default function TransferenciasPage() {
 
   return (
     <Box maxWidth={520} mx="auto">
-      <Button startIcon={<ArrowLeft size={18} />} onClick={() => navigate('/cajas')} sx={{ mb: 2 }}>
-        Dashboard Cajas
-      </Button>
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Button startIcon={<ArrowLeft size={18} />} onClick={() => navigate('/cajas')}>
+          Dashboard Cajas
+        </Button>
+        <Button startIcon={<History size={18} />} onClick={() => navigate('/cajas/transferencias/historial')}>
+          Ver Historial
+        </Button>
+      </Box>
 
       <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
         {/* Encabezado Visual */}
@@ -172,6 +197,10 @@ export default function TransferenciasPage() {
           </Box>
         </CardContent>
       </Card>
+
+      <div style={{ display: 'none' }}>
+        <PrintTransferenciaComponent ref={printRef} transferencia={transferenciaCreada} />
+      </div>
     </Box>
   );
 }
