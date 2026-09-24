@@ -77,6 +77,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
         setValue('modelo', data.modelo || '');
         setValue('numero_motor', data.numero_motor || '');
         setValue('numero_serie', data.numero_serie || '');
+        setValue('color', data.color || '');
         setValue('clase', data.clase || '');
         setValue('tipo', data.tipo || '');
         setValue('uso', data.uso || '');

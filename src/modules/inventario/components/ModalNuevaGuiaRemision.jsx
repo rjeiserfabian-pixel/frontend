@@ -18,6 +18,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
   
   const [formData, setFormData] = useState({
     serie: '',
+    almacen_origen: '',
     fecha_traslado: (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; })(),
     cliente: '',
     motivo_traslado: '',
@@ -30,6 +31,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
 
   const [detalles, setDetalles] = useState([]);
   const [series, setSeries] = useState([]);
+  const [almacenes, setAlmacenes] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [distritos, setDistritos] = useState([]);
   
@@ -46,8 +48,9 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
   const fetchDatosGenerales = async () => {
     try {
       setLoading(true);
-      const [seriesRes, distritosRes] = await Promise.all([
+      const [seriesRes, almacenesRes, distritosRes] = await Promise.all([
         api.get('/ventas/series-internas/', { params: { page_size: 100 } }),
+        api.get('/inventario/almacenes/', { params: { sucursal: activeSucursalId, page_size: 100 } }),
         api.get('/seguridad/distritos/', { params: { page_size: 2000 } })
       ]);
       
@@ -55,6 +58,10 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
       const guiasSeries = seriesData.filter(s => s.tipo_documento === 'GUIA_REMISION' && String(s.sucursal) === String(activeSucursalId));
       setSeries(guiasSeries);
       if(guiasSeries.length > 0) setFormData(prev => ({ ...prev, serie: guiasSeries[0].id }));
+
+      const almacenesData = almacenesRes.data.results || almacenesRes.data || [];
+      setAlmacenes(almacenesData);
+      if (almacenesData.length > 0) setFormData(prev => ({ ...prev, almacen_origen: almacenesData[0].id }));
 
       setDistritos(distritosRes.data.results || distritosRes.data || []);
     } catch (error) {
@@ -123,7 +130,9 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!formData.serie) return Swal.fire('Error', 'Seleccione una serie', 'error');
+    if (!formData.almacen_origen) return Swal.fire('Error', 'Seleccione un almacen de origen', 'error');
     if (!formData.cliente) return Swal.fire('Error', 'Seleccione un cliente', 'error');
+    if (!formData.motivo_traslado?.trim()) return Swal.fire('Error', 'Ingrese el motivo del traslado', 'error');
     if (!formData.ubigeo_partida || !formData.ubigeo_llegada) return Swal.fire('Error', 'Seleccione distritos de partida y llegada', 'error');
     if (!formData.punto_partida || !formData.punto_llegada) return Swal.fire('Error', 'Ingrese las direcciones', 'error');
     if (detalles.length === 0) return Swal.fire('Error', 'Debe agregar al menos un producto', 'error');
@@ -138,6 +147,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
       setSaving(true);
       const payload = {
         sucursal: activeSucursalId,
+        almacen_origen: formData.almacen_origen,
         serie: formData.serie,
         fecha_traslado: formData.fecha_traslado,
         cliente: formData.cliente,
@@ -155,7 +165,12 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
       onSuccess();
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', error.response?.data?.detail || 'Error al crear la guía', 'error');
+      const backendData = error.response?.data;
+      const backendMsg = backendData?.detail
+        || backendData?.motivo_traslado?.[0]
+        || backendData?.non_field_errors?.[0]
+        || 'Error al crear la guia';
+      Swal.fire('Error', backendMsg, 'error');
     } finally {
       setSaving(false);
     }
@@ -189,7 +204,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 3.5 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Serie Guía *</InputLabel>
                 <Select
@@ -211,6 +226,20 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
                 InputProps={{ readOnly: true }}
                 sx={{ backgroundColor: '#f8fafc', input: { textAlign: 'center', fontWeight: 'bold', color: '#0ea5e9' } }}
               />
+
+              <FormControl fullWidth size="small">
+                <InputLabel>Almacen Origen *</InputLabel>
+                <Select
+                  value={formData.almacen_origen}
+                  label="Almacen Origen *"
+                  onChange={e => setFormData({...formData, almacen_origen: e.target.value})}
+                >
+                  {almacenes.length === 0
+                    ? <MenuItem disabled value=""><em>Sin almacenes activos</em></MenuItem>
+                    : almacenes.map(a => <MenuItem key={a.id} value={a.id}>{a.nombre}</MenuItem>)
+                  }
+                </Select>
+              </FormControl>
 
               <TextField 
                 label="Fecha Traslado *" 
@@ -254,8 +283,9 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
                 </IconButton>
               </Box>
               <TextField
-                label="Motivo del Traslado"
+                label="Motivo del Traslado *"
                 size="small"
+                required
                 value={formData.motivo_traslado}
                 onChange={e => setFormData({...formData, motivo_traslado: e.target.value})}
               />
@@ -411,4 +441,3 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
     </Dialog>
   );
 }
-

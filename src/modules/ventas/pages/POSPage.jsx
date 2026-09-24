@@ -155,9 +155,18 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   
     const getSaleOrigin = (ticket_kiosko) => {
       if (!ticket_kiosko) return { text: 'Directa', color: 'info' };
+      if (ticket_kiosko.startsWith('GR')) return { text: 'Guia', color: 'success' };
       if (ticket_kiosko.startsWith('OT-')) return { text: 'Taller', color: 'primary' };
       if (ticket_kiosko.startsWith('TK-')) return { text: 'Kiosko', color: 'secondary' };
       return { text: 'Otro', color: 'default' };
+    };
+
+    const getReferenciaVenta = (venta) => venta.referencia_origen || venta.ticket_kiosko || '-';
+
+    const getClienteCompleto = (venta) => {
+      const partes = [venta.cliente_nombre, venta.cliente_apellidos]
+        .filter(parte => parte && parte !== '-');
+      return partes.join(' ') || 'Cliente General';
     };
 
   return (
@@ -262,16 +271,17 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                     </TableRow>
                   ) : (
                     ventas.map((venta) => {
-                      const origen = getSaleOrigin(venta.ticket_kiosko);
+                      const referenciaVenta = getReferenciaVenta(venta);
+                      const origen = getSaleOrigin(referenciaVenta === '-' ? venta.ticket_kiosko : referenciaVenta);
                       return (
                       <TableRow key={venta.id} hover sx={{ cursor: venta.estado === 'PRE_VENTA' ? 'pointer' : 'default', backgroundColor: venta.estado === 'PRE_VENTA' ? 'inherit' : '#fafafa' }}>
                         <TableCell>
                           <Chip label={origen.text} color={origen.color} size="small" sx={{ fontWeight: 'bold' }} />
                         </TableCell>
-                        <TableCell>{venta.ticket_kiosko || '-'}</TableCell>
+                        <TableCell>{referenciaVenta}</TableCell>
                         <TableCell><strong>{venta.serie_correlativo || 'Por emitir'}</strong></TableCell>
                         <TableCell>{formatearFecha(venta.creado_en)}</TableCell>
-                        <TableCell>{venta.cliente_nombre || 'Cliente General'}</TableCell>
+                        <TableCell>{getClienteCompleto(venta)}</TableCell>
                         <TableCell>{venta.vehiculo_placa || '-'}</TableCell>
                         <TableCell align="right"><strong>{(parseFloat(venta.total) || 0).toFixed(2)}</strong></TableCell>
                         <TableCell align="center">{getStatusChip(venta.estado)}</TableCell>

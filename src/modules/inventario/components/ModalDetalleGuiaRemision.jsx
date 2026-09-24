@@ -8,8 +8,10 @@ import { X, Truck, MapPin, User, Calendar, FileText, Package } from 'lucide-reac
 
 const ESTADO_CHIP = {
   CREADA: { label: 'Creada', color: 'default' },
+  LISTA_PARA_SALIDA: { label: 'Lista para Salida', color: 'info' },
   EN_TRASLADO: { label: 'En Traslado', color: 'warning' },
   COMPLETADA: { label: 'Completada', color: 'success' },
+  FACTURADA: { label: 'Facturada', color: 'primary' },
 };
 
 export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
@@ -128,11 +130,52 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
               <Typography variant="body1" sx={{ fontWeight: 600 }}>{guia.motivo_traslado || '-'}</Typography>
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Almacen de origen</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>{guia.almacen_origen_nombre || '-'}</Typography>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Fecha de traslado</Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 {guia.fecha_traslado ? new Date(guia.fecha_traslado + 'T00:00').toLocaleDateString() : '-'}
               </Typography>
             </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Fecha de salida</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {guia.fecha_salida ? new Date(guia.fecha_salida).toLocaleString() : '-'}
+              </Typography>
+            </Grid>
+
+            {(guia.fecha_entrega || guia.recibido_por) && (
+              <>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Fecha de entrega</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {guia.fecha_entrega ? new Date(guia.fecha_entrega).toLocaleString() : '-'}
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Recibido por</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>{guia.recibido_por || '-'}</Typography>
+                </Grid>
+              </>
+            )}
+
+            {guia.observacion_entrega && (
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mb: 1 }}>Observacion de entrega:</Typography>
+                <Typography variant="body2" sx={{ bgcolor: '#f8fafc', p: 1.5, borderRadius: 1, border: '1px solid #e2e8f0' }}>
+                  {guia.observacion_entrega}
+                </Typography>
+              </Grid>
+            )}
+
+            {guia.venta_generada && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>Venta generada</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>{guia.venta_generada_serie || `Venta #${guia.venta_generada}`}</Typography>
+              </Grid>
+            )}
 
             {guia.observaciones && (
               <Grid size={{ xs: 12 }}>

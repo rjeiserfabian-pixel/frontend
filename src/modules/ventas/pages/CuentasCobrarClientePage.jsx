@@ -61,7 +61,6 @@ export default function CuentasCobrarClientePage() {
   };
 
   const saldoTotal = cuentas.reduce((acc, c) => acc + Number(c.saldo_pendiente || 0), 0);
-
   return (
     <Box sx={{ p: 3 }}>
       <Button

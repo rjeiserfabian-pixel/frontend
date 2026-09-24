@@ -49,8 +49,8 @@ export default function ModalSalidaGuia({ open, onClose, onSuccess, guia }) {
 
     try {
       setSaving(true);
-      await api.post(`/inventario/guias-remision/${guia.id}/dar_salida/`, formData);
-      Swal.fire('¡Éxito!', 'Salida registrada correctamente', 'success');
+      await api.post(`/inventario/guias-remision/${guia.id}/preparar-salida/`, formData);
+      Swal.fire('¡Éxito!', 'Guía preparada para salida correctamente', 'success');
       onSuccess();
     } catch (error) {
       console.error(error);
@@ -67,7 +67,7 @@ export default function ModalSalidaGuia({ open, onClose, onSuccess, guia }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{ fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', pb: 2 }}>
-        🚚 Dar Salida a Guía de Remisión
+        Preparar Salida de Guía de Remisión
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3 }}>
@@ -126,7 +126,7 @@ export default function ModalSalidaGuia({ open, onClose, onSuccess, guia }) {
           onClick={handleSubmit} 
           disabled={saving || loading}
         >
-          {saving ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Salida'}
+          {saving ? <CircularProgress size={24} color="inherit" /> : 'Preparar Salida'}
         </Button>
       </DialogActions>
     </Dialog>
