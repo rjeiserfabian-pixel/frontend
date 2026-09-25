@@ -4,10 +4,11 @@ import {
   TableContainer, TableHead, TableRow, IconButton, 
   CircularProgress, TablePagination, TextField 
 } from '@mui/material';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import VehiculosForm from '../components/VehiculosForm';
+import HistorialVehiculoModal from '../components/HistorialVehiculoModal';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 export default function VehiculosPage() {
@@ -20,6 +21,7 @@ export default function VehiculosPage() {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingVehiculo, setEditingVehiculo] = useState(null);
+  const [historialVehiculoId, setHistorialVehiculoId] = useState(null);
 
   // Pagination and search
   const [page, setPage] = useState(0); // MUI TablePagination uses 0-indexed pages
@@ -153,6 +155,9 @@ export default function VehiculosPage() {
                       <TableCell>{row.color || '-'}</TableCell>
                       <TableCell align="right">{row.kilometraje_actual ? `${row.kilometraje_actual} km` : '-'}</TableCell>
                       <TableCell align="center">
+                        <IconButton color="default" onClick={() => setHistorialVehiculoId(row.id)} title="Ver historial">
+                          <History size={18} />
+                        </IconButton>
                         {puedeEditar && (
                           <IconButton color="primary" onClick={() => handleOpenModal(row)}>
                             <Edit size={18} />
@@ -187,11 +192,17 @@ export default function VehiculosPage() {
       </Paper>
 
       {/* Componente Modal refactorizado */}
-      <VehiculosForm 
-        open={openModal} 
-        onClose={handleCloseModal} 
+      <VehiculosForm
+        open={openModal}
+        onClose={handleCloseModal}
         onSuccess={() => fetchVehiculos(page, search)}
         vehiculoEdit={editingVehiculo}
+      />
+
+      <HistorialVehiculoModal
+        open={!!historialVehiculoId}
+        onClose={() => setHistorialVehiculoId(null)}
+        vehiculoId={historialVehiculoId}
       />
     </Box>
   );

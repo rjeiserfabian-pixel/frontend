@@ -11,6 +11,7 @@ import { getReporteAvanzado, exportarAvanzado, getFiltrosAuxiliares } from '../s
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const TIPOS = [
+  { value: 'rentabilidad',       label: 'Rentabilidad (Ingresos vs. Egresos)' },
   { value: 'ventas_general',     label: 'Reporte General de Ventas' },
   { value: 'ventas_sucursal',    label: 'Ventas por Sucursal' },
   { value: 'ventas_detalladas',  label: 'Ventas Detalladas' },
@@ -18,12 +19,21 @@ const TIPOS = [
   { value: 'ordenes_servicio',   label: 'Órdenes de Servicio Detalladas' },
 ];
 
+const CONCEPTO_LABEL = {
+  GASTO_OPERATIVO: 'Gasto Operativo',
+  PAGO_PROVEEDOR: 'Pago a Proveedor',
+  DEVOLUCION: 'Devolución',
+  RETIRO: 'Retiro',
+  OTROS_EGRESOS: 'Otros Egresos',
+  EGRESO_MANUAL: 'Egreso Manual (Gasto)',
+};
+
 function useReporteAvanzado() {
   const today = new Date().toISOString().split('T')[0];
   const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
   const [filtros, setFiltros] = useState({
-    fecha_inicio: firstDay, fecha_fin: today, tipo: 'ventas_general', sucursal_id: '', page: 1, page_size: 50,
+    fecha_inicio: firstDay, fecha_fin: today, tipo: 'rentabilidad', sucursal_id: '', page: 1, page_size: 50,
   });
   const [sucursales, setSucursales] = useState([]);
   const [result, setResult] = useState(null);
@@ -56,29 +66,202 @@ function useReporteAvanzado() {
 
   const exportar = useCallback(async (formato) => exportarAvanzado(filtros, formato), [filtros]);
 
-  return { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar };
+  // Cada tipo de reporte devuelve una forma de datos distinta (ventas_general
+  // trae ventas_netas/utilidad_bruta, rentabilidad trae ingresado/egresado,
+  // etc.). Si solo se cambiara filtros.tipo, el resultado anterior (de otro
+  // tipo) se seguiría mostrando hasta el próximo "Generar", y el renderizador
+  // del tipo nuevo intentaría leer campos que no existen en esa forma vieja
+  // -> pantalla en blanco. Se limpia result/buscado al cambiar de tipo para
+  // forzar una nueva búsqueda antes de renderizar cualquier resultado.
+  const cambiarTipo = useCallback((nuevoTipo) => {
+    setFiltros(f => ({ ...f, tipo: nuevoTipo, page: 1 }));
+    setResult(null);
+    setBuscado(false);
+    setError(null);
+  }, []);
+
+  return { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar, cambiarTipo };
 }
 
 // ── Renderizadores por tipo de reporte ───────────────────────────────────────
 
 function RenderVentasGeneral({ data }) {
-  if (!data) return null;
+  // Guarda extra (además de limpiar result al cambiar de tipo en el hook):
+  // si por una petición en curso llega data de OTRO tipo de reporte mientras
+  // este ya está seleccionado, no truena leyendo un campo que no existe.
+  if (!data || !data.repuestos_vs_mano_obra) return null;
+  const rvm = data.repuestos_vs_mano_obra;
+  const totalUtilidad = rvm.utilidad_total || 0;
+  const pctRepuestos = totalUtilidad > 0 ? Math.max(0, (rvm.utilidad_repuestos / totalUtilidad) * 100) : 0;
+  const pctManoObra = totalUtilidad > 0 ? Math.max(0, (rvm.utilidad_mano_obra / totalUtilidad) * 100) : 0;
+
   return (
-    <div style={{ display: 'flex', gap: '16px', padding: '24px', flexWrap: 'wrap' }}>
-      {[
-        { label: 'Ventas Netas', value: data.ventas_netas, color: '#1e40af' },
-        { label: 'Costo de Ventas', value: data.costo_ventas, color: '#dc2626' },
-        { label: 'Utilidad Bruta', value: data.utilidad_bruta, color: '#16a34a' },
-        { label: 'Margen %', value: `${data.margen_porcentaje}%`, color: '#7c3aed', noPrefix: true },
-      ].map(({ label, value, color, noPrefix }) => (
-        <div key={label} className="total-card" style={{ minWidth: '180px', borderLeft: `4px solid ${color}` }}>
-          <span className="total-card-label">{label}</span>
-          <span className="total-card-value" style={{ color, fontSize: '1.4rem' }}>
-            {noPrefix ? value : `S/ ${Number(value).toFixed(2)}`}
-          </span>
+    <>
+      <div style={{ display: 'flex', gap: '16px', padding: '24px', flexWrap: 'wrap' }}>
+        {[
+          { label: 'Ventas Netas', value: data.ventas_netas, color: '#1e40af' },
+          { label: 'Costo de Ventas', value: data.costo_ventas, color: '#dc2626' },
+          { label: 'Utilidad Bruta', value: data.utilidad_bruta, color: '#16a34a' },
+          { label: 'Margen %', value: `${data.margen_porcentaje}%`, color: '#7c3aed', noPrefix: true },
+        ].map(({ label, value, color, noPrefix }) => (
+          <div key={label} className="total-card" style={{ minWidth: '180px', borderLeft: `4px solid ${color}` }}>
+            <span className="total-card-label">{label}</span>
+            <span className="total-card-value" style={{ color, fontSize: '1.4rem' }}>
+              {noPrefix ? value : `S/ ${Number(value).toFixed(2)}`}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding: '0 24px 24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+        <div style={{ flex: '2 1 420px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', background: '#fff' }}>
+          <h4 style={{ fontSize: '0.9rem', color: '#0f172a', marginBottom: '2px', marginTop: 0 }}>Repuestos más rentables</h4>
+          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '12px' }}>Top 10 del periodo, ordenado por utilidad generada (no por ventas)</p>
+          {data.top_repuestos.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#64748b', padding: '24px 0' }}>Sin ventas de repuestos en este periodo.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="reporte-table">
+                <thead>
+                  <tr>
+                    <th>Repuesto</th>
+                    <th style={{ textAlign: 'right' }}>Cant.</th>
+                    <th style={{ textAlign: 'right' }}>Ventas</th>
+                    <th style={{ textAlign: 'right' }}>Utilidad</th>
+                    <th style={{ textAlign: 'right' }}>Margen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.top_repuestos.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.repuesto}</td>
+                      <td style={{ textAlign: 'right' }}>{r.cantidad_vendida}</td>
+                      <td style={{ textAlign: 'right' }}>S/ {Number(r.ventas).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: '#16a34a', fontWeight: 700 }}>S/ {Number(r.utilidad).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{r.margen_porcentaje}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      ))}
-    </div>
+
+        <div style={{ flex: '1 1 260px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', background: '#fff' }}>
+          <h4 style={{ fontSize: '0.9rem', color: '#0f172a', marginBottom: '2px', marginTop: 0 }}>Repuestos vs. mano de obra</h4>
+          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '14px' }}>De dónde viene la utilidad</p>
+
+          <div style={{ display: 'flex', height: '10px', width: '100%', borderRadius: '99px', overflow: 'hidden', background: '#f1f5f9', marginBottom: '16px' }}>
+            <div style={{ width: `${pctRepuestos}%`, background: '#0ea5e9' }} />
+            <div style={{ width: `${pctManoObra}%`, background: '#f59e0b' }} />
+          </div>
+
+          <div style={{ marginBottom: '14px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#64748b', marginBottom: '2px' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#0ea5e9', display: 'inline-block' }} /> Repuestos
+            </span>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>S/ {Number(rvm.utilidad_repuestos).toFixed(2)}</span>
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>de S/ {Number(rvm.ventas_repuestos).toFixed(2)} vendido</p>
+          </div>
+          <div>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#64748b', marginBottom: '2px' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#f59e0b', display: 'inline-block' }} /> Mano de Obra
+            </span>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>S/ {Number(rvm.utilidad_mano_obra).toFixed(2)}</span>
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>100% margen (sin costo)</p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function RenderRentabilidad({ data, filtros }) {
+  // Misma guarda que RenderVentasGeneral: evita leer un campo inexistente
+  // si llega data de otro tipo de reporte por una petición en curso.
+  if (!data || !data.desglose_ingresos) return null;
+  const netoPositivo = data.neto >= 0;
+
+  const columnasSerie = [
+    { key: 'fecha', label: 'Fecha' },
+    { key: 'ingresos', label: 'Ingresos', render: v => `S/ ${Number(v).toFixed(2)}` },
+    { key: 'egresos', label: 'Egresos', render: v => `S/ ${Number(v).toFixed(2)}` },
+    {
+      key: 'neto', label: 'Neto', render: v => (
+        <span style={{ color: Number(v) >= 0 ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
+          S/ {Number(v).toFixed(2)}
+        </span>
+      )
+    },
+  ];
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: '16px', padding: '24px', flexWrap: 'wrap' }}>
+        {[
+          { label: 'Ingresado', value: data.ingresado, color: '#16a34a' },
+          { label: 'Egresado', value: data.egresado, color: '#dc2626' },
+          { label: 'Neto', value: data.neto, color: netoPositivo ? '#16a34a' : '#dc2626' },
+          { label: 'Margen %', value: `${data.margen_porcentaje}%`, color: '#7c3aed', noPrefix: true },
+        ].map(({ label, value, color, noPrefix }) => (
+          <div key={label} className="total-card" style={{ minWidth: '180px', borderLeft: `4px solid ${color}` }}>
+            <span className="total-card-label">{label}</span>
+            <span className="total-card-value" style={{ color, fontSize: '1.4rem' }}>
+              {noPrefix ? value : `S/ ${Number(value).toFixed(2)}`}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {data.generado_credito > 0 && (
+        <div style={{ margin: '-12px 24px 12px', padding: '8px 14px', background: '#fefce8', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '0.82rem', color: '#854d0e' }}>
+          + S/ {Number(data.generado_credito).toFixed(2)} generado a crédito en el periodo (aún no cobrado, no incluido en el ingreso).
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '16px', padding: '0 24px 24px', flexWrap: 'wrap' }}>
+        <div className="total-card" style={{ borderLeft: '4px solid #0ea5e9' }}>
+          <span className="total-card-label">Ventas de Taller</span>
+          <span className="total-card-value">S/ {Number(data.desglose_ingresos.ventas_taller).toFixed(2)}</span>
+        </div>
+        <div className="total-card" style={{ borderLeft: '4px solid #0ea5e9' }}>
+          <span className="total-card-label">Ventas de Mostrador</span>
+          <span className="total-card-value">S/ {Number(data.desglose_ingresos.ventas_mostrador).toFixed(2)}</span>
+        </div>
+        <div className="total-card" style={{ borderLeft: '4px solid #0ea5e9' }}>
+          <span className="total-card-label">Cobros de Crédito Anterior</span>
+          <span className="total-card-value">S/ {Number(data.desglose_ingresos.cobros_credito).toFixed(2)}</span>
+        </div>
+        <div className="total-card" style={{ borderLeft: '4px solid #64748b' }}>
+          <span className="total-card-label">Órdenes Ingresadas</span>
+          <span className="total-card-value">{data.ordenes_ingresadas}</span>
+        </div>
+      </div>
+
+      {data.egresos_por_concepto.length > 0 && (
+        <div style={{ padding: '0 24px 20px' }}>
+          <h4 style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '8px' }}>Egresos por concepto</h4>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="reporte-table">
+              <thead><tr><th>Concepto</th><th>Total</th></tr></thead>
+              <tbody>
+                {data.egresos_por_concepto.map(e => (
+                  <tr key={e.concepto}>
+                    <td>{CONCEPTO_LABEL[e.concepto] || e.concepto}</td>
+                    <td>S/ {Number(e.total).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding: '0 24px 24px' }}>
+        <h4 style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '8px' }}>Tendencia diaria</h4>
+        <RenderTabla data={data.serie_diaria} columns={columnasSerie} filtros={filtros} />
+      </div>
+    </>
   );
 }
 
@@ -114,11 +297,13 @@ function RenderTabla({ data, columns, filtros, total, onPage }) {
 export default function ReporteAvanzadoPage() {
   const { tienePermiso } = usePermisos();
   const puedeExportar = tienePermiso('REPORTES.AVANZADO.EXPORTAR');
-  const { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar } = useReporteAvanzado();
+  const { filtros, setFiltros, sucursales, result, loading, buscado, error, buscar, exportar, cambiarTipo } = useReporteAvanzado();
 
   const renderContenido = () => {
     if (!result) return null;
     const tipo = filtros.tipo;
+
+    if (tipo === 'rentabilidad') return <RenderRentabilidad data={result} filtros={filtros} />;
 
     if (tipo === 'ventas_general') return <RenderVentasGeneral data={result} />;
 
@@ -195,7 +380,7 @@ export default function ReporteAvanzadoPage() {
             <label className="filtro-label">Tipo de Reporte</label>
             <select id="av-tipo" className="filtro-input" style={{ minWidth: 220 }}
               value={filtros.tipo}
-              onChange={e => { setFiltros(f => ({ ...f, tipo: e.target.value, page: 1 })); }}>
+              onChange={e => cambiarTipo(e.target.value)}>
               {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>

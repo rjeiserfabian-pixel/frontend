@@ -5,9 +5,10 @@ import {
   TextField, Box, CircularProgress, TablePagination 
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Car } from 'lucide-react';
 import { useClientes } from '../hooks/useClientes';
 import ClientesForm from '../components/ClientesForm';
+import VehiculosClienteModal from '../components/VehiculosClienteModal';
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
@@ -23,6 +24,7 @@ const ClientesPage = () => {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [clienteEdit, setClienteEdit] = useState(null);
+  const [vehiculosClienteId, setVehiculosClienteId] = useState(null);
 
   // Regla 1.3: Debounce en búsquedas
   useEffect(() => {
@@ -131,6 +133,9 @@ const ClientesPage = () => {
                         <TableCell>{row.telefono || '-'}</TableCell>
                         <TableCell>{row.direccion || '-'}</TableCell>
                         <TableCell align="center">
+                          <IconButton color="default" onClick={() => setVehiculosClienteId(row.id)} title="Ver vehículos">
+                            <Car size={18} />
+                          </IconButton>
                           {puedeEditar && (
                             <IconButton color="primary" onClick={() => handleOpenModal(row)}>
                               <Edit size={18} />
@@ -165,11 +170,17 @@ const ClientesPage = () => {
         )}
       </Paper>
 
-      <ClientesForm 
-        open={modalOpen} 
-        onClose={handleCloseModal} 
+      <ClientesForm
+        open={modalOpen}
+        onClose={handleCloseModal}
         onSuccess={() => cargarClientes(page + 1, search)}
         clienteEdit={clienteEdit}
+      />
+
+      <VehiculosClienteModal
+        open={!!vehiculosClienteId}
+        onClose={() => setVehiculosClienteId(null)}
+        clienteId={vehiculosClienteId}
       />
     </Box>
   );

@@ -28,5 +28,13 @@ export const vehiculoService = {
   vincularCliente: async (vehiculoId, clienteId) => {
     const response = await api.post(`${URL_VEHICULOS}${vehiculoId}/vincular-cliente/`, { cliente_id: clienteId });
     return response.data;
-  }
+  },
+  getHistorial: async (vehiculoId, page = 1) => {
+    const response = await api.get(`${URL_VEHICULOS}${vehiculoId}/historial/?page=${page}`);
+    return response.data;
+  },
+  descargarHistorialPdf: async (vehiculoId) => {
+    const response = await api.get(`${URL_VEHICULOS}${vehiculoId}/historial/pdf/`, { responseType: 'blob' });
+    return response.data;
+  },
 };

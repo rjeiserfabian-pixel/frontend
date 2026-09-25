@@ -56,5 +56,15 @@ export const clienteService = {
     const data = response.data;
     const lista = Array.isArray(data) ? data : (data.results || []);
     return lista.find(c => c.dni === dni) || null;
-  }
+  },
+
+  getVehiculos: async (id) => {
+    const response = await api.get(`${BASE_URL}${id}/vehiculos/`);
+    return response.data;
+  },
+
+  descargarVehiculosPdf: async (id) => {
+    const response = await api.get(`${BASE_URL}${id}/vehiculos/pdf/`, { responseType: 'blob' });
+    return response.data;
+  },
 };

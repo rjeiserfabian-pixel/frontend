@@ -8,6 +8,7 @@ import { inventarioService } from '../services/inventarioService';
 
 const defaultForm = {
   codigo: '',
+  codigo_barra: '',
   nombre: '',
   categoria: null,
   marca: null,
@@ -81,6 +82,7 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
     if (!validar()) return;
 
     const codigoIngresado = formData.codigo.trim();
+    const codigoBarraIngresado = formData.codigo_barra.trim();
 
     try {
       setLoading(true);
@@ -88,16 +90,25 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
       // Regla del negocio: si el código ya existe, no se debe crear un
       // repuesto duplicado. Se verifica antes de enviar, y el backend
       // (codigo unique=True) queda como respaldo ante una carrera de datos.
-      const busqueda = await inventarioService.getRepuestos({ search: codigoIngresado, page_size: 20 });
-      const listaExistente = busqueda.results || busqueda;
+      const busquedas = await Promise.all([
+        inventarioService.getRepuestos({ search: codigoIngresado, page_size: 20 }),
+        codigoBarraIngresado
+          ? inventarioService.getRepuestos({ search: codigoBarraIngresado, page_size: 20 })
+          : Promise.resolve({ results: [] }),
+      ]);
+      const listaExistente = busquedas.flatMap(res => res.results || res);
       const duplicado = listaExistente.find(
-        r => r.codigo.trim().toLowerCase() === codigoIngresado.toLowerCase()
+        r => r.codigo.trim().toLowerCase() === codigoIngresado.toLowerCase() ||
+          (codigoBarraIngresado && (r.codigo_barra || '').trim().toLowerCase() === codigoBarraIngresado.toLowerCase())
       );
       if (duplicado) {
+        const campoDuplicado = duplicado.codigo.trim().toLowerCase() === codigoIngresado.toLowerCase()
+          ? `código "${duplicado.codigo}"`
+          : `código de barras "${duplicado.codigo_barra}"`;
         Swal.fire({
           icon: 'warning',
           title: 'Repuesto ya registrado',
-          text: `Ya existe un repuesto con el código "${duplicado.codigo}" (${duplicado.nombre}). Selecciónalo desde el buscador en vez de crear uno nuevo.`,
+          text: `Ya existe un repuesto con el ${campoDuplicado} (${duplicado.nombre}). Selecciónalo desde el buscador en vez de crear uno nuevo.`,
         });
         setLoading(false);
         return;
@@ -105,6 +116,7 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
 
       const payload = {
         codigo: codigoIngresado,
+        codigo_barra: codigoBarraIngresado || null,
         nombre: formData.nombre.trim(),
         categoria: formData.categoria.id,
         marca: formData.marca.id,
@@ -137,6 +149,8 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
         const data = error.response.data;
         if (data.codigo) {
           errorMessage = 'Ya existe un repuesto registrado con este código/SKU.';
+        } else if (data.codigo_barra) {
+          errorMessage = 'Ya existe un repuesto registrado con este código de barras.';
         } else if (typeof data === 'object') {
           const firstKey = Object.keys(data)[0];
           if (firstKey && Array.isArray(data[firstKey])) {
@@ -163,7 +177,14 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
               InputProps={{ sx: { py: 0.5 } }}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 8 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth label="Código de barras" size="medium"
+              value={formData.codigo_barra} onChange={handleChange('codigo_barra')}
+              InputProps={{ sx: { py: 0.5 } }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               fullWidth label="Nombre del Repuesto" required size="medium"
               value={formData.nombre} onChange={handleChange('nombre')}

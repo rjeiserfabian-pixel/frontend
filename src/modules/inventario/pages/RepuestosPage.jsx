@@ -129,6 +129,7 @@ export default function RepuestosPage() {
       setEditingId(repuesto.id);
       reset({ 
         codigo: repuesto.codigo,
+        codigo_barra: repuesto.codigo_barra || '',
         nombre: repuesto.nombre,
         categoria: repuesto.categoria,
         marca: repuesto.marca,
@@ -145,7 +146,7 @@ export default function RepuestosPage() {
     } else {
       setEditingId(null);
       reset({ 
-        codigo: '', nombre: '', categoria: '', marca: '', unidad_medida: '', viscosidad: '', tipo_igv: '', stock: 0,
+        codigo: '', codigo_barra: '', nombre: '', categoria: '', marca: '', unidad_medida: '', viscosidad: '', tipo_igv: '', stock: 0,
         precio_compra: '', precio_por_mayor: '', precio_cash: '', precio_lista: '',
         aplicaciones: [] 
       });
@@ -162,6 +163,7 @@ export default function RepuestosPage() {
     try {
       // Limpiar campos vacíos de aplicaciones para evitar error 400 en enteros
       const payload = { ...data };
+      payload.codigo_barra = payload.codigo_barra ? payload.codigo_barra.trim() : null;
       if (payload.aplicaciones && payload.aplicaciones.length > 0) {
         payload.aplicaciones = payload.aplicaciones.map(app => ({
           ...app,
@@ -187,6 +189,8 @@ export default function RepuestosPage() {
         const data = error.response.data;
         if (data.codigo) {
           errorMessage = 'Ya existe un repuesto registrado con este código/SKU.';
+        } else if (data.codigo_barra) {
+          errorMessage = 'Ya existe un repuesto registrado con este código de barras.';
         } else if (typeof data === 'object') {
           const firstKey = Object.keys(data)[0];
           if (firstKey && Array.isArray(data[firstKey])) {
@@ -431,7 +435,7 @@ export default function RepuestosPage() {
       {/* --- BARRA DE HERRAMIENTAS (BUSCADOR Y FILTROS) --- */}
       <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
         <TextField
-          label="Buscar (Código/Nombre)"
+          label="Buscar (Código/C. barras/Nombre)"
           variant="outlined"
           size="small"
           value={searchQuery}
@@ -492,6 +496,11 @@ export default function RepuestosPage() {
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>
+                    <TableSortLabel active={orderBy === 'codigo_barra'} direction={orderBy === 'codigo_barra' ? order : 'asc'} onClick={() => handleRequestSort('codigo_barra')}>
+                      <strong>Cód. Barras</strong>
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
                     <TableSortLabel active={orderBy === 'nombre'} direction={orderBy === 'nombre' ? order : 'asc'} onClick={() => handleRequestSort('nombre')}>
                       <strong>Nombre</strong>
                     </TableSortLabel>
@@ -511,7 +520,7 @@ export default function RepuestosPage() {
               <TableBody>
                 {repuestos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center">No hay repuestos registrados.</TableCell>
+                    <TableCell colSpan={9} align="center">No hay repuestos registrados.</TableCell>
                   </TableRow>
                 ) : (
                   repuestos.map((row) => {
@@ -520,6 +529,7 @@ export default function RepuestosPage() {
                     return (
                     <TableRow key={row.id} hover>
                       <TableCell>{row.codigo}</TableCell>
+                      <TableCell>{row.codigo_barra || <span style={{color: 'gray'}}>—</span>}</TableCell>
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell>{row.categoria_nombre}</TableCell>
                       <TableCell>{row.marca_nombre}</TableCell>
@@ -624,7 +634,10 @@ export default function RepuestosPage() {
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField label="Código/SKU" fullWidth {...register('codigo', { required: true })} error={!!errors.codigo} />
               </Grid>
-              <Grid size={{ xs: 12, md: 8 }}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField label="Código de barras" fullWidth {...register('codigo_barra')} error={!!errors.codigo_barra} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField label="Nombre del Repuesto" fullWidth {...register('nombre', { required: true })} error={!!errors.nombre} />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }} sx={{ minWidth: 200 }}>
