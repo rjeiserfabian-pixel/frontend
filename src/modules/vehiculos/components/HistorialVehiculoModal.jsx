@@ -5,9 +5,13 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton,
   Pagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ChevronDown, Printer, X, Car } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 const ESTADO_COLOR = {
   RECEPCIONADO: 'default',
@@ -69,7 +73,7 @@ export default function HistorialVehiculoModal({ open, onClose, vehiculoId }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: '8px' } }}>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Car size={20} />
@@ -86,7 +90,7 @@ export default function HistorialVehiculoModal({ open, onClose, vehiculoId }) {
           </Box>
         ) : !data ? null : (
           <>
-            <Box sx={{ mb: 2, p: 2, bgcolor: '#f8fafc', borderRadius: '10px' }}>
+            <Box sx={{ mb: 2, p: 2, bgcolor: alpha(C.blue, 0.1), border: `1px solid ${alpha(C.blue, 0.25)}`, borderRadius: '8px' }}>
               <Typography variant="body2">
                 <strong>Marca/Modelo:</strong> {data.vehiculo.marca} {data.vehiculo.modelo}
                 {data.vehiculo.anio_fabricacion ? ` (${data.vehiculo.anio_fabricacion})` : ''}
@@ -108,7 +112,7 @@ export default function HistorialVehiculoModal({ open, onClose, vehiculoId }) {
               data.ordenes.map((o) => (
                 <Accordion
                   key={o.numero}
-                  sx={{ mb: 1, '&:before': { display: 'none' }, boxShadow: 'none', border: '1px solid #e2e8f0', borderRadius: '8px !important', overflow: 'hidden' }}
+                  sx={{ mb: 1, '&:before': { display: 'none' }, boxShadow: 'none', border: `1px solid ${C.border}`, borderRadius: '8px !important', overflow: 'hidden', bgcolor: alpha('#ffffff', 0.025), '&.Mui-expanded': { bgcolor: alpha('#ffffff', 0.045) } }}
                 >
                   <AccordionSummary expandIcon={<ChevronDown size={18} />}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pr: 2 }}>

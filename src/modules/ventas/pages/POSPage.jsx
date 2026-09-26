@@ -7,6 +7,7 @@ import {
   FormControl, Divider, Autocomplete, InputAdornment,
   Dialog, DialogContent, DialogActions, TablePagination, Tabs, Tab
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
   CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer, Eye,
@@ -24,6 +25,10 @@ import TicketImpresion from '../components/TicketImpresion';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 // ...
 
 // -------------------------------------------------------------
@@ -221,7 +226,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
             size="small"
             label="Desde"
             InputLabelProps={{ shrink: true }}
-            inputProps={{ style: { colorScheme: 'light' } }}
+            inputProps={{ style: { colorScheme: 'dark' } }}
             sx={{ width: 160 }}
             value={filtroFechaDesde}
             onChange={(e) => { setFiltroFechaDesde(e.target.value); setPage(0); }}
@@ -231,7 +236,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
             size="small"
             label="Hasta"
             InputLabelProps={{ shrink: true }}
-            inputProps={{ style: { colorScheme: 'light' } }}
+            inputProps={{ style: { colorScheme: 'dark' } }}
             sx={{ width: 160 }}
             value={filtroFechaHasta}
             onChange={(e) => { setFiltroFechaHasta(e.target.value); setPage(0); }}
@@ -251,7 +256,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
           <>
             <TableContainer>
               <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                   <TableRow>
                     <TableCell><strong>Origen</strong></TableCell>
                     <TableCell><strong>Referencia</strong></TableCell>
@@ -274,7 +279,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                       const referenciaVenta = getReferenciaVenta(venta);
                       const origen = getSaleOrigin(referenciaVenta === '-' ? venta.ticket_kiosko : referenciaVenta);
                       return (
-                      <TableRow key={venta.id} hover sx={{ cursor: venta.estado === 'PRE_VENTA' ? 'pointer' : 'default', backgroundColor: venta.estado === 'PRE_VENTA' ? 'inherit' : '#fafafa' }}>
+                      <TableRow key={venta.id} hover sx={{ cursor: venta.estado === 'PRE_VENTA' ? 'pointer' : 'default', backgroundColor: venta.estado === 'PRE_VENTA' ? 'inherit' : alpha('#ffffff', 0.018) }}>
                         <TableCell>
                           <Chip label={origen.text} color={origen.color} size="small" sx={{ fontWeight: 'bold' }} />
                         </TableCell>
@@ -336,10 +341,10 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
         onClose={() => setSelectedSaleDetails(null)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+        PaperProps={{ sx: { borderRadius: '8px', overflow: 'hidden' } }}
       >
         <Box sx={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          background: `linear-gradient(135deg, ${C.bgElevated}, ${C.surfaceSoft})`,
           color: 'white', px: 3, py: 2.5,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
@@ -361,11 +366,11 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
           </IconButton>
         </Box>
 
-        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
+        <DialogContent sx={{ bgcolor: C.bgElevated, p: 3 }}>
           {/* CLIENTE Y VENTA */}
           <Grid container spacing={2} sx={{ mb: 2.5 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', height: '100%', bgcolor: alpha('#ffffff', 0.03), borderColor: C.border }}>
                 <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                   <User size={15} /> Cliente
                 </Typography>
@@ -378,7 +383,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', height: '100%', bgcolor: alpha('#ffffff', 0.03), borderColor: C.border }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                     <Calendar size={15} /> Venta
@@ -391,7 +396,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
           </Grid>
 
           {/* ITEMS */}
-          <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden', mb: 2.5, bgcolor: 'white' }}>
+          <Paper variant="outlined" sx={{ borderRadius: '8px', overflow: 'hidden', mb: 2.5, bgcolor: alpha('#ffffff', 0.03), borderColor: C.border }}>
             <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
               <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                 <Package size={15} /> Ítems Comprados
@@ -399,7 +404,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
             </Box>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: '#f1f5f9' }}>
+                <TableRow sx={{ bgcolor: alpha(C.blue, 0.1) }}>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Producto</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Cant.</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>U.M.</TableCell>
@@ -428,7 +433,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
           </Paper>
 
           {/* PAGOS Y TOTALES */}
-          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, bgcolor: 'white' }}>
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '8px', bgcolor: alpha('#ffffff', 0.03), borderColor: C.border }}>
             <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5, mb: 1 }}>
               <Wallet size={15} /> Pagos y Totales
             </Typography>
@@ -489,7 +494,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                     )}
                   </Grid>
                   <Grid size={{ xs: 12, sm: 5 }}>
-                    <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2.5, p: 2 }}>
+                    <Box sx={{ bgcolor: alpha(C.blue, 0.12), border: `1px solid ${alpha(C.blue, 0.32)}`, borderRadius: '8px', p: 2 }}>
                       {!esCredito && (
                         <>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
@@ -528,7 +533,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
             })()}
           </Paper>
         </DialogContent>
-        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
+        <DialogActions sx={{ bgcolor: alpha('#000000', 0.16), px: 3, py: 2 }}>
           <Button onClick={() => setSelectedSaleDetails(null)} variant="outlined" color="primary" sx={{ borderRadius: 2, fontWeight: 700 }}>
             Cerrar
           </Button>
@@ -684,9 +689,12 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
                 disabled
                 sx={{ 
                   width: 120,
+                  "& .MuiInputBase-root.Mui-disabled": { bgcolor: alpha(C.blue, 0.08), opacity: 1 },
                   "& .MuiInputBase-input.Mui-disabled": {
-                    WebkitTextFillColor: "#000000",
-                    fontWeight: "bold"
+                    WebkitTextFillColor: "#bae6fd",
+                    color: "#bae6fd",
+                    opacity: 1,
+                    fontWeight: 800
                   }
                 }}
               />
@@ -790,7 +798,7 @@ const PosCheckout = ({ order, onBack, onComplete }) => {
                   const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
                   if (sumP > total) {
                     return (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1, display: 'flex', justifyContent: 'space-between', border: '1px solid #c8e6c9' }}>
+                      <Box sx={{ mt: 2, p: 2, bgcolor: alpha(C.emerald, 0.12), borderRadius: '8px', display: 'flex', justifyContent: 'space-between', border: `1px solid ${alpha(C.emerald, 0.34)}` }}>
                         <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
                         <Typography variant="subtitle1" color="success.main" fontWeight="bold">S/ {(sumP - total).toFixed(2)}</Typography>
                       </Box>
@@ -1449,9 +1457,12 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                 disabled
                 sx={{ 
                   width: 120,
+                  "& .MuiInputBase-root.Mui-disabled": { bgcolor: alpha(C.blue, 0.08), opacity: 1 },
                   "& .MuiInputBase-input.Mui-disabled": {
-                    WebkitTextFillColor: "#000000",
-                    fontWeight: "bold"
+                    WebkitTextFillColor: "#bae6fd",
+                    color: "#bae6fd",
+                    opacity: 1,
+                    fontWeight: 800
                   }
                 }}
               />
@@ -1596,7 +1607,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                   const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
                   if (sumP > totalEnMoneda) {
                     return (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1, display: 'flex', justifyContent: 'space-between', border: '1px solid #c8e6c9' }}>
+                      <Box sx={{ mt: 2, p: 2, bgcolor: alpha(C.emerald, 0.12), borderRadius: '8px', display: 'flex', justifyContent: 'space-between', border: `1px solid ${alpha(C.emerald, 0.34)}` }}>
                         <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
                         <Typography variant="subtitle1" color="success.main" fontWeight="bold">{simboloMoneda} {(sumP - totalEnMoneda).toFixed(2)}</Typography>
                       </Box>
@@ -1761,7 +1772,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                           />
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, -1)} sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }}><Minus size={14} /></IconButton>
+                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, -1)} sx={{ bgcolor: alpha('#ffffff', 0.06), border: `1px solid ${C.border}`, borderRadius: '6px' }}><Minus size={14} /></IconButton>
                           <TextField
                             size="small"
                             type="number"
@@ -1778,7 +1789,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                             }}
                             sx={{ '& .MuiOutlinedInput-root': { pr: 0, pl: 0 } }}
                           />
-                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, 1)} sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }}><Plus size={14} /></IconButton>
+                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, 1)} sx={{ bgcolor: alpha('#ffffff', 0.06), border: `1px solid ${C.border}`, borderRadius: '6px' }}><Plus size={14} /></IconButton>
                           <IconButton size="small" color="error" onClick={() => eliminarDelCarrito(item.id)} sx={{ ml: 1 }}><Trash2 size={16} /></IconButton>
                         </Box>
                       </Box>

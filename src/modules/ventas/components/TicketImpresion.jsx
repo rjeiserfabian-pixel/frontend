@@ -59,6 +59,10 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
       <style>
         {`
           @media print {
+            html, body, #root {
+              background: #ffffff !important;
+              color: #000000 !important;
+            }
             body * {
               visibility: hidden;
             }
@@ -72,6 +76,15 @@ const TicketImpresion = React.forwardRef(({ venta }, ref) => {
               width: 80mm;
               margin: 0;
               padding: 5mm;
+              box-sizing: border-box;
+              color: #000000 !important;
+              background: #ffffff !important;
+              color-scheme: light;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            #ticket-impresion * {
+              color: #000000 !important;
             }
             @page {
               size: 80mm auto;

@@ -5,10 +5,15 @@ import {
   Button, Alert, CircularProgress, MenuItem,
   InputAdornment, Divider
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Unlock, ArrowLeft, Banknote } from 'lucide-react';
 import { getCajas, abrirCaja } from '../services/cajas.service';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function AperturaCajaPage() {
   const navigate             = useNavigate();
@@ -72,14 +77,15 @@ export default function AperturaCajaPage() {
         elevation={0}
         sx={{
           border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 4,
+          borderColor: C.border,
+          bgcolor: C.surface,
+          borderRadius: '8px',
           overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+          boxShadow: S.card,
         }}
       >
         {/* Header con gradiente verde */}
-        <Box sx={{ background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)', p: 3, color: 'white' }}>
+        <Box sx={{ background: `linear-gradient(135deg, ${C.bgElevated} 0%, ${C.surfaceSoft} 100%)`, p: 3, color: 'white' }}>
           <Box display="flex" alignItems="center" gap={2}>
             <Box sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
               <Unlock size={28} color="white" />
@@ -100,10 +106,10 @@ export default function AperturaCajaPage() {
 
           <Box
             sx={{
-              bgcolor: '#f8fafc',
+              bgcolor: C.bgElevated,
               p: 3.5,
-              borderRadius: 3,
-              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              border: `1px solid ${C.border}`,
               display: 'flex',
               flexDirection: 'column',
               gap: 3.5,
@@ -116,7 +122,7 @@ export default function AperturaCajaPage() {
               label="Seleccionar Caja"
               value={cajaId}
               onChange={e => setCajaId(e.target.value)}
-              sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             >
               {cajas.length === 0 ? (
                 <MenuItem disabled>No hay cajas disponibles</MenuItem>
@@ -132,8 +138,8 @@ export default function AperturaCajaPage() {
             {/* Vista previa de caja seleccionada */}
             {cajaSeleccionada && (
               <Box
-                bgcolor="#f0fdf4"
-                border="1px solid #bbf7d0"
+                bgcolor={alpha(C.emerald, 0.14)}
+                border={`1px solid ${alpha(C.emerald, 0.4)}`}
                 borderRadius={2}
                 p={2.5}
                 display="flex"
@@ -175,7 +181,7 @@ export default function AperturaCajaPage() {
                 ),
               }}
               helperText="Cuenta el dinero que hay físicamente en el cajón"
-              sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <Divider sx={{ my: 1 }} />

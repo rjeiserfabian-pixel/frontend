@@ -5,11 +5,16 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControlLabel, Switch, Chip, TablePagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function TiposServicioPage() {
   const { tienePermiso } = usePermisos();
@@ -128,7 +133,7 @@ export default function TiposServicioPage() {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, color: '#0f172a' }}>
+        <Typography variant="h5" sx={{ fontWeight: 750, color: C.text }}>
           Tipos de Servicio
         </Typography>
         {puedeCrear && (
@@ -137,8 +142,8 @@ export default function TiposServicioPage() {
             startIcon={<Plus size={20} />}
             onClick={() => handleOpenModal()}
             sx={{
-              bgcolor: '#2563eb',
-              '&:hover': { bgcolor: '#1d4ed8' },
+              bgcolor: C.brand,
+              '&:hover': { bgcolor: C.brandDark },
               textTransform: 'none',
               borderRadius: 2
             }}
@@ -148,15 +153,15 @@ export default function TiposServicioPage() {
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+      <Paper sx={{ width: '100%', mb: 2, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <TableContainer>
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Nº</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#475569', textAlign: 'center' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#475569', textAlign: 'center' }}>Acciones</TableCell>
+              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                <TableCell sx={{ fontWeight: 800, color: C.textMuted }}>Nº</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: C.textMuted }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: C.textMuted, textAlign: 'center' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: C.textMuted, textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -168,7 +173,7 @@ export default function TiposServicioPage() {
                 </TableRow>
               ) : tipos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3, color: '#64748b' }}>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3, color: C.textMuted }}>
                     No hay tipos de servicio registrados
                   </TableCell>
                 </TableRow>
@@ -176,15 +181,16 @@ export default function TiposServicioPage() {
                 tipos.map((row, index) => (
                   <TableRow key={row.id} hover>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{row.nombre}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: C.text }}>{row.nombre}</TableCell>
                     <TableCell align="center">
                       <Chip 
                         label={row.estado ? 'Activo' : 'Inactivo'} 
                         size="small"
                         sx={{ 
-                          bgcolor: row.estado ? '#dcfce7' : '#fee2e2',
-                          color: row.estado ? '#166534' : '#991b1b',
-                          fontWeight: 500
+                          bgcolor: row.estado ? alpha(C.emerald, 0.16) : alpha(C.brand, 0.14),
+                          color: row.estado ? '#6ee7b7' : '#fda4af',
+                          border: `1px solid ${row.estado ? alpha(C.emerald, 0.35) : alpha(C.brandLight, 0.35)}`,
+                          fontWeight: 700
                         }} 
                       />
                     </TableCell>
@@ -193,7 +199,7 @@ export default function TiposServicioPage() {
                         <IconButton
                           size="small"
                           onClick={() => handleOpenModal(row)}
-                          sx={{ color: '#2563eb', mr: 1 }}
+                          sx={{ color: C.blue, mr: 1, bgcolor: alpha(C.blue, 0.09), border: `1px solid ${alpha(C.blue, 0.2)}` }}
                         >
                           <Edit size={18} />
                         </IconButton>
@@ -202,7 +208,7 @@ export default function TiposServicioPage() {
                         <IconButton
                           size="small"
                           onClick={() => handleDelete(row.id)}
-                          sx={{ color: '#ef4444' }}
+                          sx={{ color: C.brandLight, bgcolor: alpha(C.brand, 0.09), border: `1px solid ${alpha(C.brandLight, 0.2)}` }}
                         >
                           <Trash2 size={18} />
                         </IconButton>
@@ -275,8 +281,8 @@ export default function TiposServicioPage() {
               variant="contained" 
               disabled={isSubmitting}
               sx={{
-                bgcolor: '#2563eb',
-                '&:hover': { bgcolor: '#1d4ed8' },
+                bgcolor: C.brand,
+                '&:hover': { bgcolor: C.brandDark },
               }}
             >
               {isSubmitting ? 'Guardando...' : 'Guardar'}

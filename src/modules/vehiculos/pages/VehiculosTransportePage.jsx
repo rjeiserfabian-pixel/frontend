@@ -3,9 +3,14 @@ import {
   Box, Typography, Button, TextField, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, Paper, IconButton, InputAdornment, TablePagination 
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
 import VehiculosTransporteForm from '../components/VehiculosTransporteForm';
 import { useVehiculosTransporte } from '../hooks/useVehiculosTransporte';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
@@ -80,7 +85,7 @@ const VehiculosTransportePage = () => {
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
       
       {/* HEADER */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white', p: 3, borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: C.surface, p: 3, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <Box>
           <Typography variant="h5" fontWeight="bold" color="text.primary">
             Vehículos de Transporte
@@ -92,7 +97,7 @@ const VehiculosTransportePage = () => {
       </Box>
 
       {/* TOOLBAR */}
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', boxShadow: S.card }}>
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid', borderColor: 'grey.200' }}>
           <TextField
             size="small"
@@ -122,7 +127,7 @@ const VehiculosTransportePage = () => {
         {/* TABLE */}
         <TableContainer>
           <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell><strong>Placa</strong></TableCell>
                 <TableCell><strong>Marca / Modelo</strong></TableCell>
@@ -155,12 +160,12 @@ const VehiculosTransportePage = () => {
                     <TableCell>{vehiculo.carga_util ? `${vehiculo.carga_util} (Kg/Ton)` : '-'}</TableCell>
                     <TableCell align="center">
                       {puedeEditar && (
-                        <IconButton color="primary" onClick={() => handleOpenModal(vehiculo)}>
+                        <IconButton size="small" onClick={() => handleOpenModal(vehiculo)} title="Editar" sx={{ color: '#38bdf8', bgcolor: alpha(C.blue, 0.1), border: `1px solid ${alpha(C.blue, 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha(C.blue, 0.2) } }}>
                           <Edit size={18} />
                         </IconButton>
                       )}
                       {puedeEliminar && (
-                        <IconButton color="error" onClick={() => handleDelete(vehiculo.id)}>
+                        <IconButton size="small" onClick={() => handleDelete(vehiculo.id)} title="Eliminar" sx={{ ml: 0.75, color: '#fb7185', bgcolor: alpha(C.brand, 0.1), border: `1px solid ${alpha(C.brand, 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha(C.brand, 0.2) } }}>
                           <Trash2 size={18} />
                         </IconButton>
                       )}

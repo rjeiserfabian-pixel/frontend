@@ -8,6 +8,10 @@ import { Save, Upload, Eye, EyeOff, ReceiptText, CheckCircle2 } from 'lucide-rea
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 export const ConfiguracionEmpresaPage = () => {
@@ -224,9 +228,9 @@ export const ConfiguracionEmpresaPage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center p-6 rounded-lg" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: C.text }}>
             Configuración de Empresa
           </h1>
           <p className="text-slate-500 mt-1">Gestione los datos generales y la ubicación de su negocio.</p>
@@ -250,7 +254,7 @@ export const ConfiguracionEmpresaPage = () => {
       <div className="flex-1 overflow-y-auto flex flex-col gap-6">
         
         {/* DATOS GENERALES */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
           <p className="text-base font-bold text-blue-600 mb-1">Datos Generales</p>
           <hr className="border-slate-200 mb-6" />
           <div className="grid grid-cols-12 gap-4">
@@ -280,7 +284,7 @@ export const ConfiguracionEmpresaPage = () => {
         </div>
 
         {/* UBICACIÓN Y CONTACTO */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
           <p className="text-base font-bold text-blue-600 mb-1">Ubicación y Contacto</p>
           <hr className="border-slate-200 mb-6" />
           <div className="grid grid-cols-3 gap-4 mb-4">
@@ -373,7 +377,7 @@ export const ConfiguracionEmpresaPage = () => {
         </div>
 
         {/* PARÁMETROS DEL SISTEMA */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
           <p className="text-base font-bold text-blue-600 mb-1">Parámetros del Sistema</p>
           <hr className="border-slate-200 mb-6" />
           <div className="grid grid-cols-12 gap-4">
@@ -395,7 +399,7 @@ export const ConfiguracionEmpresaPage = () => {
         </div>
 
         {/* FACTURACIÓN ELECTRÓNICA (SUNAT / GRE) */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
           <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
             <p className="text-base font-bold text-blue-600 flex items-center gap-2">
               <ReceiptText size={18} />
@@ -504,7 +508,7 @@ export const ConfiguracionEmpresaPage = () => {
         </div>
 
         {/* LOGO */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
           <p className="text-base font-bold text-blue-600 mb-1">Logo de la Empresa</p>
           <hr className="border-slate-200 mb-6" />
           <div className="flex items-center gap-6">

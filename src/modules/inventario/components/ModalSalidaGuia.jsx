@@ -3,8 +3,12 @@ import {
   Box, Typography, Button, Select, MenuItem, FormControl, InputLabel, 
   CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 export default function ModalSalidaGuia({ open, onClose, onSuccess, guia }) {
   const [loading, setLoading] = useState(false);
@@ -65,8 +69,8 @@ export default function ModalSalidaGuia({ open, onClose, onSuccess, guia }) {
     : '';
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-      <DialogTitle sx={{ fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', pb: 2 }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '8px', border: `1px solid ${C.border}` } }}>
+      <DialogTitle sx={{ fontWeight: 'bold', borderBottom: `1px solid ${C.border}`, pb: 2 }}>
         Preparar Salida de Guía de Remisión
       </DialogTitle>
 

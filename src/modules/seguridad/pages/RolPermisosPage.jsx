@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Paper, CircularProgress, Chip, TextField,
   InputAdornment, LinearProgress, Checkbox, Select, MenuItem, FormControl,
-  InputLabel, Alert, Tooltip
+  Alert, Tooltip
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   ArrowLeft, Save, Search, LayoutDashboard, Users, ShieldAlert, Package,
   Wrench, ShoppingCart, Banknote, ShoppingBag, FileText, Wallet, Settings,
@@ -13,6 +14,10 @@ import {
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 // Mismo criterio de ícono/color por módulo padre que usa el sidebar, para que
 // esta pantalla se sienta parte del mismo sistema visual, no una isla aparte.
@@ -134,7 +139,7 @@ export default function RolPermisosPage() {
         position: 'top-end', icon: 'success', title: 'Permisos actualizados correctamente',
         showConfirmButton: false, timer: 1500, toast: true,
       });
-    } catch (error) {
+    } catch {
       Swal.fire('Error', 'No se pudieron guardar los permisos.', 'error');
     } finally {
       setGuardando(false);
@@ -173,7 +178,9 @@ export default function RolPermisosPage() {
   }, [permisosPorPadre]);
 
   const q = busqueda.trim().toLowerCase();
-  const coincide = (p) => !q || p.nombre?.toLowerCase().includes(q) || p.codigo?.toLowerCase().includes(q);
+  const coincide = useCallback((p) => (
+    !q || p.nombre?.toLowerCase().includes(q) || p.codigo?.toLowerCase().includes(q)
+  ), [q]);
 
   // Con búsqueda activa, un padre "coincide" si algún permiso suyo coincide —
   // así el usuario ve de inmediato en qué módulo está lo que busca.
@@ -184,7 +191,7 @@ export default function RolPermisosPage() {
       const todos = [...grupo.directos, ...Object.values(grupo.submodulos).flat()];
       return todos.some(coincide);
     });
-  }, [q, padresOrdenados, permisosPorPadre]);
+  }, [q, padresOrdenados, permisosPorPadre, coincide]);
 
   useEffect(() => {
     if (q && padresConCoincidencia && padresConCoincidencia.length > 0 && !padresConCoincidencia.includes(padreActivo)) {
@@ -209,7 +216,10 @@ export default function RolPermisosPage() {
   }
 
   const padresVisibles = q && padresConCoincidencia ? padresConCoincidencia : padresOrdenados;
-  const grupoActivo = padreActivo ? permisosPorPadre[padreActivo] : null;
+  const padreSeleccionado = padreActivo && padresVisibles.includes(padreActivo)
+    ? padreActivo
+    : (padresVisibles[0] || null);
+  const grupoActivo = padreSeleccionado ? permisosPorPadre[padreSeleccionado] : null;
 
   return (
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
@@ -218,14 +228,14 @@ export default function RolPermisosPage() {
         <Box>
           <Button
             size="small" startIcon={<ArrowLeft size={16} />} onClick={() => navigate('/roles')}
-            sx={{ textTransform: 'none', color: 'text.secondary', mb: 1, pl: 0 }}
+            sx={{ color: C.textMuted, mb: 1, pl: 0, '&:hover': { color: C.text } }}
           >
             Volver a Roles
           </Button>
-          <Typography variant="h5" fontWeight="800" color="#0f172a">
+          <Typography variant="h4" fontWeight="850" color={C.text} sx={{ lineHeight: 1.08 }}>
             Permisos de "{rol.nombre}"
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color={C.textMuted} sx={{ mt: 0.75 }}>
             {rol.descripcion || 'Elige qué módulos y acciones puede usar este rol.'}
           </Typography>
         </Box>
@@ -235,7 +245,7 @@ export default function RolPermisosPage() {
             startIcon={guardando ? <CircularProgress size={18} color="inherit" /> : <Save size={18} />}
             onClick={guardarPermisos}
             disabled={guardando}
-            sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 700, px: 3, boxShadow: 'none' }}
+            sx={{ fontWeight: 700, px: 3 }}
           >
             Guardar Cambios
           </Button>
@@ -243,7 +253,17 @@ export default function RolPermisosPage() {
       </Box>
 
       {rol.es_sistema && (
-        <Alert severity="info" sx={{ mb: 3, borderRadius: '12px' }}>
+        <Alert
+          severity="info"
+          sx={{
+            mb: 3,
+            borderRadius: 1,
+            bgcolor: alpha(C.blue, 0.08),
+            color: C.text,
+            border: `1px solid ${alpha(C.blue, 0.22)}`,
+            '& .MuiAlert-icon': { color: C.blue },
+          }}
+        >
           Este es un rol de sistema. Sus permisos no pueden ser modificados.
         </Alert>
       )}
@@ -257,7 +277,7 @@ export default function RolPermisosPage() {
         InputProps={{
           startAdornment: <InputAdornment position="start"><Search size={18} /></InputAdornment>,
         }}
-        sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: '14px', bgcolor: 'white' } }}
+        sx={{ mb: 3 }}
       />
 
       {/* Grid de cards por módulo padre */}
@@ -276,42 +296,48 @@ export default function RolPermisosPage() {
           const total = todosDelPadre.length;
           const pct = total > 0 ? Math.round((activos / total) * 100) : 0;
           const { Icon, color } = ICONO_PADRE[padre] || { Icon: Settings, color: '#64748b' };
-          const activo = padreActivo === padre;
+          const activo = padreSeleccionado === padre;
 
           return (
             <Paper
               key={padre}
-              elevation={0}
               onClick={() => setPadreActivo(padre)}
               sx={{
-                p: 2.5, borderRadius: '18px', cursor: 'pointer',
-                border: '2px solid', borderColor: activo ? color : 'divider',
-                bgcolor: activo ? `${color}10` : 'white',
+                p: 2.5,
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor: activo ? alpha(color, 0.72) : C.border,
+                bgcolor: activo ? alpha(color, 0.13) : alpha(C.surface, 0.96),
+                backgroundImage: activo
+                  ? `linear-gradient(180deg, ${alpha(color, 0.12)}, ${alpha(C.surface, 0.96)})`
+                  : `linear-gradient(180deg, ${alpha('#ffffff', 0.035)}, transparent 44%)`,
+                boxShadow: activo ? `0 18px 42px ${alpha(color, 0.14)}` : S.card,
                 transition: 'all 180ms ease',
                 position: 'relative', overflow: 'hidden',
-                '&:hover': { borderColor: color, boxShadow: `0 8px 20px -8px ${color}55`, transform: 'translateY(-2px)' },
+                '&:hover': { borderColor: alpha(color, 0.82), boxShadow: `0 18px 36px ${alpha(color, 0.18)}`, transform: 'translateY(-2px)' },
               }}
             >
               {activos > 0 && activos === total && (
                 <CheckCircle2 size={18} color="#22c55e" style={{ position: 'absolute', top: 10, right: 10 }} />
               )}
               <Box sx={{
-                width: 44, height: 44, borderRadius: '12px', bgcolor: `${color}18`,
+                width: 44, height: 44, borderRadius: 1.5, bgcolor: alpha(color, 0.14),
+                border: `1px solid ${alpha(color, 0.22)}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5,
               }}>
                 <Icon size={22} color={color} />
               </Box>
-              <Typography variant="subtitle1" fontWeight="700" color="#0f172a" noWrap>
+              <Typography variant="subtitle1" fontWeight="800" color={C.text} noWrap>
                 {padre}
               </Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight="600">
+              <Typography variant="caption" color={C.textMuted} fontWeight="700">
                 {activos}/{total} permisos
               </Typography>
               <LinearProgress
                 variant="determinate"
                 value={pct}
                 sx={{
-                  mt: 1, height: 6, borderRadius: 4, bgcolor: `${color}18`,
+                  mt: 1, height: 6, borderRadius: 4, bgcolor: alpha(color, 0.16),
                   '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 4 },
                 }}
               />
@@ -322,23 +348,23 @@ export default function RolPermisosPage() {
 
       {/* Detalle del módulo padre seleccionado */}
       {!grupoActivo ? (
-        <Paper elevation={0} sx={{ p: 6, borderRadius: '18px', border: '1px dashed', borderColor: 'divider', textAlign: 'center' }}>
-          <Typography variant="body1" color="text.secondary">
+        <Paper elevation={0} sx={{ p: 6, border: '1px dashed', borderColor: C.border, textAlign: 'center', bgcolor: alpha(C.surface, 0.82) }}>
+          <Typography variant="body1" color={C.textMuted}>
             Selecciona un módulo arriba para ver y activar sus permisos.
           </Typography>
         </Paper>
       ) : (
         <Box>
-          <Typography variant="h6" fontWeight="800" color="#0f172a" mb={2} display="flex" alignItems="center" gap={1.5}>
-            {(() => { const { Icon, color } = ICONO_PADRE[padreActivo] || {}; return Icon ? <Icon size={22} color={color} /> : null; })()}
-            {padreActivo}
+          <Typography variant="h6" fontWeight="850" color={C.text} mb={2} display="flex" alignItems="center" gap={1.5}>
+            {(() => { const { Icon, color } = ICONO_PADRE[padreSeleccionado] || {}; return Icon ? <Icon size={22} color={color} /> : null; })()}
+            {padreSeleccionado}
           </Typography>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
             {/* Permisos sin submódulo propio (ej. Dashboard, Compras) van en una sola card */}
             {grupoActivo.directos.length > 0 && (
               <TarjetaSubmodulo
-                titulo={padreActivo}
+                titulo={padreSeleccionado}
                 permisos={grupoActivo.directos.filter(coincide)}
                 permisosAsignados={permisosAsignados}
                 togglePermiso={togglePermiso}
@@ -380,7 +406,17 @@ function TarjetaSubmodulo({ titulo, permisos, permisosAsignados, togglePermiso, 
   const checkedIds = permisos.filter(p => !!permisosAsignados[p.id_permiso]);
 
   return (
-    <Paper elevation={0} sx={{ p: 2.5, borderRadius: '16px', border: '1px solid', borderColor: 'divider', bgcolor: 'white' }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.5,
+        border: '1px solid',
+        borderColor: C.border,
+        bgcolor: alpha(C.surface, 0.96),
+        backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.04)}, transparent 42%)`,
+        boxShadow: S.card,
+      }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Checkbox
@@ -391,13 +427,18 @@ function TarjetaSubmodulo({ titulo, permisos, permisosAsignados, togglePermiso, 
             disabled={disabled}
             sx={{ p: 0.5 }}
           />
-          <Typography variant="subtitle2" fontWeight="700">{titulo}</Typography>
+          <Typography variant="subtitle2" fontWeight="800" color={C.text}>{titulo}</Typography>
         </Box>
         <Chip
           label={`${activos}/${total}`} size="small"
-          color={activos > 0 ? 'primary' : 'default'}
           variant={activos > 0 ? 'filled' : 'outlined'}
-          sx={{ height: 20, fontSize: '0.7rem' }}
+          sx={{
+            height: 20,
+            fontSize: '0.7rem',
+            color: activos > 0 ? '#ffffff' : C.textMuted,
+            borderColor: C.border,
+            bgcolor: activos > 0 ? C.brand : 'transparent',
+          }}
         />
       </Box>
 
@@ -411,10 +452,18 @@ function TarjetaSubmodulo({ titulo, permisos, permisosAsignados, togglePermiso, 
                 label={etiqueta}
                 size="small"
                 onClick={() => !disabled && togglePermiso(p.id_permiso)}
-                color={activo ? 'primary' : 'default'}
                 variant={activo ? 'filled' : 'outlined'}
                 disabled={disabled}
-                sx={{ fontWeight: 600, cursor: disabled ? 'default' : 'pointer' }}
+                sx={{
+                  fontWeight: 700,
+                  cursor: disabled ? 'default' : 'pointer',
+                  color: activo ? '#ffffff' : C.textMuted,
+                  borderColor: activo ? alpha(C.brandLight, 0.32) : C.border,
+                  bgcolor: activo ? alpha(C.brand, 0.92) : alpha('#ffffff', 0.035),
+                  '&:hover': {
+                    bgcolor: activo ? C.brandDark : alpha('#ffffff', 0.07),
+                  },
+                }}
               />
             </Tooltip>
           );
@@ -422,10 +471,10 @@ function TarjetaSubmodulo({ titulo, permisos, permisosAsignados, togglePermiso, 
       </Box>
 
       {checkedIds.length > 0 && (
-        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: C.border, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {checkedIds.map(p => (
             <Box key={p.id_permiso} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>{p.nombre}</Typography>
+              <Typography variant="caption" color={C.textMuted} noWrap sx={{ flex: 1 }}>{p.nombre}</Typography>
               <FormControl size="small" sx={{ minWidth: 118 }}>
                 <Select
                   value={permisosAsignados[p.id_permiso]}

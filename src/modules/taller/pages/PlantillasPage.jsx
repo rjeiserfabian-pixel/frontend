@@ -5,11 +5,16 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControlLabel, Switch, Chip, TablePagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function PlantillasPage() {
   const { tienePermiso } = usePermisos();
@@ -169,10 +174,10 @@ export default function PlantillasPage() {
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <TableContainer sx={{ maxHeight: 'calc(100vh - 200px)' }}>
           <Table stickyHeader>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell><strong>Nombre</strong></TableCell>
                 <TableCell><strong>Descripción</strong></TableCell>
@@ -198,7 +203,7 @@ export default function PlantillasPage() {
               ) : (
                 plantillas.map((plantilla) => (
                   <TableRow key={plantilla.id} hover>
-                    <TableCell fontWeight="500">{plantilla.nombre}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#f8fafc' }}>{plantilla.nombre}</TableCell>
                     <TableCell>{plantilla.descripcion || '-'}</TableCell>
                     <TableCell align="right">{plantilla.precio_base || '-'}</TableCell>
                     <TableCell align="right">{plantilla.tiempo_estimado_minutos || '-'}</TableCell>
@@ -211,12 +216,12 @@ export default function PlantillasPage() {
                     </TableCell>
                     <TableCell align="center">
                       {puedeEditar && (
-                        <IconButton onClick={() => handleOpenModal(plantilla)} color="primary" size="small">
+                        <IconButton onClick={() => handleOpenModal(plantilla)} color="secondary" size="small" sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                           <Edit size={18} />
                         </IconButton>
                       )}
                       {puedeEliminar && (
-                        <IconButton onClick={() => handleDelete(plantilla.id)} color="error" size="small">
+                        <IconButton onClick={() => handleDelete(plantilla.id)} color="error" size="small" sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}>
                           <Trash2 size={18} />
                         </IconButton>
                       )}

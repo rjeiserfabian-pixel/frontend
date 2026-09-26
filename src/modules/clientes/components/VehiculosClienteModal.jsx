@@ -4,9 +4,13 @@ import {
   Chip, CircularProgress, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Printer, X, Users } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { clienteService } from '../services/clienteService';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 export default function VehiculosClienteModal({ open, onClose, clienteId }) {
   const [data, setData] = useState(null);
@@ -68,7 +72,7 @@ export default function VehiculosClienteModal({ open, onClose, clienteId }) {
           </Box>
         ) : !data ? null : (
           <>
-            <Box sx={{ mb: 2, p: 2, bgcolor: '#f8fafc', borderRadius: '10px' }}>
+            <Box sx={{ mb: 2, p: 2, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}`, borderRadius: '8px' }}>
               <Typography variant="body2"><strong>{data.cliente.tipo_documento}:</strong> {data.cliente.dni}</Typography>
               <Typography variant="body2"><strong>Teléfono:</strong> {data.cliente.telefono || '-'}</Typography>
               <Typography variant="body2"><strong>Total de vehículos:</strong> {data.total_vehiculos}</Typography>

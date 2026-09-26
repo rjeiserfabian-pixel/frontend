@@ -4,9 +4,14 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Chip, Button, CircularProgress
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Eye, ArrowLeft, User, Inbox } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function CuentasCobrarClientePage() {
   const { clienteId } = useParams();
@@ -73,8 +78,8 @@ export default function CuentasCobrarClientePage() {
 
       {/* HEADER */}
       <Box sx={{
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-        borderRadius: 4, color: 'white', p: 3, mb: 3,
+        background: `linear-gradient(135deg, ${C.bgElevated}, ${C.surfaceSoft})`,
+        border: `1px solid ${C.border}`, borderRadius: '8px', color: 'white', p: 3, mb: 3,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
         boxShadow: '0 8px 24px rgba(30,58,138,0.25)'
       }}>
@@ -97,17 +102,17 @@ export default function CuentasCobrarClientePage() {
         </Box>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+      <Paper elevation={0} sx={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f1f5f9' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>CÓD. CRÉDITO</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>NRO VENTA</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>MONTO FINANCIADO</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>ESTADO</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>ACCIONES</TableCell>
+              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>CÓD. CRÉDITO</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>NRO VENTA</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>MONTO FINANCIADO</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ESTADO</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ACCIONES</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -124,9 +129,9 @@ export default function CuentasCobrarClientePage() {
                 </TableRow>
               ) : (
                 cuentas.map((row) => (
-                  <TableRow key={row.id} hover sx={{ '&:hover': { bgcolor: '#f8fafc' } }}>
+                  <TableRow key={row.id} hover>
                     <TableCell sx={{ fontWeight: 600 }}>{row.codigo_credito}</TableCell>
-                    <TableCell sx={{ color: '#64748b' }}>{row.venta_serie}</TableCell>
+                    <TableCell sx={{ color: '#7dd3fc', fontWeight: 700 }}>{row.venta_serie}</TableCell>
                     <TableCell align="right">S/ {Number(row.monto_financiado).toFixed(2)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: row.saldo_pendiente > 0 ? '#dc2626' : '#16a34a' }}>
                       S/ {Number(row.saldo_pendiente).toFixed(2)}
@@ -137,7 +142,7 @@ export default function CuentasCobrarClientePage() {
                         size="small"
                         onClick={() => handleOpenCuotas(row)}
                         title="Ver Cuotas"
-                        sx={{ bgcolor: '#eff6ff', color: '#2563eb', '&:hover': { bgcolor: '#dbeafe' } }}
+                        sx={{ bgcolor: alpha(C.blue, 0.08), color: C.blue, border: `1px solid ${alpha(C.blue, 0.18)}`, '&:hover': { bgcolor: alpha(C.blue, 0.16) } }}
                       >
                         <Eye size={18} />
                       </IconButton>

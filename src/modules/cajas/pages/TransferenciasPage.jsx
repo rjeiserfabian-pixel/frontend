@@ -4,11 +4,16 @@ import {
   Box, Card, CardContent, Typography, TextField, Button,
   MenuItem, Alert, CircularProgress, InputAdornment, Divider
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, ArrowRightLeft, History } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { getSesiones, crearTransferencia } from '../services/cajas.service';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import PrintTransferenciaComponent from '../components/PrintTransferenciaComponent';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function TransferenciasPage() {
   const navigate = useNavigate();
@@ -95,9 +100,9 @@ export default function TransferenciasPage() {
         </Button>
       </Box>
 
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px', overflow: 'hidden', boxShadow: S.card }}>
         {/* Encabezado Visual */}
-        <Box sx={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', p: 3, color: 'white' }}>
+        <Box sx={{ background: `linear-gradient(135deg, ${C.bgElevated} 0%, ${C.surfaceSoft} 100%)`, p: 3, color: 'white' }}>
           <Box display="flex" alignItems="center" gap={2}>
             <Box sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
               <ArrowRightLeft size={28} color="white" />
@@ -116,10 +121,10 @@ export default function TransferenciasPage() {
           {error   && <Alert severity="error"   sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-          <Box sx={{ bgcolor: '#f8fafc', p: 3.5, borderRadius: 3, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+          <Box sx={{ bgcolor: C.bgElevated, p: 3.5, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
             <TextField 
               select fullWidth label="Caja Origen" value={sesionOrigen} onChange={e => setSesionOrigen(e.target.value)}
-              sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             >
               {sesiones.map(s => (
                 <MenuItem key={s.id} value={String(s.id)}>
@@ -130,7 +135,7 @@ export default function TransferenciasPage() {
 
             <TextField 
               select fullWidth label="Caja Destino" value={sesionDestino} onChange={e => setSesionDestino(e.target.value)}
-              sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             >
               {sesiones.filter(s => String(s.id) !== String(sesionOrigen)).map(s => (
                 <MenuItem key={s.id} value={String(s.id)}>
@@ -141,12 +146,12 @@ export default function TransferenciasPage() {
 
             {/* Vista previa */}
             {sesionOrigenData && sesionDestinoData && (
-              <Box bgcolor="#eff6ff" border="1px solid #bfdbfe" borderRadius={2} p={2.5} display="flex" alignItems="center" gap={2}>
+              <Box bgcolor={alpha(C.blue, 0.12)} border={`1px solid ${alpha(C.blue, 0.38)}`} borderRadius={2} p={2.5} display="flex" alignItems="center" gap={2}>
                 <Box textAlign="center" flex={1}>
                   <Typography variant="body2" fontWeight={700}>{sesionOrigenData.caja_nombre}</Typography>
                   <Typography variant="caption" color="text.secondary">Origen</Typography>
                 </Box>
-                <ArrowRightLeft size={20} color="#3b82f6" />
+                <ArrowRightLeft size={20} color="#7dd3fc" />
                 <Box textAlign="center" flex={1}>
                   <Typography variant="body2" fontWeight={700}>{sesionDestinoData.caja_nombre}</Typography>
                   <Typography variant="caption" color="text.secondary">Destino</Typography>
@@ -157,14 +162,14 @@ export default function TransferenciasPage() {
             <TextField
               fullWidth label="Monto a transferir (S/)" type="number" value={monto} onChange={e => setMonto(e.target.value)}
               InputProps={{ startAdornment: <InputAdornment position="start">S/</InputAdornment> }}
-              sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
               fullWidth label="Motivo / Descripción" multiline rows={2}
               value={motivo} onChange={e => setMotivo(e.target.value)}
               placeholder="Ej: Reposición de fondo para Caja Chica"
-              sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <Divider sx={{ my: 1 }} />

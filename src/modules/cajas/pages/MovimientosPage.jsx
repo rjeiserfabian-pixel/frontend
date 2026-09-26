@@ -6,11 +6,16 @@ import {
   Paper, CircularProgress, Alert, Divider, IconButton, Tooltip,
   TextField, MenuItem, Grid, TablePagination, Stack
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, RefreshCw, Plus, Check, X } from 'lucide-react';
 import { getDetalleSesion, aprobarMovimiento, rechazarMovimiento } from '../services/cajas.service';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const fmtMoney = (v) =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v ?? 0);
@@ -250,15 +255,15 @@ export default function MovimientosPage() {
       <Box sx={{ marginBottom: '24px' }}>
       <Grid container spacing={3}>
         {[
-          { label: 'Saldo Inicial', value: fmtMoney(resumen?.saldo_inicial), color: '#64748b', bg: '#f1f5f9' },
-          { label: 'Ingresos',      value: fmtMoney(resumen?.ingresos),      color: '#16a34a', bg: '#f0fdf4' },
-          { label: 'Egresos',       value: fmtMoney(resumen?.egresos),       color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Saldo Actual',  value: fmtMoney(resumen?.saldo_actual),  color: '#2563eb', bg: '#eff6ff' },
+          { label: 'Saldo Inicial', value: fmtMoney(resumen?.saldo_inicial), color: '#cbd5e1', bg: alpha(C.surfaceSoft, 0.78) },
+          { label: 'Ingresos',      value: fmtMoney(resumen?.ingresos),      color: '#6ee7b7', bg: alpha(C.emerald, 0.14) },
+          { label: 'Egresos',       value: fmtMoney(resumen?.egresos),       color: '#fda4af', bg: alpha(C.brand, 0.14) },
+          { label: 'Saldo Actual',  value: fmtMoney(resumen?.saldo_actual),  color: '#7dd3fc', bg: alpha(C.blue, 0.14) },
         ].map(k => (
           <Grid size={{ xs: 12, sm: 6, md: 3 }} key={k.label}>
             <Card elevation={0} sx={{
-              border: '1px solid', borderColor: 'divider', borderRadius: 3,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px',
+              boxShadow: S.card,
               transition: 'box-shadow .2s',
               '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.10)' },
             }}>
@@ -289,7 +294,7 @@ export default function MovimientosPage() {
             '& .MuiOutlinedInput-root': {
               borderRadius: '8px',
               height: '36px',
-              backgroundColor: '#fff',
+              backgroundColor: C.surface,
               '& fieldset': { borderColor: '#d1d5db' },
               '&:hover fieldset': { borderColor: '#6366f1' },
               '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: '1.5px' },
@@ -311,7 +316,7 @@ export default function MovimientosPage() {
             '& .MuiOutlinedInput-root': {
               borderRadius: '8px',
               height: '36px',
-              backgroundColor: '#fff',
+              backgroundColor: C.surface,
               '& fieldset': { borderColor: '#d1d5db' },
               '&:hover fieldset': { borderColor: '#6366f1' },
               '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: '1.5px' },
@@ -332,10 +337,10 @@ export default function MovimientosPage() {
       </Stack>
 
       {/* Tabla con paginación */}
-      <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+      <Paper elevation={0} sx={{ border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px', boxShadow: S.card }}>
         <TableContainer>
           <Table size="small">
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Fecha / Hora</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Tipo</TableCell>

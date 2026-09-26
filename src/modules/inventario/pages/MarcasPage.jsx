@@ -5,11 +5,16 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, TablePagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function MarcasPage() {
   const { tienePermiso } = usePermisos();
@@ -141,7 +146,7 @@ export default function MarcasPage() {
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -149,7 +154,7 @@ export default function MarcasPage() {
         ) : (
           <TableContainer>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
                   <TableCell><strong>Nº</strong></TableCell>
                   <TableCell><strong>Nombre</strong></TableCell>
@@ -168,12 +173,12 @@ export default function MarcasPage() {
                       <TableCell>{row.nombre}</TableCell>
                       <TableCell align="center">
                         {puedeEditar && (
-                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                          <IconButton color="secondary" onClick={() => handleOpenModal(row)} size="small" sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                             <Edit size={18} />
                           </IconButton>
                         )}
                         {puedeEliminar && (
-                          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                          <IconButton color="error" onClick={() => handleDelete(row.id)} size="small" sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}>
                             <Trash2 size={18} />
                           </IconButton>
                         )}

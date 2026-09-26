@@ -5,6 +5,7 @@ import {
   Typography, Button, Chip, CircularProgress,
   Alert, Divider, IconButton, Tooltip, Stack
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Banknote, TrendingUp, TrendingDown,
   Plus, Eye, ArrowRightLeft, Lock,
@@ -12,6 +13,10 @@ import {
 } from 'lucide-react';
 import { getDashboardCajas } from '../services/cajas.service';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 // ── Helpers ──────────────────────────────────────────────────────
 const fmtMoney = (v) =>
@@ -37,10 +42,11 @@ const CajaCard = ({ item, onAbrir }) => {
       elevation={0}
       sx={{
         border: '1px solid',
-        borderColor: abierta ? 'success.light' : 'divider',
-        borderRadius: 3,
+        borderColor: abierta ? alpha(C.emerald, 0.5) : C.border,
+        bgcolor: C.surface,
+        borderRadius: '8px',
         transition: 'box-shadow .2s',
-        '&:hover': { boxShadow: 4 },
+        '&:hover': { boxShadow: S.card },
       }}
     >
       <CardContent sx={{ p: 2.5, pb: 1.5 }}>
@@ -59,7 +65,7 @@ const CajaCard = ({ item, onAbrir }) => {
 
         {/* Saldo */}
         <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-          <Box sx={{ bgcolor: '#eff6ff', borderRadius: 2, p: 1, color: '#3b82f6', flexShrink: 0 }}>
+          <Box sx={{ bgcolor: alpha(C.blue, 0.14), borderRadius: 2, p: 1, color: '#7dd3fc', flexShrink: 0 }}>
             <Wallet size={20} />
           </Box>
           <Box>
@@ -152,7 +158,7 @@ export default function DashboardCajasPage() {
       <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ marginBottom: '24px' }}>
         <Box>
           <Box display="flex" alignItems="center" gap={1.5}>
-            <Box sx={{ bgcolor: '#fef9c3', borderRadius: 2, p: 0.8, display: 'inline-flex', alignItems: 'center', color: '#ca8a04', flexShrink: 0, width: 'fit-content' }}>
+            <Box sx={{ bgcolor: alpha(C.amber, 0.14), borderRadius: 2, p: 0.8, display: 'inline-flex', alignItems: 'center', color: '#fcd34d', flexShrink: 0, width: 'fit-content' }}>
               <Landmark size={22} />
             </Box>
             <Typography variant="h5" fontWeight={700}>Módulo de Cajas</Typography>
@@ -195,10 +201,10 @@ export default function DashboardCajasPage() {
         ].map((k) => (
           <Grid size={{ xs: 12, sm: 6, md: 3 }} key={k.label}>
             <Card elevation={0} sx={{
-              border: '1px solid', borderColor: 'divider', borderRadius: 3,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px',
+              boxShadow: S.card,
               transition: 'box-shadow .2s',
-              '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.10)' },
+              '&:hover': { boxShadow: S.floating },
             }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2.5, p: 2.5, '&:last-child': { pb: 2.5 } }}>
                 <Box sx={{ bgcolor: `${k.color}18`, borderRadius: 2.5, p: 1.5, color: k.color, flexShrink: 0 }}>{k.icon}</Box>

@@ -4,7 +4,11 @@ import {
   Box, Typography, Grid, Paper, Table, TableHead, TableRow, TableCell, TableBody,
   Divider, IconButton, Chip
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { X, Truck, MapPin, User, Calendar, FileText, Package } from 'lucide-react';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 const ESTADO_CHIP = {
   CREADA: { label: 'Creada', color: 'default' },
@@ -29,12 +33,12 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
       PaperProps={{
         sx: {
           borderRadius: 2,
-          bgcolor: '#f8fafc'
+          bgcolor: C.bgElevated
         }
       }}
     >
       <Box sx={{
-        bgcolor: '#1e293b',
+        bgcolor: C.bgElevated,
         color: 'white',
         p: 2.5,
         display: 'flex',
@@ -60,7 +64,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
       </Box>
 
       <DialogContent sx={{ p: 3 }}>
-        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: '8px', border: `1px solid ${C.border}`, bgcolor: alpha('#ffffff', 0.025) }}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
@@ -164,7 +168,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
             {guia.observacion_entrega && (
               <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mb: 1 }}>Observacion de entrega:</Typography>
-                <Typography variant="body2" sx={{ bgcolor: '#f8fafc', p: 1.5, borderRadius: 1, border: '1px solid #e2e8f0' }}>
+                <Typography variant="body2" sx={{ bgcolor: alpha('#ffffff', 0.04), p: 1.5, borderRadius: '8px', border: `1px solid ${C.border}` }}>
                   {guia.observacion_entrega}
                 </Typography>
               </Grid>
@@ -181,7 +185,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
               <Grid size={{ xs: 12 }}>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mb: 1 }}>Observaciones:</Typography>
-                <Typography variant="body2" sx={{ bgcolor: '#f1f5f9', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="body2" sx={{ bgcolor: alpha('#ffffff', 0.04), p: 1.5, borderRadius: '8px', border: `1px solid ${C.border}` }}>
                   {guia.observaciones}
                 </Typography>
               </Grid>
@@ -189,13 +193,13 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
           </Grid>
         </Paper>
 
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#1e293b' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: C.text }}>
           Bienes a Transportar ({guia.detalles?.length || 0})
         </Typography>
 
-        <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
+        <Paper elevation={0} sx={{ border: `1px solid ${C.border}`, borderRadius: '8px', overflow: 'hidden' }}>
           <Table size="small">
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell><b>Código</b></TableCell>
                 <TableCell><b>Descripción</b></TableCell>
@@ -210,7 +214,7 @@ export default function ModalDetalleGuiaRemision({ open, onClose, guia }) {
                   <TableCell>{det.repuesto_nombre}</TableCell>
                   <TableCell align="center">{det.repuesto_unidad || '-'}</TableCell>
                   <TableCell align="center">
-                    <Typography sx={{ fontWeight: 'bold', color: '#2563eb' }}>
+                    <Typography sx={{ fontWeight: 'bold', color: C.blue }}>
                       {parseFloat(det.cantidad)}
                     </Typography>
                   </TableCell>

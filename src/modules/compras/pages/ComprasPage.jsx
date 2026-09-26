@@ -4,12 +4,17 @@ import {
   Chip, CircularProgress, TablePagination, Autocomplete, TextField, MenuItem, IconButton,
   Dialog, DialogContent, DialogActions, Divider, Grid
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, FileText, Ban, CreditCard, X, Receipt, Package, Wallet, Truck, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
 import { proveedorService } from '../../clientes/services/proveedorService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const ESTADOS = ['Completada', 'Anulada'];
 const TIPOS_PAGO = ['Contado', 'Credito'];
@@ -182,7 +187,7 @@ const ComprasPage = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, color: '#0f172a' }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: C.text }}>
           Listado de Compras
         </Typography>
         {puedeCrear && (
@@ -191,8 +196,8 @@ const ComprasPage = () => {
             startIcon={<Plus size={20} />}
             onClick={() => navigate('/compras/nueva')}
             sx={{
-              bgcolor: '#2563eb',
-              '&:hover': { bgcolor: '#1d4ed8' },
+              bgcolor: C.brand,
+              '&:hover': { bgcolor: C.brandDark },
               textTransform: 'none',
               borderRadius: 2
             }}
@@ -202,7 +207,7 @@ const ComprasPage = () => {
         )}
       </Box>
 
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+      <Paper sx={{ p: 2, mb: 2, borderRadius: '8px', bgcolor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
           <Autocomplete
             size="small"
@@ -244,7 +249,7 @@ const ComprasPage = () => {
             size="small"
             label="Desde"
             InputLabelProps={{ shrink: true }}
-            inputProps={{ style: { colorScheme: 'light' } }}
+            inputProps={{ style: { colorScheme: 'dark' } }}
             sx={{ width: 160 }}
             value={filtroFechaDesde}
             onChange={(e) => cambiarFiltro(setFiltroFechaDesde)(e.target.value)}
@@ -254,7 +259,7 @@ const ComprasPage = () => {
             size="small"
             label="Hasta"
             InputLabelProps={{ shrink: true }}
-            inputProps={{ style: { colorScheme: 'light' } }}
+            inputProps={{ style: { colorScheme: 'dark' } }}
             sx={{ width: 160 }}
             value={filtroFechaHasta}
             onChange={(e) => cambiarFiltro(setFiltroFechaHasta)(e.target.value)}
@@ -267,18 +272,18 @@ const ComprasPage = () => {
         </Box>
       </Paper>
 
-      <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+      <Paper sx={{ width: '100%', mb: 2, borderRadius: '8px', bgcolor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <TableContainer sx={{ maxHeight: 'calc(100vh - 250px)' }}>
           <Table stickyHeader sx={{ minWidth: 650 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Fecha</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Comprobante</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Proveedor</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Tipo Pago</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600, color: '#475569' }}>Total</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, color: '#475569' }}>Estado</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, color: '#475569' }}>Acciones</TableCell>
+              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd' }}>Fecha</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd' }}>Comprobante</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd' }}>Proveedor</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd' }}>Tipo Pago</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd' }}>Total</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd' }}>Estado</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -362,10 +367,10 @@ const ComprasPage = () => {
         onClose={cerrarDetalle}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+        PaperProps={{ sx: { borderRadius: '8px', overflow: 'hidden', bgcolor: C.bgElevated, border: `1px solid ${C.border}` } }}
       >
         <Box sx={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          background: `linear-gradient(135deg, ${C.bgElevated} 0%, ${C.surfaceSoft} 100%)`,
           color: 'white', px: 3, py: 2.5,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
@@ -387,7 +392,7 @@ const ComprasPage = () => {
           </IconButton>
         </Box>
 
-        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
+        <DialogContent sx={{ bgcolor: C.bgElevated, p: 3 }}>
           {detalleLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
@@ -397,20 +402,20 @@ const ComprasPage = () => {
               {/* PROVEEDOR Y COMPRA */}
               <Grid container spacing={2} sx={{ mb: 2.5 }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', height: '100%', bgcolor: C.surface, borderColor: C.border }}>
                     <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                       <Truck size={15} /> Proveedor
                     </Typography>
                     <Typography variant="body1" fontWeight={700} sx={{ mt: 0.5 }}>
                       {compraDetalle.proveedor_detalle?.nombre_o_razon_social}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#7dd3fc', fontWeight: 700 }}>
                       {compraDetalle.proveedor_detalle?.numero_documento}
                     </Typography>
                   </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, height: '100%', bgcolor: 'white' }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', height: '100%', bgcolor: C.surface, borderColor: C.border }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                         <CalendarDays size={15} /> Compra
@@ -423,7 +428,7 @@ const ComprasPage = () => {
               </Grid>
 
               {/* ITEMS */}
-              <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden', mb: 2.5, bgcolor: 'white' }}>
+              <Paper variant="outlined" sx={{ borderRadius: '8px', overflow: 'hidden', mb: 2.5, bgcolor: C.surface, borderColor: C.border }}>
                 <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
                   <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}>
                     <Package size={15} /> Repuestos Comprados
@@ -431,11 +436,11 @@ const ComprasPage = () => {
                 </Box>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: '#f1f5f9' }}>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Repuesto</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Cant.</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>P. Unit.</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Subtotal</TableCell>
+                    <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                      <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#bae6fd' }}>Repuesto</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#bae6fd' }}>Cant.</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#bae6fd' }}>P. Unit.</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#bae6fd' }}>Subtotal</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -455,7 +460,7 @@ const ComprasPage = () => {
               </Paper>
 
               {/* PAGO Y TOTALES */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, bgcolor: 'white' }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '8px', bgcolor: C.surface, borderColor: C.border }}>
                 <Typography variant="overline" sx={{ display: 'flex', alignItems: 'center', gap: 0.7, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5, mb: 1 }}>
                   <Wallet size={15} /> Pago y Totales
                 </Typography>
@@ -481,7 +486,7 @@ const ComprasPage = () => {
                     )}
                   </Grid>
                   <Grid size={{ xs: 12, sm: 5 }}>
-                    <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 2.5, p: 2 }}>
+                    <Box sx={{ bgcolor: alpha(C.blue, 0.12), border: `1px solid ${alpha(C.blue, 0.38)}`, borderRadius: '8px', p: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="body2" color="text.secondary">Subtotal</Typography>
                         <Typography variant="body2" fontWeight={600}>S/ {parseFloat(compraDetalle.subtotal).toFixed(2)}</Typography>
@@ -490,10 +495,10 @@ const ComprasPage = () => {
                         <Typography variant="body2" color="text.secondary">IGV</Typography>
                         <Typography variant="body2" fontWeight={600}>S/ {parseFloat(compraDetalle.igv).toFixed(2)}</Typography>
                       </Box>
-                      <Divider sx={{ mb: 1.5, borderColor: '#bfdbfe' }} />
+                      <Divider sx={{ mb: 1.5, borderColor: alpha(C.blue, 0.38) }} />
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="body1" fontWeight={700}>TOTAL</Typography>
-                        <Typography variant="h5" fontWeight={800} color="primary.main">
+                        <Typography variant="h5" fontWeight={800} sx={{ color: '#7dd3fc' }}>
                           S/ {parseFloat(compraDetalle.total).toFixed(2)}
                         </Typography>
                       </Box>
@@ -506,7 +511,7 @@ const ComprasPage = () => {
             <Typography color="text.secondary">No se pudo cargar el detalle.</Typography>
           )}
         </DialogContent>
-        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
+        <DialogActions sx={{ bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}`, px: 3, py: 2 }}>
           {compraDetalle?.tipo_pago === 'Credito' && (
             <Button onClick={() => verCuentaPorPagar(compraDetalle)} sx={{ textTransform: 'none', fontWeight: 700 }}>
               Ver cuenta por pagar

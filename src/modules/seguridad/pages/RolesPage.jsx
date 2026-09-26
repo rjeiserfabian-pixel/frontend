@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  CircularProgress, TablePagination
+  CircularProgress, TablePagination, Chip
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, ShieldCheck } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import api from '../../../core/api/axios';
-
 import Swal from 'sweetalert2';
+import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function RolesPage() {
   const navigate = useNavigate();
@@ -24,15 +28,13 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
-  // Pagination states
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const resRoles = await api.get(`seguridad/roles/?page=${page + 1}`);
@@ -40,15 +42,15 @@ export default function RolesPage() {
       setRoles(rolesData.results ? rolesData.results : (Array.isArray(rolesData) ? rolesData : []));
       setTotalCount(rolesData.count !== undefined ? rolesData.count : (rolesData.results ? rolesData.results.length : rolesData.length));
     } catch (error) {
-      console.error("Error al cargar roles:", error);
+      console.error('Error al cargar roles:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
   useEffect(() => {
     fetchData();
-  }, [page]);
+  }, [fetchData]);
 
   const handleOpen = (rol = null) => {
     if (rol) {
@@ -75,6 +77,7 @@ export default function RolesPage() {
       } else {
         await api.post('seguridad/roles/', payload);
       }
+
       handleClose();
       fetchData();
 
@@ -91,13 +94,13 @@ export default function RolesPage() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: '¿Estás seguro?',
-      text: "El rol será eliminado permanentemente.",
+      title: 'Estas seguro?',
+      text: 'El rol sera eliminado permanentemente.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'Si, eliminar',
       cancelButtonText: 'Cancelar'
     });
 
@@ -106,20 +109,32 @@ export default function RolesPage() {
         await api.delete(`seguridad/roles/${id}/`);
         fetchData();
         Swal.fire('Eliminado', 'El rol ha sido eliminado.', 'success');
-      } catch (error) {
-        Swal.fire('Error', 'No se pudo eliminar el rol. Puede que esté asignado a usuarios.', 'error');
+      } catch {
+        Swal.fire('Error', 'No se pudo eliminar el rol. Puede que este asignado a usuarios.', 'error');
       }
     }
   };
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+          mb: 4,
+        }}
+      >
         <Box>
-          <Typography variant="h5" fontWeight="bold" color="slate.800">
-            Gestión de Roles y Permisos
+          <Typography variant="overline" sx={{ color: C.brandLight, fontWeight: 800, letterSpacing: 0.8 }}>
+            Seguridad
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="h4" sx={{ fontWeight: 850, color: C.text, lineHeight: 1.08 }}>
+            Gestion de Roles y Permisos
+          </Typography>
+          <Typography variant="body2" sx={{ color: C.textMuted, mt: 0.75 }}>
             Crea los roles del sistema y entra a cada uno para configurar sus permisos.
           </Typography>
         </Box>
@@ -128,20 +143,28 @@ export default function RolesPage() {
             variant="contained"
             startIcon={<Plus size={18} />}
             onClick={() => handleOpen()}
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
           >
             Nuevo Rol
           </Button>
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper
+        sx={{
+          width: '100%',
+          overflow: 'hidden',
+          background:
+            `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 42%), ${C.surface}`,
+          border: `1px solid ${C.border}`,
+          boxShadow: S.card,
+        }}
+      >
         <TableContainer>
           <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Rol</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>Acciones</TableCell>
+                <TableCell>Rol</TableCell>
+                <TableCell align="right">Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -156,25 +179,57 @@ export default function RolesPage() {
                 return (
                   <TableRow key={idRol} hover>
                     <TableCell>
-                      <Typography fontWeight="600" color="slate.800">
-                        {rol.nombre}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {rol.descripcion || 'Sin descripción'}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: C.brandLight,
+                            bgcolor: alpha(C.brand, 0.12),
+                            border: `1px solid ${alpha(C.brandLight, 0.24)}`,
+                            flexShrink: 0,
+                          }}
+                        >
+                          <ShieldCheck size={18} />
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography fontWeight="800" color={C.text}>
+                            {rol.nombre}
+                          </Typography>
+                          <Typography variant="body2" color={C.textMuted}>
+                            {rol.descripcion || 'Sin descripcion'}
+                          </Typography>
+                        </Box>
+                        {rol.es_sistema && (
+                          <Chip
+                            label="Sistema"
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              ml: { xs: 0, sm: 1 },
+                              color: C.blue,
+                              borderColor: alpha(C.blue, 0.36),
+                              bgcolor: alpha(C.blue, 0.08),
+                            }}
+                          />
+                        )}
+                      </Box>
                     </TableCell>
                     <TableCell align="right">
                       <IconButton
-                        color="primary"
                         onClick={() => navigate(`/roles/${idRol}/permisos`)}
                         size="small"
-                        sx={{ mr: 1 }}
+                        sx={{ mr: 1, color: C.brandLight, bgcolor: alpha(C.brand, 0.08) }}
                         title="Configurar permisos"
                       >
                         <ShieldCheck size={18} />
                       </IconButton>
                       {puedeEditar && (
-                        <IconButton color="primary" onClick={() => handleOpen(rol)} size="small" sx={{ mr: 1 }} title="Editar rol">
+                        <IconButton onClick={() => handleOpen(rol)} size="small" sx={{ mr: 1, color: C.blue }} title="Editar rol">
                           <Edit size={18} />
                         </IconButton>
                       )}
@@ -189,7 +244,7 @@ export default function RolesPage() {
               })}
               {!loading && roles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={2} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                  <TableCell colSpan={2} align="center" sx={{ py: 4, color: C.textMuted }}>
                     No se encontraron roles.
                   </TableCell>
                 </TableRow>
@@ -205,12 +260,11 @@ export default function RolesPage() {
             onPageChange={(e, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
             rowsPerPageOptions={[25]}
-            labelRowsPerPage="Filas por página:"
+            labelRowsPerPage="Filas por pagina:"
           />
         )}
       </Paper>
 
-      {/* Modal Crear/Editar Rol */}
       <Dialog open={openModal} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogTitle fontWeight="bold">
@@ -218,7 +272,7 @@ export default function RolesPage() {
           </DialogTitle>
           <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 3 }}>
             <TextField
-              label="Nombre del Rol (ej. Vendedor, Mecánico)"
+              label="Nombre del Rol (ej. Vendedor, Mecanico)"
               fullWidth
               size="small"
               {...register('nombre', { required: 'Requerido' })}
@@ -226,7 +280,7 @@ export default function RolesPage() {
               helperText={errors.nombre?.message}
             />
             <TextField
-              label="Descripción"
+              label="Descripcion"
               fullWidth
               multiline
               rows={3}
@@ -235,8 +289,8 @@ export default function RolesPage() {
             />
           </DialogContent>
           <DialogActions sx={{ p: 2, pt: 1 }}>
-            <Button onClick={handleClose} color="inherit" sx={{ textTransform: 'none' }}>Cancelar</Button>
-            <Button type="submit" variant="contained" sx={{ textTransform: 'none' }}>
+            <Button onClick={handleClose} color="inherit">Cancelar</Button>
+            <Button type="submit" variant="contained">
               {editingId ? 'Guardar Cambios' : 'Crear Rol'}
             </Button>
           </DialogActions>

@@ -3,10 +3,15 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, 
   TextField, Button, CircularProgress, MenuItem, Select, FormControl, InputLabel, FormHelperText
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export const UbigeoPage = () => {
   const { tienePermiso } = usePermisos();
@@ -252,16 +257,16 @@ export const UbigeoPage = () => {
   };
 
   const renderTable = (items, type) => (
-    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+    <div className="overflow-x-auto rounded-lg" style={{ border: `1px solid ${C.border}` }}>
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="p-4 font-medium text-slate-600 w-16">Nº</th>
-            <th className="p-4 font-medium text-slate-600">Nombre</th>
-            <th className="p-4 font-medium text-slate-600 text-right w-32">Acciones</th>
+          <tr className="border-b text-sky-200" style={{ backgroundColor: alpha(C.surfaceSoft, 0.92), borderColor: C.border }}>
+            <th className="p-4 font-bold text-sky-200 w-16">Nº</th>
+            <th className="p-4 font-bold text-sky-200">Nombre</th>
+            <th className="p-4 font-bold text-sky-200 text-right w-32">Acciones</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y" style={{ color: C.text, borderColor: C.border }}>
           {items.length === 0 ? (
             <tr>
               <td colSpan="3" className="p-4 text-center text-slate-500">
@@ -270,14 +275,14 @@ export const UbigeoPage = () => {
             </tr>
           ) : (
             items.map((item, index) => (
-              <tr key={item.id} className="hover:bg-slate-50">
-                <td className="p-4 text-slate-800">{index + 1}</td>
-                <td className="p-4 text-slate-800">{item.nombre}</td>
+              <tr key={item.id}>
+                <td className="p-4 text-slate-100">{index + 1}</td>
+                <td className="p-4 text-slate-100">{item.nombre}</td>
                 <td className="p-4 text-right space-x-2">
                   {puedeEditar && (
                     <button
                       onClick={() => openModal(type, item)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="inline-flex items-center justify-center w-8 h-8 text-sky-300 bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/20 rounded-md transition-colors"
                       title="Editar"
                     >
                       <Edit size={18} />
@@ -286,7 +291,7 @@ export const UbigeoPage = () => {
                   {puedeEliminar && (
                     <button
                       onClick={() => handleDelete(type, item.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="inline-flex items-center justify-center w-8 h-8 text-rose-300 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 rounded-md transition-colors"
                       title="Eliminar"
                     >
                       <Trash2 size={18} />
@@ -305,19 +310,19 @@ export const UbigeoPage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center p-6 rounded-lg" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-            <MapPin className="text-blue-600" size={32} />
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: C.text }}>
+            <MapPin color="#7dd3fc" size={32} />
             Gestión de Ubigeo
           </h1>
           <p className="text-slate-500 mt-1">Gestione los departamentos, provincias y distritos del sistema.</p>
         </div>
       </div>
 
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col shadow-sm">
+      <div className="flex-1 rounded-lg p-6 flex flex-col" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         {/* TABS */}
-        <div className="flex border-b border-slate-200 mb-6 overflow-x-auto">
+        <div className="flex border-b mb-6 overflow-x-auto" style={{ borderColor: C.border }}>
           <button 
             className={`px-6 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === 'departamentos' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             onClick={() => setActiveTab('departamentos')}
@@ -343,7 +348,7 @@ export const UbigeoPage = () => {
           {activeTab === 'departamentos' && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-slate-700">Listado de Departamentos</h2>
+                <h2 className="text-lg font-bold text-slate-100">Listado de Departamentos</h2>
                 {puedeCrear && (
                   <button
                     onClick={() => openModal('dep')}
@@ -360,7 +365,7 @@ export const UbigeoPage = () => {
           {activeTab === 'provincias' && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-slate-700">Listado de Provincias</h2>
+                <h2 className="text-lg font-bold text-slate-100">Listado de Provincias</h2>
                 {puedeCrear && (
                   <button
                     onClick={() => openModal('prov')}
@@ -377,7 +382,7 @@ export const UbigeoPage = () => {
           {activeTab === 'distritos' && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-slate-700">Listado de Distritos</h2>
+                <h2 className="text-lg font-bold text-slate-100">Listado de Distritos</h2>
                 {puedeCrear && (
                   <button
                     onClick={() => openModal('dist')}
@@ -394,12 +399,12 @@ export const UbigeoPage = () => {
       </div>
 
       {/* MODAL */}
-      <Dialog open={modalOpen} onClose={() => !saving && setModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog open={modalOpen} onClose={() => !saving && setModalOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: C.bgElevated, borderRadius: '8px', border: `1px solid ${C.border}` } }}>
+        <DialogTitle sx={{ color: C.text, fontWeight: 800, bgcolor: C.surface, borderBottom: `1px solid ${C.border}` }}>
           {editData ? 'Editar ' : 'Nuevo '} 
           {modalType === 'dep' ? 'Departamento' : modalType === 'prov' ? 'Provincia' : 'Distrito'}
         </DialogTitle>
-        <DialogContent dividers className="flex flex-col gap-5 pt-4">
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 3, bgcolor: C.bgElevated, borderColor: C.border }}>
           
           {modalType !== 'dep' && (
             <FormControl fullWidth size="small" error={!!formErrors.departamento_id}>
@@ -460,9 +465,9 @@ export const UbigeoPage = () => {
             helperText={formErrors.nombre}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModalOpen(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={handleSave} variant="contained" disabled={saving}>
+        <DialogActions sx={{ p: 2, bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}` }}>
+          <Button onClick={() => setModalOpen(false)} disabled={saving} variant="outlined" sx={{ color: '#e2e8f0', borderColor: C.border }}>Cancelar</Button>
+          <Button onClick={handleSave} variant="contained" disabled={saving} sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}>
             {saving ? <CircularProgress size={20} color="inherit" /> : 'Guardar'}
           </Button>
         </DialogActions>

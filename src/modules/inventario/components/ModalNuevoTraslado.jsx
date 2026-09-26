@@ -5,11 +5,16 @@ import {
   TableHead, TableRow, IconButton, Typography, CircularProgress,
   Box, Paper, Divider, Select, MenuItem, InputAdornment
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Trash2, Plus, X, Search, Package, Info, Calendar } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { useReactToPrint } from 'react-to-print';
 import PrintTrasladoComponent from './PrintTrasladoComponent';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
   const [almacenes, setAlmacenes] = useState([]);
@@ -216,14 +221,16 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
           maxWidth: '80%',
           height: '90vh',
           maxHeight: '90vh',
-          borderRadius: 2,
-          bgcolor: '#f4f7f9',
+          borderRadius: '8px',
+          bgcolor: C.bgElevated,
+          border: `1px solid ${C.border}`,
+          boxShadow: S.floating,
           overflow: 'hidden'
         }
       }}
     >
       <Box sx={{ 
-        bgcolor: '#1a365d', 
+        bgcolor: C.bgElevated,
         color: 'white', 
         p: 3, 
         display: 'flex', 
@@ -232,7 +239,8 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ 
-            bgcolor: '#3b82f6', 
+            bgcolor: alpha(C.brand, 0.16),
+            border: `1px solid ${alpha(C.brandLight, 0.26)}`,
             p: 1.5, 
             borderRadius: 2, 
             display: 'flex', 
@@ -245,7 +253,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             <Typography variant="h5" sx={{ fontWeight: 600, m: 0, lineHeight: 1.2 }}>
               Nuevo Movimiento de Almacén
             </Typography>
-            <Typography variant="body2" sx={{ color: '#94a3b8', mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: C.textMuted, mt: 0.5 }}>
               Registra un nuevo movimiento de productos entre almacenes
             </Typography>
           </Box>
@@ -256,17 +264,17 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
       </Box>
 
       <DialogContent sx={{ p: 3, m: 0, overflowY: 'auto' }}>
-        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: '8px', border: `1px solid ${C.border}`, bgcolor: alpha('#ffffff', 0.025) }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
             <Box sx={{ 
               width: 28, height: 28, borderRadius: '50%', 
-              bgcolor: '#3b82f6', color: 'white', 
+              bgcolor: alpha(C.brand, 0.16), color: '#ffffff', border: `1px solid ${alpha(C.brandLight, 0.26)}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 'bold', fontSize: '14px'
             }}>
               1
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: C.text }}>
               Información General
             </Typography>
           </Box>
@@ -275,8 +283,8 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             {/* Almacén Origen */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Package size={16} color="#3b82f6" />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>Almacén Origen *</Typography>
+                <Package size={16} color={C.blue} />
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>Almacén Origen *</Typography>
               </Box>
               <Autocomplete
                 fullWidth
@@ -298,8 +306,8 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             {/* Almacén Destino */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Package size={16} color="#3b82f6" />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>Almacén Destino *</Typography>
+                <Package size={16} color={C.blue} />
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>Almacén Destino *</Typography>
               </Box>
               <Autocomplete
                 fullWidth
@@ -322,7 +330,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/></svg>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>Tipo de Movimiento *</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>Tipo de Movimiento *</Typography>
               </Box>
               <TextField 
                 select
@@ -336,8 +344,8 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             {/* Fecha de Movimiento */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Calendar size={16} color="#3b82f6" />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>Fecha de Movimiento *</Typography>
+                <Calendar size={16} color={C.blue} />
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>Fecha de Movimiento *</Typography>
               </Box>
               <TextField 
                 fullWidth
@@ -348,12 +356,12 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             </Box>
           </Box>
 
-          <Divider sx={{ my: 3, borderColor: '#e2e8f0' }} />
+          <Divider sx={{ my: 3, borderColor: C.border }} />
 
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>Observaciones adicionales del traslado</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>Observaciones adicionales del traslado</Typography>
             </Box>
             <TextField
               fullWidth
@@ -363,24 +371,24 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
               value={observaciones}
               onChange={e => setObservaciones(e.target.value)}
               inputProps={{ maxLength: 500 }}
-              sx={{ '& .MuiInputBase-input::placeholder': { color: '#94a3b8', opacity: 1 }, bgcolor: 'white' }}
+              sx={{ '& .MuiInputBase-input::placeholder': { color: C.textSubtle, opacity: 1 }, bgcolor: alpha('#ffffff', 0.035) }}
               helperText={`${observaciones.length}/500`}
               FormHelperTextProps={{ sx: { textAlign: 'right', margin: 0, mt: 0.5 } }}
             />
           </Box>
         </Paper>
 
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <Paper elevation={0} sx={{ p: 3, borderRadius: '8px', border: `1px solid ${C.border}`, bgcolor: alpha('#ffffff', 0.025) }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
             <Box sx={{ 
               width: 28, height: 28, borderRadius: '50%', 
-              bgcolor: '#3b82f6', color: 'white', 
+              bgcolor: alpha(C.brand, 0.16), color: '#ffffff', border: `1px solid ${alpha(C.brandLight, 0.26)}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 'bold', fontSize: '14px'
             }}>
               2
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: C.text }}>
               Productos a Transferir
             </Typography>
           </Box>
@@ -435,9 +443,9 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             </Button>
           </Box>
 
-          <Table size="small" sx={{ mb: 3 }}>
+          <Table size="small" sx={{ mb: 3, border: `1px solid ${C.border}`, borderRadius: '8px', overflow: 'hidden' }}>
             <TableHead>
-              <TableRow sx={{ '& th': { borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: 600, py: 1.5 } }}>
+              <TableRow sx={{ '& th': { bgcolor: alpha(C.blue, 0.14), borderBottom: `2px solid ${alpha(C.blue, 0.28)}`, color: '#dbeafe', fontWeight: 800, py: 1.5 } }}>
                 <TableCell>Código</TableCell>
                 <TableCell>Producto</TableCell>
                 <TableCell align="center">U.M.</TableCell>
@@ -451,31 +459,31 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
             <TableBody>
               {detalles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#94a3b8' }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#cbd5e1' }}>
                     Agregue productos para transferir seleccionándolos arriba
                   </TableCell>
                 </TableRow>
               ) : (
                 detalles.map((row) => (
-                  <TableRow key={row.id} sx={{ '& td': { borderBottom: '1px solid #f1f5f9', py: 1.5 } }}>
-                    <TableCell sx={{ color: '#64748b', fontWeight: 500 }}>{row.repuesto_codigo}</TableCell>
+                  <TableRow key={row.id} hover sx={{ '& td': { borderBottom: `1px solid ${C.border}`, py: 1.5 }, '&:hover': { bgcolor: alpha('#ffffff', 0.035) } }}>
+                    <TableCell sx={{ color: '#bae6fd', fontWeight: 700 }}>{row.repuesto_codigo}</TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#0f172a' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#f8fafc' }}>
                         {row.repuesto_nombre}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>
                         {row.repuesto_unidad || '-'}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>
                         {row.ubicacion_origen_nombre}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#cbd5e1' }}>
                         {row.stock_disponible}
                       </Typography>
                     </TableCell>
@@ -485,7 +493,7 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
                         displayEmpty
                         value={row.ubicacion_destino_id}
                         onChange={(e) => handleDetalleChange(row.id, 'ubicacion_destino_id', e.target.value)}
-                        sx={{ minWidth: 140, bgcolor: 'white' }}
+                        sx={{ minWidth: 140, bgcolor: alpha('#ffffff', 0.035) }}
                         disabled={!almacenDestino}
                       >
                         <MenuItem value="" disabled>Seleccione destino...</MenuItem>
@@ -501,15 +509,15 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
                         value={row.cantidad}
                         onChange={(e) => handleDetalleChange(row.id, 'cantidad', e.target.value)}
                         inputProps={{ min: 1, max: row.stock_disponible }}
-                        sx={{ bgcolor: 'white' }}
+                        sx={{ bgcolor: alpha('#ffffff', 0.035) }}
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <Box sx={{ bgcolor: '#fee2e2', borderRadius: 1, display: 'inline-flex' }}>
+                      <Box sx={{ bgcolor: alpha(C.brand, 0.14), border: `1px solid ${alpha(C.brandLight, 0.26)}`, borderRadius: '8px', display: 'inline-flex' }}>
                         <IconButton 
                           size="small" 
                           onClick={() => handleRemoveDetalle(row.id)}
-                          sx={{ color: '#ef4444' }}
+                          sx={{ color: C.brandLight }}
                         >
                           <Trash2 size={18} />
                         </IconButton>
@@ -522,16 +530,16 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
           </Table>
 
           <Box sx={{ 
-            bgcolor: '#eff6ff', 
+            bgcolor: alpha(C.blue, 0.18),
             borderRadius: 1, 
             p: 2, 
             display: 'flex', 
             alignItems: 'center', 
             gap: 1.5,
-            border: '1px solid #bfdbfe' 
+            border: `1px solid ${alpha(C.blue, 0.38)}`
           }}>
-            <Info size={20} color="#3b82f6" />
-            <Typography variant="body2" sx={{ color: '#1e3a8a', fontWeight: 500 }}>
+            <Info size={20} color="#7dd3fc" />
+            <Typography variant="body2" sx={{ color: '#bae6fd', fontWeight: 600 }}>
               El stock saldrá de inmediato del almacén origen y quedará "en tránsito". Recién se sumará al almacén destino cuando alguien confirme la recepción física desde el listado de movimientos. Todo queda registrado en el Kardex.
             </Typography>
           </Box>
@@ -540,8 +548,8 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
 
       <Box sx={{ 
         p: 3, 
-        borderTop: '1px solid #e2e8f0', 
-        bgcolor: 'white',
+        borderTop: `1px solid ${C.border}`,
+        bgcolor: C.bgElevated,
         display: 'flex',
         justifyContent: 'flex-end',
         gap: 2
@@ -550,8 +558,8 @@ export default function ModalNuevoTraslado({ open, onClose, onSuccess }) {
           variant="outlined" 
           onClick={onClose}
           sx={{ 
-            color: '#475569', 
-            borderColor: '#cbd5e1',
+            color: C.textMuted,
+            borderColor: C.border,
             textTransform: 'none',
             fontWeight: 600,
             px: 3

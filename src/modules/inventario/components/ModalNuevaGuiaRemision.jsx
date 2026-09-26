@@ -5,11 +5,15 @@ import {
   Select, MenuItem, FormControl, InputLabel, CircularProgress, Autocomplete,
   Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Trash2, X, Plus } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import ClientesForm from '../../clientes/components/ClientesForm';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
   const { activeSucursalId } = useSucursal();
@@ -187,11 +191,11 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
       onClose={onClose} 
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      PaperProps={{ sx: { borderRadius: '8px', border: `1px solid ${C.border}` } }}
     >
       <DialogTitle sx={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: '#1e3a5f', color: 'white', py: 2
+        backgroundColor: C.bgElevated, color: 'white', py: 2, borderBottom: `1px solid ${C.border}`
       }}>
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Nueva Guía de Remisión</Typography>
         <IconButton onClick={onClose} sx={{ color: 'white' }} size="small">
@@ -224,7 +228,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
                 size="small" 
                 value={nextCorrelativo}
                 InputProps={{ readOnly: true }}
-                sx={{ backgroundColor: '#f8fafc', input: { textAlign: 'center', fontWeight: 'bold', color: '#0ea5e9' } }}
+                sx={{ backgroundColor: alpha('#ffffff', 0.04), input: { textAlign: 'center', fontWeight: 'bold', color: C.blue } }}
               />
 
               <FormControl fullWidth size="small">
@@ -277,7 +281,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
                 <IconButton
                   onClick={() => setClientModalOpen(true)}
                   title="Registrar cliente rápido"
-                  sx={{ bgcolor: '#1e3a5f', color: 'white', borderRadius: 1.5, '&:hover': { bgcolor: '#16304d' } }}
+                  sx={{ bgcolor: alpha(C.brand, 0.14), border: `1px solid ${alpha(C.brandLight, 0.24)}`, color: C.brandLight, borderRadius: '8px', '&:hover': { bgcolor: alpha(C.brand, 0.22) } }}
                 >
                   <Plus size={20} />
                 </IconButton>
@@ -301,7 +305,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
               onChange={e => setFormData({...formData, observaciones: e.target.value})}
             />
             
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1e3a5f', mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: C.brandLight, mt: 1 }}>
               Punto de Partida
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2 }}>
@@ -320,7 +324,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
               />
             </Box>
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1e3a5f', mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: C.brandLight, mt: 1 }}>
               Punto de Llegada
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2 }}>
@@ -339,7 +343,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
               />
             </Box>
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1e3a5f', mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: C.brandLight, mt: 1 }}>
               Productos a Trasladar
             </Typography>
             <Autocomplete
@@ -362,9 +366,9 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
               )}
             />
 
-            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px', borderColor: C.border }}>
               <Table size="small">
-                <TableHead sx={{ backgroundColor: '#f1f5f9' }}>
+                <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                   <TableRow>
                     <TableCell><b>Código</b></TableCell>
                     <TableCell><b>Producto</b></TableCell>
@@ -420,7 +424,7 @@ export default function ModalNuevaGuiaRemision({ open, onClose, onSuccess }) {
           color="primary" 
           onClick={handleSubmit} 
           disabled={saving || loading}
-          sx={{ backgroundColor: '#1e3a5f' }}
+          sx={{ background: `linear-gradient(135deg, ${C.brandLight}, ${C.brand})` }}
         >
           {saving ? <CircularProgress size={22} color="inherit" /> : 'Crear Guía'}
         </Button>

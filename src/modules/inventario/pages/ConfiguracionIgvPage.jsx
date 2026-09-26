@@ -5,8 +5,13 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, 
   TextField, Button, Box 
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const ConfiguracionIgvPage = () => {
   const { tienePermiso } = usePermisos();
@@ -107,34 +112,35 @@ const ConfiguracionIgvPage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center p-6" style={{ border: `1px solid ${C.border}`, borderRadius: '8px', boxShadow: S.card, backgroundImage: `linear-gradient(135deg, ${alpha(C.brand, 0.1)}, transparent 46%), linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 68%)` }}>
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-            <Settings className="text-blue-600" size={32} />
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: C.text }}>
+            <Settings style={{ color: C.brandLight }} size={32} />
             Configuración de Impuestos (IGV)
           </h1>
-          <p className="text-slate-500 mt-1">Gestione los impuestos que aplican a los repuestos y servicios del inventario.</p>
+          <p className="mt-1" style={{ color: C.textMuted }}>Gestione los impuestos que aplican a los repuestos y servicios del inventario.</p>
         </div>
       </div>
 
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col shadow-sm">
+      <div className="flex-1 p-6 flex flex-col" style={{ border: `1px solid ${C.border}`, borderRadius: '8px', boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-slate-800">
+          <h2 className="text-xl font-semibold" style={{ color: C.text }}>
             Listado de Impuestos
           </h2>
           {puedeCrear && (
             <button
               onClick={handleOpenModal}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              className="px-4 py-2 font-medium flex items-center gap-2 transition-colors"
+              style={{ color: '#ffffff', borderRadius: '8px', background: `linear-gradient(135deg, ${C.brandLight}, ${C.brand})`, boxShadow: `0 12px 28px ${alpha(C.brand, 0.24)}` }}
             >
               <Plus size={20} /> Nuevo Registro
             </button>
           )}
         </div>
 
-        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+        <div className="overflow-x-auto" style={{ border: `1px solid ${C.border}`, borderRadius: '8px' }}>
           <table className="w-full text-left">
-            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <thead style={{ color: C.textMuted, backgroundColor: alpha(C.surfaceSoft, 0.92), borderBottom: `1px solid ${C.border}` }}>
               <tr>
                 <th className="p-4 font-medium">Nº</th>
                 <th className="p-4 font-medium">Nombre</th>
@@ -143,19 +149,27 @@ const ConfiguracionIgvPage = () => {
                 <th className="p-4 font-medium text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="text-slate-700 divide-y divide-slate-100 bg-white">
+            <tbody style={{ color: C.text, backgroundColor: C.surface }}>
               {impuestos.map((i, index) => (
-                <tr key={i.id} className="hover:bg-slate-50">
+                <tr key={i.id} style={{ borderBottom: `1px solid ${C.border}` }}>
                   <td className="p-4">{index + 1}</td>
-                  <td className="p-4 font-medium text-slate-800">{i.nombre}</td>
+                  <td className="p-4 font-medium">{i.nombre}</td>
                   <td className="p-4">{i.tasa}%</td>
                   <td className="p-4">{i.codigo_sunat || '-'}</td>
                   <td className="p-4 text-right">
                     {puedeEditar && (
-                      <button onClick={() => handleOpenEditModal(i)} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                      <button
+                        onClick={() => handleOpenEditModal(i)}
+                        className="p-2"
+                        style={{ color: C.blue, backgroundColor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}`, borderRadius: '8px', marginRight: '8px' }}
+                      ><Edit size={18} /></button>
                     )}
                     {puedeEliminar && (
-                      <button onClick={() => handleEliminar(i.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                      <button
+                        onClick={() => handleEliminar(i.id)}
+                        className="p-2"
+                        style={{ color: C.brandLight, backgroundColor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}`, borderRadius: '8px' }}
+                      ><Trash2 size={18} /></button>
                     )}
                   </td>
                 </tr>
@@ -163,7 +177,7 @@ const ConfiguracionIgvPage = () => {
               
               {impuestos.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="p-8 text-center text-slate-500">No hay impuestos configurados.</td>
+                  <td colSpan="5" className="p-8 text-center" style={{ color: C.textMuted }}>No hay impuestos configurados.</td>
                 </tr>
               )}
             </tbody>

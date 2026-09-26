@@ -7,11 +7,16 @@ import {
   Drawer, Chip, Tooltip, Popover, List, ListItem, ListItemText,
   TablePagination, TableSortLabel, Autocomplete
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, X, Warehouse, Tag, Download, FileText, Search } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function RepuestosPage() {
   const { tienePermiso } = usePermisos();
@@ -415,6 +420,27 @@ export default function RepuestosPage() {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
+    setPage(0);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    setPage(0);
+  };
+
+  const handleUbicacionChange = (event) => {
+    setFilterUbicacion(event.target.value);
+    setPage(0);
+  };
+
+  const handleCategoriaChange = (newValue) => {
+    setFilterCategoria(newValue ? newValue.id : '');
+    setPage(0);
+  };
+
+  const handleMarcaChange = (newValue) => {
+    setFilterMarca(newValue ? newValue.id : '');
+    setPage(0);
   };
 
   return (
@@ -433,13 +459,13 @@ export default function RepuestosPage() {
       </Box>
 
       {/* --- BARRA DE HERRAMIENTAS (BUSCADOR Y FILTROS) --- */}
-      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
+      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <TextField
           label="Buscar (Código/C. barras/Nombre)"
           variant="outlined"
           size="small"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           sx={{ minWidth: 200 }}
           InputProps={{ endAdornment: <Search size={20} style={{ opacity: 0.5 }} /> }}
         />
@@ -449,7 +475,7 @@ export default function RepuestosPage() {
           variant="outlined"
           size="small"
           value={filterUbicacion}
-          onChange={(e) => setFilterUbicacion(e.target.value)}
+          onChange={handleUbicacionChange}
           sx={{ minWidth: 200 }}
         />
         <Autocomplete
@@ -457,7 +483,7 @@ export default function RepuestosPage() {
           options={categorias}
           getOptionLabel={(option) => option.nombre}
           value={categorias.find(c => c.id === filterCategoria) || null}
-          onChange={(event, newValue) => setFilterCategoria(newValue ? newValue.id : '')}
+          onChange={(event, newValue) => handleCategoriaChange(newValue)}
           sx={{ minWidth: 200 }}
           renderInput={(params) => <TextField {...params} label="Categoría" variant="outlined" />}
           noOptionsText="No se encontraron categorías"
@@ -467,7 +493,7 @@ export default function RepuestosPage() {
           options={marcas}
           getOptionLabel={(option) => option.nombre}
           value={marcas.find(m => m.id === filterMarca) || null}
-          onChange={(event, newValue) => setFilterMarca(newValue ? newValue.id : '')}
+          onChange={(event, newValue) => handleMarcaChange(newValue)}
           sx={{ minWidth: 200 }}
           renderInput={(params) => <TextField {...params} label="Marca" variant="outlined" />}
           noOptionsText="No se encontraron marcas"
@@ -479,7 +505,7 @@ export default function RepuestosPage() {
         <Button variant="outlined" color="error" startIcon={<FileText size={18} />} onClick={handleExportPDF}>PDF</Button>
       </Paper>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -488,7 +514,7 @@ export default function RepuestosPage() {
           <>
           <TableContainer>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
                   <TableCell>
                     <TableSortLabel active={orderBy === 'codigo'} direction={orderBy === 'codigo' ? order : 'asc'} onClick={() => handleRequestSort('codigo')}>
@@ -581,22 +607,22 @@ export default function RepuestosPage() {
                       <TableCell>S/ {row.precio_lista}</TableCell>
                       <TableCell align="center">
                         <Tooltip title="Ver Precios / Descuentos">
-                          <IconButton color="secondary" onClick={(e) => handleOpenPrecios(e, row)}>
+                          <IconButton color="secondary" onClick={(e) => handleOpenPrecios(e, row)} size="small" sx={{ mr: 0.75, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                             <Tag size={18} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Ver Stock por Ubicación">
-                          <IconButton color="success" onClick={() => handleVerStock(row)}>
+                          <IconButton color="success" onClick={() => handleVerStock(row)} size="small" sx={{ mr: 0.75, bgcolor: alpha(C.emerald, 0.08), border: `1px solid ${alpha(C.emerald, 0.2)}` }}>
                             <Warehouse size={18} />
                           </IconButton>
                         </Tooltip>
                         {puedeEditar && (
-                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                          <IconButton color="secondary" onClick={() => handleOpenModal(row)} size="small" sx={{ mr: 0.75, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                             <Edit size={18} />
                           </IconButton>
                         )}
                         {puedeEliminar && (
-                          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                          <IconButton color="error" onClick={() => handleDelete(row.id)} size="small" sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}>
                             <Trash2 size={18} />
                           </IconButton>
                         )}
@@ -979,31 +1005,31 @@ export default function RepuestosPage() {
         }}
       >
         {repuestoPrecios && (
-          <Box sx={{ p: 2, minWidth: 220 }}>
-            <Typography variant="subtitle2" fontWeight="bold" gutterBottom color="primary">
+          <Box sx={{ p: 2, minWidth: 236, color: C.text }}>
+            <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ color: C.brandLight }}>
               Márgenes de Negociación
             </Typography>
-            <Divider sx={{ mb: 1 }} />
+            <Divider sx={{ mb: 1, borderColor: C.border }} />
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">P. Lista (Público):</Typography>
-              <Typography variant="body2" fontWeight="bold">S/ {repuestoPrecios.precio_lista}</Typography>
+              <Typography variant="body2" sx={{ color: C.textMuted }}>P. Lista (Público):</Typography>
+              <Typography variant="body2" fontWeight="bold" sx={{ color: C.text }}>S/ {repuestoPrecios.precio_lista}</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">P. Cash (Descuento):</Typography>
-              <Typography variant="body2" fontWeight="bold">S/ {repuestoPrecios.precio_cash}</Typography>
+              <Typography variant="body2" sx={{ color: C.textMuted }}>P. Cash (Descuento):</Typography>
+              <Typography variant="body2" fontWeight="bold" sx={{ color: C.text }}>S/ {repuestoPrecios.precio_cash}</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">P. Por Mayor (Mínimo):</Typography>
-              <Typography variant="body2" fontWeight="bold">S/ {repuestoPrecios.precio_por_mayor}</Typography>
+              <Typography variant="body2" sx={{ color: C.textMuted }}>P. Por Mayor (Mínimo):</Typography>
+              <Typography variant="body2" fontWeight="bold" sx={{ color: C.text }}>S/ {repuestoPrecios.precio_por_mayor}</Typography>
             </Box>
 
             {isOwner && (
               <>
-                <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', bgcolor: '#ffebee', p: 0.5, borderRadius: 1 }}>
-                  <Typography variant="body2" color="error.main" fontWeight="bold">Costo (Compra):</Typography>
-                  <Typography variant="body2" color="error.main" fontWeight="bold">S/ {repuestoPrecios.precio_compra}</Typography>
+                <Divider sx={{ my: 1, borderStyle: 'dashed', borderColor: C.border }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha(C.brand, 0.16), border: `1px solid ${alpha(C.brandLight, 0.42)}`, p: 0.75, borderRadius: 1 }}>
+                  <Typography variant="body2" fontWeight="bold" sx={{ color: '#fecdd3' }}>Costo (Compra):</Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ color: '#fff1f2' }}>S/ {repuestoPrecios.precio_compra}</Typography>
                 </Box>
               </>
             )}

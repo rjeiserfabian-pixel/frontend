@@ -4,6 +4,7 @@ import {
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   TablePagination, Chip
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowRightLeft, Printer, Eye, CheckCircle, XCircle } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
@@ -12,6 +13,10 @@ import ModalDetalleTraslado from '../components/ModalDetalleTraslado';
 import { useReactToPrint } from 'react-to-print';
 import PrintTrasladoComponent from '../components/PrintTrasladoComponent';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function TrasladosPage() {
   const { tienePermiso } = usePermisos();
@@ -155,9 +160,9 @@ export default function TrasladosPage() {
         )}
       </Box>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <Table>
-          <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+          <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
             <TableRow>
               <TableCell><b>N° Documento</b></TableCell>
               <TableCell><b>Fecha</b></TableCell>
@@ -193,18 +198,18 @@ export default function TrasladosPage() {
                   <TableCell align="center">
                     {item.estado === 'PENDIENTE' && puedeAprobar && (
                       <>
-                        <IconButton color="success" onClick={() => handleConfirmar(item)} title="Confirmar recepción" sx={{ mr: 1 }}>
+                        <IconButton color="success" onClick={() => handleConfirmar(item)} title="Confirmar recepción" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.emerald, 0.08), border: `1px solid ${alpha(C.emerald, 0.2)}` }}>
                           <CheckCircle size={18} />
                         </IconButton>
-                        <IconButton color="error" onClick={() => handleRechazar(item)} title="Rechazar" sx={{ mr: 1 }}>
+                        <IconButton color="error" onClick={() => handleRechazar(item)} title="Rechazar" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}>
                           <XCircle size={18} />
                         </IconButton>
                       </>
                     )}
-                    <IconButton color="info" onClick={() => setSelectedTraslado(item)} title="Ver Detalle" sx={{ mr: 1 }}>
+                    <IconButton color="secondary" onClick={() => setSelectedTraslado(item)} title="Ver Detalle" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                       <Eye size={18} />
                     </IconButton>
-                    <IconButton color="primary" onClick={() => handlePrint(item)} title="Imprimir Nota">
+                    <IconButton onClick={() => handlePrint(item)} title="Imprimir Nota" size="small" sx={{ color: C.textMuted, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}>
                       <Printer size={18} />
                     </IconButton>
                   </TableCell>

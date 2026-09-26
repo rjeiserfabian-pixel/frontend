@@ -5,11 +5,16 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Grid, FormControl, InputLabel, Select, MenuItem, TablePagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 // Custom hook: separa la lógica de la vista
 function useUbicaciones() {
@@ -137,7 +142,7 @@ export default function UbicacionesPage() {
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -145,7 +150,7 @@ export default function UbicacionesPage() {
         ) : (
           <TableContainer>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
                   <TableCell><strong>Código</strong></TableCell>
                   <TableCell><strong>Almacén</strong></TableCell>
@@ -166,7 +171,7 @@ export default function UbicacionesPage() {
                 ) : (
                   ubicaciones.map((row) => (
                     <TableRow key={row.id} hover>
-                      <TableCell><strong style={{ color: '#1976d2' }}>{row.codigo}</strong></TableCell>
+                      <TableCell><strong style={{ color: C.blue }}>{row.codigo}</strong></TableCell>
                       <TableCell>{row.almacen_nombre}</TableCell>
                       <TableCell>{row.sucursal_nombre}</TableCell>
                       <TableCell>{row.pasillo || '—'}</TableCell>
@@ -174,12 +179,12 @@ export default function UbicacionesPage() {
                       <TableCell>{row.casillero || '—'}</TableCell>
                       <TableCell align="center">
                         {puedeEditar && (
-                          <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
+                          <IconButton color="secondary" onClick={() => handleOpenModal(row)} title="Editar" size="small" sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                             <Edit size={18} />
                           </IconButton>
                         )}
                         {puedeEliminar && (
-                          <IconButton color="error" onClick={() => handleDelete(row.id, row.codigo)} title="Eliminar">
+                          <IconButton color="error" onClick={() => handleDelete(row.id, row.codigo)} title="Eliminar" size="small" sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}>
                             <Trash2 size={18} />
                           </IconButton>
                         )}

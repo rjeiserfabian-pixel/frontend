@@ -5,6 +5,7 @@ import {
   IconButton, Autocomplete, CircularProgress, Divider, InputAdornment,
   FormControlLabel, Switch
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, Plus, Trash2, Save, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -18,6 +19,9 @@ import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import ModalNuevoProveedor from '../components/ModalNuevoProveedor';
 import ModalNuevoRepuesto from '../../inventario/components/ModalNuevoRepuesto';
 import api from '../../../core/api/axios';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 const NuevaCompraPage = () => {
   const navigate = useNavigate();
@@ -297,21 +301,35 @@ const NuevaCompraPage = () => {
   return (
     <div className="flex flex-col gap-6 w-full pb-12">
       <div className="flex items-center gap-3">
-        <button 
-          onClick={() => navigate('/compras')} 
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900 focus:outline-none"
+        <Button
+          variant="outlined"
+          startIcon={<ArrowLeft size={18} />}
+          onClick={() => navigate('/compras')}
+          sx={{
+            minHeight: 38,
+            px: 1.5,
+            borderRadius: '8px',
+            borderColor: C.border,
+            color: '#e2e8f0',
+            fontWeight: 700,
+            '&:hover': {
+              borderColor: '#7dd3fc',
+              bgcolor: alpha(C.blue, 0.1),
+              color: '#bae6fd',
+            },
+          }}
         >
-          <ArrowLeft size={24} />
-        </button>
+          Volver a compras
+        </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Registrar Nueva Compra</h1>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: C.text }}>Registrar Nueva Compra</h1>
         </div>
       </div>
 
       <div className="flex flex-col gap-8">
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-8 mb-6">
-            <div className="pb-4 mb-5 border-b border-slate-100">
-              <h2 className="text-xl font-serif text-slate-800 font-semibold">Datos del comprobante</h2>
+        <div className="rounded-lg p-6 md:p-8 mb-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+            <div className="pb-4 mb-5 border-b" style={{ borderColor: C.border }}>
+              <h2 className="text-xl font-serif font-semibold" style={{ color: C.text }}>Datos del comprobante</h2>
               <p className="text-sm text-slate-500 mt-1">Información del proveedor y del documento de compra.</p>
             </div>
 
@@ -329,7 +347,7 @@ const NuevaCompraPage = () => {
                 <Button 
                   variant="contained" 
                   onClick={() => setModalProveedorOpen(true)}
-                  sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: '#1e293b', '&:hover': { bgcolor: '#0f172a' }, boxShadow: 'none' }}
+                  sx={{ minWidth: '56px', px: 0, borderRadius: '8px', bgcolor: C.surfaceSoft, '&:hover': { bgcolor: C.surfaceMuted }, boxShadow: 'none' }}
                 >
                   <Plus size={24} />
                 </Button>
@@ -442,10 +460,10 @@ const NuevaCompraPage = () => {
 
               {formData.tipo_pago === 'Credito' && (
                 <div className="md:col-span-3">
-                  <Box sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <Box sx={{ p: 2.5, bgcolor: alpha(C.blue, 0.1), borderRadius: '8px', border: `1px solid ${alpha(C.blue, 0.35)}` }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Wallet size={18} color="#1e293b" />
-                      <Typography variant="subtitle2" fontWeight="bold" color="#1e293b">
+                      <Wallet size={18} color="#7dd3fc" />
+                      <Typography variant="subtitle2" fontWeight="bold" sx={{ color: C.text }}>
                         Pago Inicial (Opcional)
                       </Typography>
                     </Box>
@@ -457,7 +475,7 @@ const NuevaCompraPage = () => {
                         value={pagoInicial.monto}
                         onChange={(e) => setPagoInicial({ ...pagoInicial, monto: e.target.value })}
                         InputProps={{
-                          sx: { borderRadius: '12px', bgcolor: 'white' },
+                          sx: { borderRadius: '8px', bgcolor: C.surface },
                           startAdornment: <InputAdornment position="start">S/</InputAdornment>,
                           inputProps: { min: 0, step: 0.1, max: totalGeneral }
                         }}
@@ -468,7 +486,7 @@ const NuevaCompraPage = () => {
                         label="Método de pago"
                         value={pagoInicial.metodo_pago_id}
                         onChange={(e) => setPagoInicial({ ...pagoInicial, metodo_pago_id: e.target.value })}
-                        InputProps={{ sx: { borderRadius: '12px', bgcolor: 'white' } }}
+                        InputProps={{ sx: { borderRadius: '8px', bgcolor: C.surface } }}
                         disabled={!pagoInicial.monto || parseFloat(pagoInicial.monto) <= 0}
                       >
                         {metodosPagoList.map(m => (
@@ -481,7 +499,7 @@ const NuevaCompraPage = () => {
                         label="Referencia (Opcional)"
                         value={pagoInicial.referencia}
                         onChange={(e) => setPagoInicial({ ...pagoInicial, referencia: e.target.value })}
-                        InputProps={{ sx: { borderRadius: '12px', bgcolor: 'white' } }}
+                        InputProps={{ sx: { borderRadius: '8px', bgcolor: C.surface } }}
                         disabled={!pagoInicial.monto || parseFloat(pagoInicial.monto) <= 0}
                       />
                       <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', pt: 1 }}>
@@ -517,9 +535,9 @@ const NuevaCompraPage = () => {
           </div>
 
           {/* Detalles */}
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px' }}>
              <Typography variant="h6" mb={2} fontWeight="bold">Detalle de Repuestos</Typography>
-             <Box mb={2} sx={{ display: 'flex', gap: 1 }}>
+             <Box mb={2.5} sx={{ display: 'flex', gap: 1 }}>
                <Autocomplete
                   fullWidth
                   options={repuestos}
@@ -548,14 +566,14 @@ const NuevaCompraPage = () => {
                 )}
              </Box>
              
-             <TableContainer>
+             <TableContainer sx={{ mt: 2.5 }}>
                <Table size="small">
-                 <TableHead>
+                 <TableHead sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
                    <TableRow>
-                     <TableCell><b>Repuesto</b></TableCell>
-                     <TableCell width="15%"><b>Cantidad</b></TableCell>
-                     <TableCell width="20%"><b>Costo Unit.</b></TableCell>
-                     <TableCell align="right"><b>Subtotal</b></TableCell>
+                     <TableCell sx={{ color: '#bae6fd', fontWeight: 800 }}>Repuesto</TableCell>
+                     <TableCell width="15%" sx={{ color: '#bae6fd', fontWeight: 800 }}>Cantidad</TableCell>
+                     <TableCell width="20%" sx={{ color: '#bae6fd', fontWeight: 800 }}>Costo Unit.</TableCell>
+                     <TableCell align="right" sx={{ color: '#bae6fd', fontWeight: 800 }}>Subtotal</TableCell>
                      <TableCell width="5%"></TableCell>
                    </TableRow>
                  </TableHead>
@@ -600,7 +618,7 @@ const NuevaCompraPage = () => {
 
               {/* Resumen de Compra */}
               <div className="flex justify-end mt-6">
-                <div className="w-full sm:w-80 bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <div className="w-full sm:w-80 rounded-lg p-5" style={{ backgroundColor: alpha(C.blue, 0.1), border: `1px solid ${alpha(C.blue, 0.35)}` }}>
                   <Typography variant="subtitle1" mb={2} fontWeight="bold" color="text.primary">Resumen de Compra</Typography>
                   
                   <Box display="flex" justifyContent="space-between" mb={1}>

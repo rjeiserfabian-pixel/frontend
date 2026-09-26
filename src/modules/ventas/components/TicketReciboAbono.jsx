@@ -37,6 +37,10 @@ const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) =
       <style>
         {`
           @media print {
+            html, body, #root {
+              background: #ffffff !important;
+              color: #000000 !important;
+            }
             body * {
               visibility: hidden;
             }
@@ -50,6 +54,15 @@ const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) =
               width: 80mm;
               margin: 0;
               padding: 5mm;
+              box-sizing: border-box;
+              color: #000000 !important;
+              background: #ffffff !important;
+              color-scheme: light;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            #ticket-recibo * {
+              color: #000000 !important;
             }
             @page {
               size: 80mm auto;

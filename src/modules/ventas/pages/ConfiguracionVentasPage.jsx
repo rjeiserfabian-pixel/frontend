@@ -213,39 +213,39 @@ const ConfiguracionVentasPage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center bg-[#101928] border border-slate-700 p-6 rounded-lg shadow-lg">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-            <Settings className="text-blue-600" size={32} />
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <Settings className="text-sky-400" size={32} />
             Configuraciones de Ventas
           </h1>
           <p className="text-slate-500 mt-1">Gestione los métodos de cobro y series de facturación.</p>
         </div>
       </div>
 
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col shadow-sm">
+      <div className="flex-1 bg-[#101928] border border-slate-700 rounded-lg p-6 flex flex-col shadow-lg">
         {/* TABS */}
-        <div className="flex border-b border-slate-200 mb-6">
+        <div className="flex border-b border-slate-700 mb-6">
           <button 
-            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'metodos' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'metodos' ? 'text-sky-300 border-b-2 border-sky-400' : 'text-slate-400 hover:text-white'}`}
             onClick={() => setActiveTab('metodos')}
           >
             Métodos de Pago
           </button>
           <button 
-            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'tipos' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'tipos' ? 'text-sky-300 border-b-2 border-sky-400' : 'text-slate-400 hover:text-white'}`}
             onClick={() => setActiveTab('tipos')}
           >
             Tipos de Comprobante
           </button>
           <button 
-            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'cajas' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'cajas' ? 'text-sky-300 border-b-2 border-sky-400' : 'text-slate-400 hover:text-white'}`}
             onClick={() => setActiveTab('cajas')}
           >
             Cajas
           </button>
           <button 
-            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'series' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === 'series' ? 'text-sky-300 border-b-2 border-sky-400' : 'text-slate-400 hover:text-white'}`}
             onClick={() => setActiveTab('series')}
           >
             Series de Comprobante
@@ -255,7 +255,7 @@ const ConfiguracionVentasPage = () => {
         {/* CONTENT */}
         <div className="flex-1">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h2 className="text-xl font-semibold text-white">
               {activeTab === 'metodos' && 'Listado de Métodos de Pago'}
               {activeTab === 'tipos' && 'Tipos de Comprobante'}
               {activeTab === 'cajas' && 'Cajas Registradoras'}
@@ -264,16 +264,16 @@ const ConfiguracionVentasPage = () => {
             {puedeCrearTab && (
               <button
                 onClick={handleOpenModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors"
               >
                 <Plus size={20} /> Nuevo Registro
               </button>
             )}
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <div className="overflow-x-auto border border-slate-700 rounded-lg">
             <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+              <thead className="bg-[#162235] text-slate-300 border-b border-slate-700">
                 <tr>
                   <th className="p-4 font-medium">Nº</th>
                   <th className="p-4 font-medium">{activeTab === 'series' ? 'Serie' : 'Nombre'}</th>
@@ -286,68 +286,68 @@ const ConfiguracionVentasPage = () => {
                   <th className="p-4 font-medium text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-700 divide-y divide-slate-100 bg-white">
+              <tbody className="text-slate-200 divide-y divide-slate-700 bg-[#101928]">
                 {activeTab === 'metodos' && metodos.map((m, index) => (
-                  <tr key={m.id} id={`row-${m.id}`} className={`transition-colors duration-1000 ${highlightId === m.id ? 'bg-blue-100' : 'hover:bg-slate-50'}`}>
+                  <tr key={m.id} id={`row-${m.id}`} className={`transition-colors duration-1000 ${highlightId === m.id ? 'bg-sky-950' : 'hover:bg-slate-800/70'}`}>
                     <td className="p-4">{index + 1}</td>
-                    <td className="p-4 font-medium text-slate-800">{m.nombre}</td>
+                    <td className="p-4 font-semibold text-white">{m.nombre}</td>
                     <td className="p-4">{m.requiere_referencia ? 'Sí' : 'No'}</td>
                     <td className="p-4 text-right">
                       {puedeEditarTab && (
-                        <button onClick={() => handleEditar(m, 'metodos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                        <button onClick={() => handleEditar(m, 'metodos')} className="text-sky-400 hover:text-sky-200 bg-sky-400/10 border border-sky-400/20 rounded-md p-2 mr-1"><Edit size={18} /></button>
                       )}
                       {puedeEliminarTab && (
-                        <button onClick={() => handleEliminar(m.id, 'metodos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEliminar(m.id, 'metodos')} className="text-red-400 hover:text-red-200 bg-red-500/10 border border-red-400/20 rounded-md p-2"><Trash2 size={18} /></button>
                       )}
                     </td>
                   </tr>
                 ))}
                 
                 {activeTab === 'tipos' && tiposComprobante.map((t, index) => (
-                  <tr key={t.id} id={`row-${t.id}`} className={`transition-colors duration-1000 ${highlightId === t.id ? 'bg-blue-100' : 'hover:bg-slate-50'}`}>
+                  <tr key={t.id} id={`row-${t.id}`} className={`transition-colors duration-1000 ${highlightId === t.id ? 'bg-sky-950' : 'hover:bg-slate-800/70'}`}>
                     <td className="p-4">{index + 1}</td>
-                    <td className="p-4 font-medium text-slate-800">{t.nombre}</td>
+                    <td className="p-4 font-semibold text-white">{t.nombre}</td>
                     <td className="p-4">{t.codigo_sunat || '-'}</td>
                     <td className="p-4 text-right">
                       {puedeEditarTab && (
-                        <button onClick={() => handleEditar(t, 'tipos')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                        <button onClick={() => handleEditar(t, 'tipos')} className="text-sky-400 hover:text-sky-200 bg-sky-400/10 border border-sky-400/20 rounded-md p-2 mr-1"><Edit size={18} /></button>
                       )}
                       {puedeEliminarTab && (
-                        <button onClick={() => handleEliminar(t.id, 'tipos')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEliminar(t.id, 'tipos')} className="text-red-400 hover:text-red-200 bg-red-500/10 border border-red-400/20 rounded-md p-2"><Trash2 size={18} /></button>
                       )}
                     </td>
                   </tr>
                 ))}
 
                 {activeTab === 'series' && series.map((s, index) => (
-                  <tr key={s.id} id={`row-${s.id}`} className={`transition-colors duration-1000 ${highlightId === s.id ? 'bg-blue-100' : 'hover:bg-slate-50'}`}>
+                  <tr key={s.id} id={`row-${s.id}`} className={`transition-colors duration-1000 ${highlightId === s.id ? 'bg-sky-950' : 'hover:bg-slate-800/70'}`}>
                     <td className="p-4">{index + 1}</td>
-                    <td className="p-4 font-medium text-slate-800">{s.serie}</td>
+                    <td className="p-4 font-semibold text-white">{s.serie}</td>
                     <td className="p-4">{s.tipo_comprobante_nombre} (Act: {s.correlativo_actual})</td>
                     <td className="p-4">{s.sucursal_nombre || 'Sede Principal / Global'}</td>
                     <td className="p-4 text-right">
                       {puedeEditarTab && (
-                        <button onClick={() => handleEditar(s, 'series')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                        <button onClick={() => handleEditar(s, 'series')} className="text-sky-400 hover:text-sky-200 bg-sky-400/10 border border-sky-400/20 rounded-md p-2 mr-1"><Edit size={18} /></button>
                       )}
                       {puedeEliminarTab && (
-                        <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEliminar(s.id, 'series')} className="text-red-400 hover:text-red-200 bg-red-500/10 border border-red-400/20 rounded-md p-2"><Trash2 size={18} /></button>
                       )}
                     </td>
                   </tr>
                 ))}
 
                 {activeTab === 'cajas' && cajas.map((c, index) => (
-                  <tr key={c.id} id={`row-${c.id}`} className={`transition-colors duration-1000 ${highlightId === c.id ? 'bg-blue-100' : 'hover:bg-slate-50'}`}>
+                  <tr key={c.id} id={`row-${c.id}`} className={`transition-colors duration-1000 ${highlightId === c.id ? 'bg-sky-950' : 'hover:bg-slate-800/70'}`}>
                     <td className="p-4">{index + 1}</td>
-                    <td className="p-4 font-medium text-slate-800">{c.nombre}</td>
+                    <td className="p-4 font-semibold text-white">{c.nombre}</td>
                     <td className="p-4">{c.sucursal_nombre}</td>
                     <td className="p-4">{c.almacen_nombre || '-'}</td>
                     <td className="p-4 text-right">
                       {puedeEditarTab && (
-                        <button onClick={() => handleEditar(c, 'cajas')} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18} /></button>
+                        <button onClick={() => handleEditar(c, 'cajas')} className="text-sky-400 hover:text-sky-200 bg-sky-400/10 border border-sky-400/20 rounded-md p-2 mr-1"><Edit size={18} /></button>
                       )}
                       {puedeEliminarTab && (
-                        <button onClick={() => handleEliminar(c.id, 'cajas')} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEliminar(c.id, 'cajas')} className="text-red-400 hover:text-red-200 bg-red-500/10 border border-red-400/20 rounded-md p-2"><Trash2 size={18} /></button>
                       )}
                     </td>
                   </tr>

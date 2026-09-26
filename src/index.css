@@ -1,20 +1,39 @@
 @import "tailwindcss";
 
 :root {
+  --omega-bg: #070b12;
+  --omega-bg-elevated: #0b1220;
+  --omega-surface: #101928;
+  --omega-surface-soft: #162235;
+  --omega-border: rgba(148, 163, 184, 0.16);
+  --omega-text: #f8fafc;
+  --omega-text-muted: #94a3b8;
+  --omega-brand: #e11d2e;
+  --omega-brand-light: #fb4b5b;
+
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #f8fafc;
+  color-scheme: dark;
+  color: var(--omega-text);
+  background-color: var(--omega-bg);
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: #1e293b;
+  color: var(--omega-text);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(225, 29, 46, 0.12) 0, transparent 32%),
+    radial-gradient(circle at 82% 8%, rgba(56, 189, 248, 0.1) 0, transparent 28%),
+    var(--omega-bg);
+}
+
+::selection {
+  color: #ffffff;
+  background: rgba(225, 29, 46, 0.52);
 }
 
 /* Scrollbar personalizado para darle un toque premium */
@@ -23,19 +42,166 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(7, 11, 18, 0.35);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(148, 163, 184, 0.32);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(248, 113, 113, 0.58);
 }
 
 /* Fix z-index for SweetAlert2 over MUI Dialogs */
 .swal2-container {
   z-index: 9999 !important;
+}
+
+/* SweetAlert2 integrado al tema premium del panel */
+.swal2-container.swal2-backdrop-show,
+.swal2-container.swal2-noanimation {
+  background: rgba(2, 6, 23, 0.72) !important;
+  backdrop-filter: blur(8px);
+}
+
+.swal2-popup {
+  width: min(420px, calc(100vw - 32px)) !important;
+  padding: 28px !important;
+  border: 1px solid var(--omega-border) !important;
+  border-radius: 8px !important;
+  color: var(--omega-text) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 42%),
+    linear-gradient(135deg, var(--omega-surface), var(--omega-bg-elevated)) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.52) !important;
+}
+
+.swal2-popup.swal2-toast {
+  width: auto !important;
+  min-width: min(360px, calc(100vw - 32px)) !important;
+  padding: 14px 16px !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 50%),
+    var(--omega-surface) !important;
+}
+
+.swal2-title {
+  padding: 0 !important;
+  color: var(--omega-text) !important;
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+.swal2-html-container,
+.swal2-content {
+  margin: 12px 0 0 !important;
+  color: var(--omega-text-muted) !important;
+  font-size: 0.95rem !important;
+}
+
+.swal2-actions {
+  gap: 10px;
+  margin-top: 24px !important;
+}
+
+.swal2-styled {
+  min-height: 38px !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+.swal2-confirm {
+  background: linear-gradient(135deg, var(--omega-brand-light), var(--omega-brand)) !important;
+  color: #ffffff !important;
+}
+
+.swal2-confirm:hover {
+  background: linear-gradient(135deg, var(--omega-brand-light), #9f1020) !important;
+}
+
+.swal2-cancel,
+.swal2-deny {
+  border: 1px solid var(--omega-border) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: var(--omega-text) !important;
+}
+
+.swal2-cancel:hover,
+.swal2-deny:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.swal2-icon {
+  margin: 4px auto 20px !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: rgba(16, 185, 129, 0.42) !important;
+  color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(16, 185, 129, 0.34) !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  color: #f59e0b !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: rgba(251, 75, 91, 0.52) !important;
+  color: var(--omega-brand-light) !important;
+}
+
+.swal2-icon.swal2-info,
+.swal2-icon.swal2-question {
+  border-color: rgba(56, 189, 248, 0.48) !important;
+  color: #38bdf8 !important;
+}
+
+.swal2-input,
+.swal2-textarea,
+.swal2-select {
+  border: 1px solid var(--omega-border) !important;
+  border-radius: 8px !important;
+  color: var(--omega-text) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  box-shadow: none !important;
+}
+
+.swal2-input:focus,
+.swal2-textarea:focus,
+.swal2-select:focus {
+  border-color: var(--omega-brand) !important;
+  box-shadow: 0 0 0 3px rgba(225, 29, 46, 0.14) !important;
+}
+
+/* Native select options need explicit colors on Windows browsers. */
+.swal2-select option {
+  color: #f8fafc !important;
+  background-color: #101928 !important;
+}
+
+.swal2-select option:checked,
+.swal2-select option:hover {
+  color: #ffffff !important;
+  background-color: #9f1020 !important;
+}
+
+.swal2-validation-message {
+  border: 1px solid rgba(245, 158, 11, 0.22) !important;
+  border-radius: 8px !important;
+  color: #fde68a !important;
+  background: rgba(245, 158, 11, 0.1) !important;
 }
 
 /* ── Animaciones para LoginPage ── */
@@ -54,12 +220,12 @@ body {
   }
 }
 
-/* Fix: autofill del navegador - texto oscuro para formularios normales */
+/* Fix: autofill del navegador para formularios del panel premium */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
-  -webkit-text-fill-color: #1e293b !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--omega-surface) inset !important;
+  -webkit-text-fill-color: var(--omega-text) !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -77,4 +243,3 @@ input:-webkit-autofill:focus {
   border-color: rgba(16, 185, 129, 0.5) !important;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12) !important;
 }
-

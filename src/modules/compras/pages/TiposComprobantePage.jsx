@@ -16,11 +16,18 @@ import {
   TextField,
   Switch,
   FormControlLabel,
-  CircularProgress
+  CircularProgress,
+  Box,
+  Typography
 } from '@mui/material';
-import { Plus, Edit2, Trash2, FileText, Edit } from 'lucide-react';
+import { Plus, Edit2, Trash2, FileText, Edit, X } from 'lucide-react';
+import { alpha } from '@mui/material/styles';
 import { comprasService } from '../services/comprasApi';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const TiposComprobantePage = () => {
   const { tienePermiso } = usePermisos();
@@ -101,19 +108,19 @@ const TiposComprobantePage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center p-6 rounded-lg" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            <FileText className="text-blue-600" size={32} />
+          <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color: C.text }}>
+            <FileText color="#7dd3fc" size={32} />
             Tipos de Comprobante
           </h1>
-          <p className="text-slate-500 mt-1">Administra los tipos de comprobante de compras.</p>
+          <p className="mt-1" style={{ color: '#cbd5e1' }}>Administra los tipos de comprobante de compras.</p>
         </div>
       </div>
 
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col shadow-sm">
+      <div className="flex-1 rounded-lg p-6 flex flex-col" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">
+          <h2 className="text-lg font-semibold" style={{ color: C.text }}>
             Listado de Comprobantes
           </h2>
           {puedeCrear && (
@@ -121,14 +128,14 @@ const TiposComprobantePage = () => {
               variant="contained"
               startIcon={<Plus size={20} />}
               onClick={() => handleOpenDialog()}
-              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+              sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}
             >
               Nuevo Tipo
             </Button>
           )}
         </div>
 
-        <div className="w-full overflow-hidden border border-slate-200 rounded-xl shadow-none">
+        <div className="w-full overflow-hidden rounded-lg shadow-none" style={{ border: `1px solid ${C.border}` }}>
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex justify-center items-center py-12">
@@ -136,33 +143,33 @@ const TiposComprobantePage = () => {
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-slate-50">
+                <thead style={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200 w-16">Nº</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Nombre</th>
-                    <th className="px-6 py-3 text-center text-sm font-medium text-slate-600 border-b border-slate-200">Estado</th>
-                    <th className="px-6 py-3 text-right text-sm font-medium text-slate-600 border-b border-slate-200">Acciones</th>
+                    <th className="px-6 py-3 text-left text-sm font-bold text-sky-200 border-b border-slate-700">Nombre</th>
+                    <th className="px-6 py-3 text-center text-sm font-bold text-sky-200 border-b border-slate-700">Estado</th>
+                    <th className="px-6 py-3 text-right text-sm font-bold text-sky-200 border-b border-slate-700">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y" style={{ color: C.text, borderColor: C.border }}>
                   {tipos.length === 0 ? (
-                    <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-500">No hay tipos de comprobante registrados.</td></tr>
+                    <tr><td colSpan="4" className="px-6 py-8 text-center" style={{ color: '#cbd5e1' }}>No hay tipos de comprobante registrados.</td></tr>
                   ) : tipos.map((tipo, index) => (
-                    <tr key={tipo.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">{index + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">{tipo.nombre}</td>
+                    <tr key={tipo.id} className="transition-colors" style={{ color: C.text }}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{index + 1}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">{tipo.nombre}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
                           tipo.estado_activo 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                            : 'bg-rose-50 text-rose-700 border border-rose-100'
+                            ? 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/35' 
+                            : 'bg-rose-500/15 text-rose-200 border border-rose-500/35'
                         }`}>
                           {tipo.estado_activo ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {puedeEditar && (
-                          <button onClick={() => handleOpenDialog(tipo)} className="text-blue-600 hover:text-blue-800 mx-3 transition-colors" title="Editar">
+                          <button onClick={() => handleOpenDialog(tipo)} className="text-sky-300 hover:text-sky-100 mx-3 transition-colors" title="Editar">
                             <Edit size={18} />
                           </button>
                         )}
@@ -181,11 +188,28 @@ const TiposComprobantePage = () => {
         </div>
       </div>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth PaperProps={{ style: { borderRadius: '1rem' } }}>
-        <DialogTitle className="font-semibold text-slate-900">
-          {currentTipo ? 'Editar Tipo de Comprobante' : 'Nuevo Tipo de Comprobante'}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '8px', bgcolor: C.bgElevated, border: `1px solid ${C.border}`, boxShadow: S.floating } }}>
+        <DialogTitle sx={{ px: 3, py: 2.25, borderBottom: `1px solid ${C.border}`, bgcolor: C.surface }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: '8px', display: 'grid', placeItems: 'center', bgcolor: alpha(C.blue, 0.14), color: '#7dd3fc', border: `1px solid ${alpha(C.blue, 0.34)}` }}>
+                <FileText size={18} />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: C.text, lineHeight: 1.2 }}>
+                  {currentTipo ? 'Editar Tipo de Comprobante' : 'Nuevo Tipo de Comprobante'}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
+                  Define el nombre y su disponibilidad en compras.
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={handleCloseDialog} size="small" sx={{ color: '#cbd5e1', '&:hover': { bgcolor: alpha(C.surfaceSoft, 0.8), color: C.text } }}>
+              <X size={18} />
+            </IconButton>
+          </Box>
         </DialogTitle>
-        <DialogContent className="flex flex-col gap-4 mt-2 pt-2">
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, mt: 1.5, px: 3, py: 3, bgcolor: C.bgElevated }}>
           <TextField
             label="Nombre"
             fullWidth
@@ -193,28 +217,32 @@ const TiposComprobantePage = () => {
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
             autoFocus
             required
-            InputProps={{ size: 'small' }}
+            InputProps={{ sx: { bgcolor: C.surface, borderRadius: '8px' } }}
           />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.estado_activo}
-                onChange={(e) => setFormData({ ...formData, estado_activo: e.target.checked })}
-                color="primary"
-              />
-            }
-            label={formData.estado_activo ? "Activo (Visible en compras)" : "Inactivo (Oculto)"}
-          />
+          <Box sx={{ px: 1.5, py: 1.25, borderRadius: '8px', bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.26)}` }}>
+            <FormControlLabel
+              sx={{ m: 0, width: '100%', justifyContent: 'space-between', '& .MuiFormControlLabel-label': { color: C.text, fontWeight: 700, fontSize: '0.875rem' } }}
+              labelPlacement="start"
+              control={
+                <Switch
+                  checked={formData.estado_activo}
+                  onChange={(e) => setFormData({ ...formData, estado_activo: e.target.checked })}
+                  color="primary"
+                />
+              }
+              label={formData.estado_activo ? "Activo y visible en compras" : "Inactivo y oculto en compras"}
+            />
+          </Box>
         </DialogContent>
-        <DialogActions className="p-4 bg-slate-50 border-t border-slate-200">
-          <Button onClick={handleCloseDialog} color="inherit" className="text-slate-600 hover:bg-slate-200">
+        <DialogActions sx={{ p: 2.25, px: 3, bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}`, gap: 1 }}>
+          <Button onClick={handleCloseDialog} color="inherit" variant="outlined" sx={{ color: '#e2e8f0', borderColor: C.border, borderRadius: '8px', '&:hover': { bgcolor: alpha(C.surfaceSoft, 0.72), borderColor: '#7dd3fc' } }}>
             Cancelar
           </Button>
           <Button 
             onClick={handleSubmit} 
             variant="contained" 
             disabled={saving || !formData.nombre.trim()}
-            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+            sx={{ minWidth: 104, bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}
           >
             {saving ? 'Guardando...' : 'Guardar'}
           </Button>

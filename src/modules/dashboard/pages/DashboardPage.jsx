@@ -42,7 +42,7 @@ function ResumenGerencial({ resumen, loading, error }) {
     return (
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-[104px] rounded-2xl bg-slate-100 border border-slate-200/60" />
+          <div key={i} className="h-[104px] rounded-lg bg-slate-800/70 border border-slate-700 animate-pulse" />
         ))}
       </section>
     );
@@ -50,7 +50,7 @@ function ResumenGerencial({ resumen, loading, error }) {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 p-4 rounded-2xl border border-amber-200 bg-amber-50 text-amber-700 text-sm">
+      <div className="flex items-center gap-2 p-4 rounded-lg border border-amber-500/35 bg-amber-500/10 text-amber-200 text-sm">
         <AlertCircle size={18} />
         No se pudo cargar el resumen del día. Intenta recargar la página.
       </div>
@@ -82,7 +82,7 @@ function ResumenGerencial({ resumen, loading, error }) {
       value: formatSoles(resumen.neto_hoy),
       icon: <TrendingUp size={24} />,
       isPrimary: false,
-      valueClass: netoPositivo ? 'text-emerald-600' : 'text-rose-600',
+      valueClass: netoPositivo ? 'text-emerald-400' : 'text-rose-400',
     },
     {
       title: 'Órdenes ingresadas hoy',
@@ -99,26 +99,26 @@ function ResumenGerencial({ resumen, loading, error }) {
           <div
             key={index}
             className={`
-              relative overflow-hidden p-6 rounded-2xl border transition-all duration-300
+              relative overflow-hidden p-6 rounded-lg border transition-all duration-300
               hover:-translate-y-1 hover:shadow-lg
               ${stat.isPrimary
-                ? 'bg-slate-900 border-slate-900 text-white shadow-md'
-                : 'bg-white border-slate-200/60 text-slate-900 shadow-sm'
+                ? 'bg-slate-900 border-slate-700 text-white shadow-md'
+                : 'bg-slate-800/80 border-slate-700 text-slate-100 shadow-md'
               }
             `}
           >
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-1">
-                <span className={`text-sm font-medium ${stat.isPrimary ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className="text-sm font-medium text-slate-300">
                   {stat.title}
                 </span>
-                <span className={`text-3xl font-bold tracking-tight ${stat.valueClass || (stat.isPrimary ? 'text-white' : 'text-slate-900')}`}>
+                <span className={`text-3xl font-bold tracking-tight ${stat.valueClass || 'text-slate-50'}`}>
                   {stat.value}
                 </span>
               </div>
               <div className={`
                 p-3 rounded-xl
-                ${stat.isPrimary ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-400'}
+                ${stat.isPrimary ? 'bg-slate-800 text-slate-200' : 'bg-slate-700/70 text-sky-200'}
               `}>
                 {stat.icon}
               </div>
@@ -134,10 +134,10 @@ function ResumenGerencial({ resumen, loading, error }) {
       </section>
 
       <section className="mt-2">
-        <div className="relative w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="relative w-full rounded-lg border border-slate-700 bg-slate-800/80 p-6 shadow-md">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-900">Ingresos vs. egresos (últimos 7 días)</h3>
-            <div className="flex items-center gap-4 text-xs text-slate-500">
+            <h3 className="text-base font-semibold text-slate-50">Ingresos vs. egresos (últimos 7 días)</h3>
+            <div className="flex items-center gap-4 text-xs text-slate-300">
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Ingresos</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-400 inline-block" /> Egresos</span>
             </div>
@@ -166,10 +166,10 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto">
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
           Bienvenido, {user?.nombre || 'Usuario'} <span className="animate-pulse inline-block">👋</span>
         </h1>
-        <p className="text-slate-500 text-sm font-medium">
+        <p className="text-slate-300 text-sm font-medium">
           Aquí tienes un resumen de la actividad del sistema.
         </p>
       </header>
@@ -182,26 +182,26 @@ export default function DashboardPage() {
             <div
               key={index}
               className={`
-                relative overflow-hidden p-6 rounded-2xl border transition-all duration-300
+                relative overflow-hidden p-6 rounded-lg border transition-all duration-300
                 hover:-translate-y-1 hover:shadow-lg
                 ${stat.isPrimary
-                  ? 'bg-slate-900 border-slate-900 text-white shadow-md'
-                  : 'bg-white border-slate-200/60 text-slate-900 shadow-sm'
+                  ? 'bg-slate-900 border-slate-700 text-white shadow-md'
+                  : 'bg-slate-800/80 border-slate-700 text-slate-100 shadow-md'
                 }
               `}
             >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                  <span className={`text-sm font-medium ${stat.isPrimary ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className="text-sm font-medium text-slate-300">
                     {stat.title}
                   </span>
-                  <span className={`text-3xl font-bold tracking-tight ${stat.isPrimary ? 'text-white' : 'text-slate-900'}`}>
+                  <span className="text-3xl font-bold tracking-tight text-slate-50">
                     {stat.value}
                   </span>
                 </div>
                 <div className={`
                   p-3 rounded-xl
-                  ${stat.isPrimary ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-400'}
+                  ${stat.isPrimary ? 'bg-slate-800 text-slate-200' : 'bg-slate-700/70 text-sky-200'}
                 `}>
                   {stat.icon}
                 </div>

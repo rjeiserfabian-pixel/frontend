@@ -4,8 +4,13 @@ import {
   Button, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, CircularProgress, Typography, Box, IconButton, Chip, Paper, Grid
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Wallet, X, FileText, CheckCircle, Calendar, History, CreditCard, Banknote } from 'lucide-react';
 import { comprasService } from '../services/comprasApi';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 // Helper de Iconos de Método
 const getMetodoIcon = (metodo) => {
@@ -51,21 +56,22 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
       fullWidth 
       PaperProps={{ 
         sx: { 
-          borderRadius: 4,
+          borderRadius: '8px',
           overflow: 'hidden',
-          bgcolor: '#f4f7fc', 
+          bgcolor: C.bgElevated,
+          border: `1px solid ${C.border}`,
         } 
       }}
     >
       {/* Header Dark Blue */}
       <Box sx={{ 
-        bgcolor: '#0f172a', // Sidebar dark blue color
+        bgcolor: C.bgElevated,
         color: 'white', 
         pt: 3, 
         pb: 5, 
         px: 4,
         position: 'relative',
-        backgroundImage: 'linear-gradient(to right, #0f172a, #1e293b)'
+        backgroundImage: `linear-gradient(to right, ${C.bgElevated}, ${C.surfaceSoft})`
       }}>
         <IconButton 
           onClick={onClose} 
@@ -101,10 +107,11 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
           mt: -2, 
           mb: 4, 
           borderRadius: 3, 
-          border: '1px solid #e2e8f0',
+          border: `1px solid ${C.border}`,
+          bgcolor: C.bgElevated,
           position: 'relative',
           zIndex: 1,
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+          boxShadow: S.card,
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'stretch',
@@ -120,8 +127,8 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
           }}>
             <Box display="flex" flexDirection="column" gap={1.5}>
               <Box sx={{ 
-                bgcolor: '#eff6ff', 
-                color: '#3b82f6', 
+                bgcolor: alpha(C.blue, 0.14),
+                color: '#7dd3fc',
                 p: 1.5, 
                 borderRadius: '50%',
                 display: 'flex',
@@ -133,13 +140,13 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
                 <FileText size={24} />
               </Box>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.5}>COMPROBANTE</Typography>
-                <Typography variant="h6" fontWeight="bold" sx={{ color: '#1e293b', lineHeight: 1.2, mt: 0.5 }}>
+                <Typography variant="caption" sx={{ color: '#cbd5e1' }} fontWeight={700} letterSpacing={0.5}>COMPROBANTE</Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ color: C.text, lineHeight: 1.2, mt: 0.5 }}>
                   {cuenta.compra_comprobante || 'Deuda sin comprobante'}
                 </Typography>
                 <Box display="flex" flexDirection="column" mt={1.5}>
-                  <Typography variant="caption" color="text.secondary">RUC/DNI:</Typography>
-                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                  <Typography variant="caption" sx={{ color: '#cbd5e1', fontWeight: 700 }}>RUC/DNI:</Typography>
+                  <Typography variant="body2" sx={{ color: '#7dd3fc', fontWeight: 700 }}>
                     {cuenta.proveedor_documento || 'No registrado'}
                   </Typography>
                 </Box>
@@ -148,7 +155,7 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
           </Box>
 
           {/* Divider */}
-          <Box sx={{ width: '1px', bgcolor: '#e2e8f0', my: 2 }} />
+          <Box sx={{ width: '1px', bgcolor: C.border, my: 2 }} />
 
           {/* Right: Total Abonado */}
           <Box sx={{ 
@@ -160,8 +167,8 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
           }}>
             <Box display="flex" flexDirection="column" gap={1.5}>
               <Box sx={{ 
-                bgcolor: '#ecfdf5', 
-                color: '#10b981', 
+                bgcolor: alpha(C.emerald, 0.14),
+                color: '#6ee7b7',
                 p: 1.5, 
                 borderRadius: '50%',
                 display: 'flex',
@@ -173,8 +180,8 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
                 <Wallet size={24} />
               </Box>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.5}>TOTAL ABONADO</Typography>
-                <Typography variant="h5" fontWeight="bold" sx={{ color: '#1e293b', lineHeight: 1.2, mt: 0.5 }}>
+                <Typography variant="caption" sx={{ color: '#cbd5e1' }} fontWeight={700} letterSpacing={0.5}>TOTAL ABONADO</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: '#6ee7b7', lineHeight: 1.2, mt: 0.5 }}>
                   S/ {parseFloat(cuenta.monto_pagado).toFixed(2)}
                 </Typography>
                 <Chip 
@@ -183,8 +190,8 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
                   icon={<CheckCircle size={14} />}
                   sx={{ 
                     mt: 1.5,
-                    bgcolor: cuenta.estado === 'Parcial' ? '#fff7ed' : '#ecfdf5',
-                    color: cuenta.estado === 'Parcial' ? '#ea580c' : '#10b981',
+                    bgcolor: cuenta.estado === 'Parcial' ? alpha(C.amber, 0.16) : alpha(C.emerald, 0.14),
+                    color: cuenta.estado === 'Parcial' ? '#fcd34d' : '#6ee7b7',
                     fontWeight: 600,
                     '& .MuiChip-icon': { color: 'inherit' }
                   }} 
@@ -197,20 +204,20 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
         {/* Title */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} px={1}>
           <Box display="flex" alignItems="center" gap={1.5}>
-            <History size={22} color="#3b82f6" />
-            <Typography variant="h6" fontWeight="bold" sx={{ color: '#1e293b' }}>
+            <History size={22} color="#38bdf8" />
+            <Typography variant="h6" fontWeight="bold" sx={{ color: C.text }}>
               Historial de Abonos
             </Typography>
           </Box>
           <Chip 
             label={`${pagos.length} registro${pagos.length !== 1 ? 's' : ''}`}
             size="small"
-            sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 600, px: 1 }}
+            sx={{ bgcolor: alpha(C.blue, 0.16), color: '#7dd3fc', fontWeight: 700, px: 1 }}
           />
         </Box>
 
         {/* Table */}
-        <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+        <Paper elevation={0} sx={{ border: `1px solid ${C.border}`, borderRadius: '8px', overflow: 'hidden', bgcolor: C.bgElevated }}>
           {loading ? (
             <Box display="flex" justifyContent="center" p={6}>
               <CircularProgress />
@@ -222,13 +229,13 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
           ) : (
             <TableContainer>
               <Table size="medium">
-                <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                   <TableRow>
-                    <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>FECHA</TableCell>
-                    <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>MÉTODO</TableCell>
-                    <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>REFERENCIA</TableCell>
-                    <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>MONTO</TableCell>
-                    <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }} align="right">ESTADO</TableCell>
+                    <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>FECHA</TableCell>
+                    <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>MÉTODO</TableCell>
+                    <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>REFERENCIA</TableCell>
+                    <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>MONTO</TableCell>
+                    <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }} align="right">ESTADO</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -236,8 +243,8 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
                     <TableRow key={pago.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1.5}>
-                          <Calendar size={18} color="#94a3b8" />
-                          <Typography variant="body2" fontWeight={600} color="#334155">
+                          <Calendar size={18} color="#7dd3fc" />
+                          <Typography variant="body2" fontWeight={700} color={C.text}>
                             {pago.fecha_pago}
                           </Typography>
                         </Box>
@@ -245,15 +252,15 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1.5}>
                           {getMetodoIcon(pago.metodo_pago)}
-                          <Typography variant="body2" fontWeight={600} color="#334155">
+                          <Typography variant="body2" fontWeight={700} color={C.text}>
                             {pago.metodo_pago || '-'}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
                          <Box display="flex" alignItems="center" gap={1.5}>
-                          <FileText size={18} color="#94a3b8" />
-                          <Typography variant="body2" color="#64748b" fontWeight={500}>
+                          <FileText size={18} color="#7dd3fc" />
+                          <Typography variant="body2" sx={{ color: '#cbd5e1' }} fontWeight={600}>
                             {pago.referencia || '-'}
                           </Typography>
                         </Box>
@@ -269,8 +276,8 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
                           size="small"
                           icon={<CheckCircle size={14} />}
                           sx={{ 
-                            bgcolor: '#ecfdf5',
-                            color: '#10b981',
+                            bgcolor: alpha(C.emerald, 0.14),
+                            color: '#6ee7b7',
                             fontWeight: 600,
                             '& .MuiChip-icon': { color: 'inherit' }
                           }} 
@@ -285,20 +292,20 @@ export default function ModalHistorialPagos({ open, onClose, cuenta }) {
         </Paper>
 
       </DialogContent>
-      <DialogActions sx={{ p: 3, pt: 1, pb: 4, px: 4 }}>
+      <DialogActions sx={{ p: 3, pt: 1, pb: 4, px: 4, bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}` }}>
         <Button 
           onClick={onClose} 
           variant="outlined" 
           color="inherit"
           startIcon={<X size={18} />}
           sx={{ 
-            borderRadius: 2, 
+            borderRadius: '8px',
             textTransform: 'none', 
             fontWeight: 600,
-            borderColor: '#cbd5e1',
-            color: '#475569',
+            borderColor: C.border,
+            color: '#e2e8f0',
             px: 3,
-            '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' }
+            '&:hover': { bgcolor: alpha(C.surfaceSoft, 0.7), borderColor: '#7dd3fc' }
           }}
         >
           Cerrar

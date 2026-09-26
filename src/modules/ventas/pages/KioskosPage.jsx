@@ -5,12 +5,17 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Chip, MenuItem, FormControlLabel, Switch
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, Monitor, Link as LinkIcon } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { kioskoService } from '../services/kioskoService';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 function useKioskos() {
   const [kioskos, setKioskos] = useState([]);
@@ -167,7 +172,7 @@ export default function KioskosPage() {
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', boxShadow: S.card }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -175,7 +180,7 @@ export default function KioskosPage() {
         ) : (
           <TableContainer>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
                   <TableCell><strong>Nombre</strong></TableCell>
                   <TableCell><strong>Sucursal</strong></TableCell>
@@ -208,16 +213,16 @@ export default function KioskosPage() {
                       </TableCell>
                       <TableCell>{formatFecha(row.ultima_actividad)}</TableCell>
                       <TableCell align="center">
-                        <IconButton color="secondary" onClick={() => copiarEnlaceActivacion(row.codigo_activacion)} title="Copiar enlace de activación">
+                        <IconButton size="small" onClick={() => copiarEnlaceActivacion(row.codigo_activacion)} title="Copiar enlace de activación" sx={{ color: '#a78bfa', bgcolor: alpha('#8b5cf6', 0.1), border: `1px solid ${alpha('#8b5cf6', 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha('#8b5cf6', 0.2) } }}>
                           <LinkIcon size={18} />
                         </IconButton>
                         {puedeEditar && (
-                          <IconButton color="primary" onClick={() => handleOpenModal(row)} title="Editar">
+                          <IconButton size="small" onClick={() => handleOpenModal(row)} title="Editar" sx={{ ml: 0.75, color: '#38bdf8', bgcolor: alpha(C.blue, 0.1), border: `1px solid ${alpha(C.blue, 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha(C.blue, 0.2) } }}>
                             <Edit size={18} />
                           </IconButton>
                         )}
                         {puedeEliminar && (
-                          <IconButton color="error" onClick={() => handleDelete(row.id, row.nombre)} title="Eliminar">
+                          <IconButton size="small" onClick={() => handleDelete(row.id, row.nombre)} title="Eliminar" sx={{ ml: 0.75, color: '#fb7185', bgcolor: alpha(C.brand, 0.1), border: `1px solid ${alpha(C.brand, 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha(C.brand, 0.2) } }}>
                             <Trash2 size={18} />
                           </IconButton>
                         )}

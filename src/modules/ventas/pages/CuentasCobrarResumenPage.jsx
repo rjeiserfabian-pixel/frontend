@@ -4,9 +4,14 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Chip, TablePagination, CircularProgress
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Wallet, DollarSign, Users, Inbox } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function CuentasCobrarResumenPage() {
   const [clientes, setClientes] = useState([]);
@@ -58,8 +63,8 @@ export default function CuentasCobrarResumenPage() {
     <Box sx={{ p: 3 }}>
       {/* HEADER */}
       <Box sx={{
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-        borderRadius: 4, color: 'white', p: 3, mb: 3,
+        background: `linear-gradient(135deg, ${C.bgElevated}, ${C.surfaceSoft})`,
+        border: `1px solid ${C.border}`, borderRadius: '8px', color: 'white', p: 3, mb: 3,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
         boxShadow: '0 8px 24px rgba(30,58,138,0.25)'
       }}>
@@ -78,17 +83,17 @@ export default function CuentasCobrarResumenPage() {
         </Box>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+      <Paper elevation={0} sx={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f1f5f9' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>DOCUMENTO (DNI/RUC)</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>CLIENTE</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>DEUDA TOTAL HISTÓRICA</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>ESTADO</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>ACCIONES</TableCell>
+              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DOCUMENTO (DNI/RUC)</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>CLIENTE</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DEUDA TOTAL HISTÓRICA</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ESTADO</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ACCIONES</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -105,8 +110,8 @@ export default function CuentasCobrarResumenPage() {
                 </TableRow>
               ) : (
                 clientes.map((row) => (
-                  <TableRow key={row.venta__cliente__id} hover sx={{ '&:hover': { bgcolor: '#f8fafc' } }}>
-                    <TableCell sx={{ color: '#64748b' }}>{row.venta__cliente__dni}</TableCell>
+                  <TableRow key={row.venta__cliente__id} hover>
+                    <TableCell sx={{ color: '#7dd3fc', fontWeight: 700 }}>{row.venta__cliente__dni}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>
                       {(row.venta__cliente__nombres || '') + ' ' + (row.venta__cliente__apellidos || '')}
                     </TableCell>
@@ -120,7 +125,7 @@ export default function CuentasCobrarResumenPage() {
                         size="small"
                         onClick={() => handleOpenCliente(row)}
                         title="Ver Créditos del Cliente"
-                        sx={{ bgcolor: '#eff6ff', color: '#2563eb', '&:hover': { bgcolor: '#dbeafe' } }}
+                        sx={{ bgcolor: alpha(C.blue, 0.08), color: C.blue, border: `1px solid ${alpha(C.blue, 0.18)}`, '&:hover': { bgcolor: alpha(C.blue, 0.16) } }}
                       >
                         <DollarSign size={18} />
                       </IconButton>

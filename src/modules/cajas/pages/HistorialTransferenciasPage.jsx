@@ -4,10 +4,15 @@ import {
   Box, Card, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, CircularProgress, Alert, IconButton, Tooltip, Stack, TablePagination, Chip, Button
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { History, ArrowRightLeft, Printer, ArrowLeft } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { getTransferencias } from '../services/cajas.service';
 import PrintTransferenciaComponent from '../components/PrintTransferenciaComponent';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const fmtDate = (d) => {
   if (!d) return '—';
@@ -80,8 +85,8 @@ export default function HistorialTransferenciasPage() {
   return (
     <Box sx={{ py: 2 }}>
       {/* Encabezado Visual */}
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', mb: 3 }}>
-        <Box sx={{ background: 'linear-gradient(135deg, #475569 0%, #334155 100%)', p: 3, color: 'white' }}>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px', overflow: 'hidden', boxShadow: S.card, mb: 3 }}>
+        <Box sx={{ background: `linear-gradient(135deg, ${C.bgElevated} 0%, ${C.surfaceSoft} 100%)`, p: 3, color: 'white' }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
             <Box display="flex" alignItems="center" gap={2}>
               <Box sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
@@ -118,10 +123,10 @@ export default function HistorialTransferenciasPage() {
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
       {/* Tabla */}
-      <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
+      <Paper elevation={0} sx={{ border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px', overflow: 'hidden', boxShadow: S.card }}>
         <TableContainer>
           <Table size="small" sx={{ minWidth: 900 }}>
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700, py: 2 }}>N° Documento</TableCell>
                 <TableCell sx={{ fontWeight: 700, py: 2 }}>Fecha</TableCell>

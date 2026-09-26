@@ -8,6 +8,10 @@ import { ArrowLeft, Save, TrendingDown, TrendingUp, ArrowDownCircle, ArrowUpCirc
 import { registrarMovimiento, getMetodosPago } from '../services/cajas.service';
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function NuevoMovimientoPage() {
   const navigate = useNavigate();
@@ -170,10 +174,10 @@ export default function NuevoMovimientoPage() {
           <form onSubmit={handleSubmit}>
             <Box
               sx={{
-                bgcolor: '#f8fafc',
+                bgcolor: C.bgElevated,
                 p: 3.5,
-                borderRadius: 3,
-                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                border: `1px solid ${C.border}`,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 3.5,
@@ -187,7 +191,7 @@ export default function NuevoMovimientoPage() {
                 value={formData.tipo}
                 onChange={handleChange}
                 disabled={loading}
-                sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               >
                 <MenuItem value="EGRESO">
                   <Box display="flex" alignItems="center" gap={1}>
@@ -224,7 +228,7 @@ export default function NuevoMovimientoPage() {
                   InputProps={{
                     startAdornment: <InputAdornment position="start">S/</InputAdornment>,
                   }}
-                  sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                  sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
                 <TextField
                   select fullWidth
@@ -234,7 +238,7 @@ export default function NuevoMovimientoPage() {
                   onChange={handleChange}
                   required
                   disabled={loading}
-                  sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                  sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 >
                   {metodosPago.map(m => (
                     <MenuItem key={m.id} value={m.id}>{m.nombre}</MenuItem>
@@ -254,7 +258,7 @@ export default function NuevoMovimientoPage() {
                 rows={2}
                 disabled={loading}
                 placeholder={esEgreso ? 'Ej: Compra de útiles de limpieza' : 'Ej: Ingreso inicial extra'}
-                sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
               {/* Referencia */}
@@ -270,7 +274,7 @@ export default function NuevoMovimientoPage() {
                 disabled={loading}
                 required={metodosPago.find(m => m.id === formData.metodo_pago)?.requiere_referencia || false}
                 placeholder="Nro. Boleta, Ticket, Operación..."
-                sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                sx={{ bgcolor: C.surface, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
               <Divider sx={{ my: 1 }} />

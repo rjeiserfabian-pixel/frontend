@@ -5,11 +5,16 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, FormControl, InputLabel, Select, MenuItem, FormHelperText
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, CreditCard } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function CuentasBancariasPage() {
   const { tienePermiso } = usePermisos();
@@ -163,21 +168,21 @@ export default function CuentasBancariasPage() {
     <Box className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <Box className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <Box className="flex justify-between items-center p-6 rounded-lg" sx={{ bgcolor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <Box>
-          <Typography variant="h4" className="font-bold text-slate-800 flex items-center gap-3">
-            <CreditCard className="text-blue-600" size={32} />
+          <Typography variant="h4" className="font-bold flex items-center gap-3" sx={{ color: C.text }}>
+            <CreditCard color="#7dd3fc" size={32} />
             Cuentas Bancarias
           </Typography>
-          <Typography className="text-slate-500 mt-1">
+          <Typography className="mt-1" sx={{ color: '#cbd5e1' }}>
             Gestione las cuentas bancarias de la empresa y sus tipos.
           </Typography>
         </Box>
       </Box>
 
-      <Box className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col shadow-sm">
+      <Box className="flex-1 rounded-lg p-6 flex flex-col" sx={{ bgcolor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         {/* TABS */}
-        <Box className="flex border-b border-slate-200 mb-6">
+        <Box className="flex border-b mb-6" sx={{ borderColor: C.border }}>
           <button 
             className={`px-6 py-3 font-medium transition-colors ${activeTab === 'cuentas' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             onClick={() => setActiveTab('cuentas')}
@@ -195,7 +200,7 @@ export default function CuentasBancariasPage() {
         {/* CONTENT */}
         <Box className="flex-1">
           <Box className="flex justify-between items-center mb-4">
-            <Typography variant="h6" className="font-semibold text-slate-800">
+            <Typography variant="h6" className="font-semibold" sx={{ color: C.text }}>
               {activeTab === 'cuentas' ? 'Listado de Cuentas' : 'Tipos de Cuenta Bancaria'}
             </Typography>
             {puedeCrear && (
@@ -203,14 +208,14 @@ export default function CuentasBancariasPage() {
                 variant="contained"
                 startIcon={<Plus size={20} />}
                 onClick={() => handleOpenModal()}
-                className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}
               >
                 Nuevo Registro
               </Button>
             )}
           </Box>
 
-          <Paper className="w-full overflow-hidden border border-slate-200 rounded-xl shadow-none">
+          <Paper className="w-full overflow-hidden rounded-lg shadow-none" sx={{ bgcolor: C.surface, border: `1px solid ${C.border}` }}>
             {loading ? (
               <Box className="flex justify-center p-8">
                 <CircularProgress />
@@ -218,7 +223,7 @@ export default function CuentasBancariasPage() {
             ) : (
               <TableContainer>
                 <Table>
-                  <TableHead className="bg-slate-50">
+                  <TableHead sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
                     <TableRow>
                       <TableCell className="font-medium text-slate-600">Nº</TableCell>
                       
@@ -237,7 +242,7 @@ export default function CuentasBancariasPage() {
                       <TableCell align="right" className="font-medium text-slate-600">Acciones</TableCell>
                     </TableRow>
                   </TableHead>
-                  <TableBody className="divide-y divide-slate-100">
+                  <TableBody className="divide-y" sx={{ '& .MuiTableCell-root': { borderColor: C.border } }}>
                     {(activeTab === 'cuentas' ? cuentas : tiposCuenta).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={activeTab === 'cuentas' ? 7 : 3} align="center" className="text-slate-500 p-8">
@@ -266,12 +271,12 @@ export default function CuentasBancariasPage() {
 
                           <TableCell align="right">
                             {puedeEditar && (
-                              <IconButton color="primary" onClick={() => handleOpenModal(row)} className="hover:bg-blue-50">
+                              <IconButton size="small" onClick={() => handleOpenModal(row)} title="Editar" sx={{ color: '#38bdf8', bgcolor: alpha(C.blue, 0.1), border: `1px solid ${alpha(C.blue, 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha(C.blue, 0.2) } }}>
                                 <Edit size={18} />
                               </IconButton>
                             )}
                             {puedeEliminar && (
-                              <IconButton color="error" onClick={() => handleDelete(row.id)} className="hover:bg-red-50">
+                              <IconButton size="small" onClick={() => handleDelete(row.id)} title="Eliminar" sx={{ ml: 0.75, color: '#fb7185', bgcolor: alpha(C.brand, 0.1), border: `1px solid ${alpha(C.brand, 0.3)}`, borderRadius: '6px', '&:hover': { bgcolor: alpha(C.brand, 0.2) } }}>
                                 <Trash2 size={18} />
                               </IconButton>
                             )}
@@ -288,12 +293,12 @@ export default function CuentasBancariasPage() {
       </Box>
 
       {/* Modal Formulario */}
-      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
-        <DialogTitle className="font-bold text-slate-800">
+      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: C.bgElevated, borderRadius: '8px', border: `1px solid ${C.border}` } }}>
+        <DialogTitle sx={{ fontWeight: 800, color: C.text, bgcolor: C.surface, borderBottom: `1px solid ${C.border}` }}>
           {editingId ? 'Editar Registro' : 'Nuevo Registro'}
         </DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogContent dividers className="flex flex-col gap-4 pt-4">
+          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 3, bgcolor: C.bgElevated, borderColor: C.border }}>
             
             {activeTab === 'tipos' ? (
               <TextField
@@ -379,8 +384,8 @@ export default function CuentasBancariasPage() {
             )}
 
           </DialogContent>
-          <DialogActions className="p-4">
-            <Button onClick={handleCloseModal} color="inherit" disabled={isSubmitting}>
+          <DialogActions sx={{ p: 2, bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}` }}>
+            <Button onClick={handleCloseModal} color="inherit" disabled={isSubmitting} sx={{ color: '#e2e8f0', border: `1px solid ${C.border}` }}>
               Cancelar
             </Button>
             <Button 
@@ -388,7 +393,7 @@ export default function CuentasBancariasPage() {
               variant="contained" 
               color="primary"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}
             >
               {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Guardar'}
             </Button>

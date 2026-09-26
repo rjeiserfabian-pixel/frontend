@@ -5,6 +5,7 @@ import {
   CircularProgress, Grid, TextField, MenuItem, Select, InputLabel, 
   FormControl, Divider, Tabs, Tab, Autocomplete, InputAdornment
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { 
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
   CreditCard, Banknote, Calendar, User, FileText, ShoppingCart
@@ -16,6 +17,9 @@ import { clienteService } from './../../clientes/services/clienteService';
 import { useReactToPrint } from 'react-to-print';
 import TicketImpresion from '../components/TicketImpresion';
 import api from '../../../core/api/axios';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 
 const RegistroManualVentasPage = () => {
@@ -457,7 +461,7 @@ const RegistroManualVentasPage = () => {
         <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ p: 3, mb: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>1</span>
+              <span style={{ backgroundColor: alpha(C.blue, 0.16), color: '#7dd3fc', border: `1px solid ${alpha(C.blue, 0.35)}`, borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>1</span>
               DATOS DEL CLIENTE
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -498,7 +502,7 @@ const RegistroManualVentasPage = () => {
 
           <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>2</span>
+              <span style={{ backgroundColor: alpha(C.blue, 0.16), color: '#7dd3fc', border: `1px solid ${alpha(C.blue, 0.35)}`, borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>2</span>
               COMPROBANTE
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -535,9 +539,12 @@ const RegistroManualVentasPage = () => {
                 disabled
                 sx={{ 
                   width: 120,
+                  "& .MuiInputBase-root.Mui-disabled": { bgcolor: alpha(C.blue, 0.08), opacity: 1 },
                   "& .MuiInputBase-input.Mui-disabled": {
-                    WebkitTextFillColor: "#000000",
-                    fontWeight: "bold"
+                    WebkitTextFillColor: "#bae6fd",
+                    color: "#bae6fd",
+                    opacity: 1,
+                    fontWeight: 800
                   }
                 }}
               />
@@ -567,7 +574,7 @@ const RegistroManualVentasPage = () => {
             <Grid size={{ xs: 12, sm: 6, md: 12 }}>
               <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
             <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
+              <span style={{ backgroundColor: alpha(C.blue, 0.16), color: '#7dd3fc', border: `1px solid ${alpha(C.blue, 0.35)}`, borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
               CONDICIÓN DE PAGO
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -669,7 +676,7 @@ const RegistroManualVentasPage = () => {
                   const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
                   if (sumP > total) {
                     return (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: '#e8f5e9', borderRadius: 1, display: 'flex', justifyContent: 'space-between', border: '1px solid #c8e6c9' }}>
+                      <Box sx={{ mt: 2, p: 2, bgcolor: alpha(C.emerald, 0.12), borderRadius: '8px', display: 'flex', justifyContent: 'space-between', border: `1px solid ${alpha(C.emerald, 0.34)}` }}>
                         <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
                         <Typography variant="subtitle1" color="success.main" fontWeight="bold">S/ {(sumP - total).toFixed(2)}</Typography>
                       </Box>
@@ -686,7 +693,7 @@ const RegistroManualVentasPage = () => {
             <Grid size={{ xs: 12, sm: 6, md: 12 }}>
               <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>4</span>
+              <span style={{ backgroundColor: alpha(C.blue, 0.16), color: '#7dd3fc', border: `1px solid ${alpha(C.blue, 0.35)}`, borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>4</span>
                   MONEDA Y TIPO DE CAMBIO
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
@@ -828,9 +835,9 @@ const RegistroManualVentasPage = () => {
                           />
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, -1)} sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }}><Minus size={14} /></IconButton>
+                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, -1)} sx={{ bgcolor: alpha('#ffffff', 0.06), border: `1px solid ${C.border}`, borderRadius: '6px' }}><Minus size={14} /></IconButton>
                           <Typography variant="body2" sx={{ width: 24, textAlign: 'center' }}>{item.cantidad}</Typography>
-                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, 1)} sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }}><Plus size={14} /></IconButton>
+                          <IconButton size="small" onClick={() => actualizarCantidad(item.id, 1)} sx={{ bgcolor: alpha('#ffffff', 0.06), border: `1px solid ${C.border}`, borderRadius: '6px' }}><Plus size={14} /></IconButton>
                           <IconButton size="small" color="error" onClick={() => eliminarDelCarrito(item.id)} sx={{ ml: 1 }}><Trash2 size={16} /></IconButton>
                         </Box>
                       </Box>

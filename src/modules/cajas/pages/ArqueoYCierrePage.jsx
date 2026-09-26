@@ -4,9 +4,14 @@ import {
   Box, Card, CardContent, Typography, TextField, Button,
   Alert, CircularProgress, Divider, InputAdornment, Stack
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, Scale, Lock } from 'lucide-react';
 import { calcularArqueo, cerrarCaja } from '../services/cajas.service';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const fmtMoney = (v) =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v ?? 0);
@@ -69,9 +74,9 @@ export default function ArqueoYCierrePage() {
         Volver
       </Button>
 
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: C.border, bgcolor: C.surface, borderRadius: '8px', overflow: 'hidden', boxShadow: S.card }}>
         {/* Encabezado Visual */}
-        <Box sx={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', p: 3, color: 'white' }}>
+        <Box sx={{ background: `linear-gradient(135deg, ${C.bgElevated} 0%, ${C.surfaceSoft} 100%)`, p: 3, color: 'white' }}>
           <Box display="flex" alignItems="center" gap={2}>
             <Box sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
               <Scale size={28} color="white" />
@@ -90,7 +95,7 @@ export default function ArqueoYCierrePage() {
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
           {/* Saldo Teórico (Sistema) */}
-          <Box bgcolor="#f0f9ff" borderRadius={2} p={2.5} mb={2.5}>
+          <Box bgcolor={alpha(C.blue, 0.12)} border={`1px solid ${alpha(C.blue, 0.35)}`} borderRadius={2} p={2.5} mb={2.5}>
             <Typography variant="overline" color="primary" fontWeight={700}>
               📊 Saldo Teórico (Sistema)
             </Typography>
@@ -118,7 +123,7 @@ export default function ArqueoYCierrePage() {
           </Box>
 
           {/* Formulario de Cierre */}
-          <Box sx={{ bgcolor: '#f8fafc', p: 3, borderRadius: 3, border: '1px solid #e2e8f0', mb: 3 }}>
+          <Box sx={{ bgcolor: C.bgElevated, p: 3, borderRadius: '8px', border: `1px solid ${C.border}`, mb: 3 }}>
             <Stack spacing={3}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" fontWeight={700} mb={1}>
@@ -130,7 +135,7 @@ export default function ArqueoYCierrePage() {
                   placeholder="0.00"
                   InputProps={{ startAdornment: <InputAdornment position="start">S/</InputAdornment> }}
                   sx={{ 
-                    bgcolor: 'white', 
+                    bgcolor: C.surface,
                     '& .MuiOutlinedInput-root': { borderRadius: 2 } 
                   }}
                 />
@@ -139,7 +144,7 @@ export default function ArqueoYCierrePage() {
           {/* Resultado del Arqueo */}
           {contado !== '' && (
             <Box
-              bgcolor={hayDiferencia ? '#fff7ed' : '#f0fdf4'}
+              bgcolor={hayDiferencia ? alpha(C.amber, 0.14) : alpha(C.emerald, 0.14)}
               border="1px solid"
               borderColor={hayDiferencia ? 'warning.light' : 'success.light'}
               borderRadius={2} p={2} mb={2.5}
@@ -172,7 +177,7 @@ export default function ArqueoYCierrePage() {
                     placeholder="Ej: Error al dar vuelto en una venta de la tarde..."
                     helperText="El administrador revisará esta justificación. Es obligatoria."
                     sx={{ 
-                      bgcolor: 'white', 
+                      bgcolor: C.surface,
                       '& .MuiOutlinedInput-root': { borderRadius: 2 } 
                     }}
                   />

@@ -4,6 +4,7 @@ import {
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   TablePagination, Chip
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Truck, Printer, Play, CheckCircle, Eye, ReceiptText } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
@@ -14,6 +15,10 @@ import PrintGuiaRemisionA4 from '../components/PrintGuiaRemisionA4';
 import { useReactToPrint } from 'react-to-print';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function GuiasRemisionPage() {
   const { tienePermiso } = usePermisos();
@@ -511,9 +516,9 @@ export default function GuiasRemisionPage() {
         )}
       </Box>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <Table>
-          <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+          <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
             <TableRow>
               <TableCell><b>Nº Guía</b></TableCell>
               <TableCell><b>Emisión</b></TableCell>
@@ -544,33 +549,34 @@ export default function GuiasRemisionPage() {
                   <TableCell>{getStatusChip(item.estado)}</TableCell>
                   <TableCell align="center">
                     {item.estado === 'CREADA' && puedeAprobar && (
-                      <IconButton color="success" onClick={() => handleDarSalida(item)} title="Preparar Salida" sx={{ mr: 1 }}>
+                      <IconButton color="success" onClick={() => handleDarSalida(item)} title="Preparar Salida" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.emerald, 0.08), border: `1px solid ${alpha(C.emerald, 0.2)}` }}>
                         <Truck size={18} />
                       </IconButton>
                     )}
                     {item.estado === 'LISTA_PARA_SALIDA' && puedeAprobar && (
-                      <IconButton color="success" onClick={() => handleIniciarTraslado(item)} title="Dar Salida" sx={{ mr: 1 }}>
+                      <IconButton color="success" onClick={() => handleIniciarTraslado(item)} title="Dar Salida" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.emerald, 0.08), border: `1px solid ${alpha(C.emerald, 0.2)}` }}>
                         <Play size={18} />
                       </IconButton>
                     )}
                     {item.estado === 'EN_TRASLADO' && puedeAprobar && (
-                      <IconButton color="primary" onClick={() => handleCompletarTraslado(item)} title="Confirmar llegada / Completar" sx={{ mr: 1 }}>
+                      <IconButton color="secondary" onClick={() => handleCompletarTraslado(item)} title="Confirmar llegada / Completar" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                         <CheckCircle size={18} />
                       </IconButton>
                     )}
                     {item.estado === 'COMPLETADA' && !item.venta_generada && puedeFacturar && (
-                      <IconButton color="success" onClick={() => handleFacturarGuiaMultiple(item)} title="Facturar guía" sx={{ mr: 1 }}>
+                      <IconButton color="success" onClick={() => handleFacturarGuiaMultiple(item)} title="Facturar guía" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.emerald, 0.08), border: `1px solid ${alpha(C.emerald, 0.2)}` }}>
                         <ReceiptText size={18} />
                       </IconButton>
                     )}
-                    <IconButton color="info" onClick={() => setGuiaDetalle(item)} title="Ver Detalle" sx={{ mr: 1 }}>
+                    <IconButton color="secondary" onClick={() => setGuiaDetalle(item)} title="Ver Detalle" size="small" sx={{ mr: 0.75, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                       <Eye size={18} />
                     </IconButton>
                     <IconButton
-                      color="primary"
                       onClick={() => setGuiaParaImprimir(item)}
                       title="Imprimir Guía"
                       disabled={item.estado === 'CREADA' || item.estado === 'LISTA_PARA_SALIDA'} // Solo imprime si ya dio salida
+                      size="small"
+                      sx={{ color: C.textMuted, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}
                     >
                       <Printer size={18} />
                     </IconButton>

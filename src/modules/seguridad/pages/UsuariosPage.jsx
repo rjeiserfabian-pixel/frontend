@@ -1,17 +1,28 @@
-import { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Button, Paper, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, IconButton, Chip, 
+import { useEffect, useState } from 'react';
+import {
+  Box, Typography, Button, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, IconButton, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, FormControl, InputLabel, Select, MenuItem,
   OutlinedInput, Checkbox, ListItemText, TablePagination
 } from '@mui/material';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { alpha } from '@mui/material/styles';
+import { Plus, Edit, Trash2, UserRound, ShieldCheck, Building2, Mail } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import api from '../../../core/api/axios';
 
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
+
+const getInitials = (user) => {
+  const first = user?.nombres?.trim()?.charAt(0) || user?.username?.trim()?.charAt(0) || 'U';
+  const last = user?.apellidos?.trim()?.charAt(0) || '';
+  return `${first}${last}`.toUpperCase();
+};
 
 export default function UsuariosPage() {
   const { tienePermiso } = usePermisos();
@@ -25,14 +36,12 @@ export default function UsuariosPage() {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  
-  // Estado para los roles seleccionados
+
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedSucursales, setSelectedSucursales] = useState([]);
 
-  // Pagination states
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
@@ -45,18 +54,18 @@ export default function UsuariosPage() {
         api.get('seguridad/roles/'),
         api.get('inventario/sucursales/')
       ]);
-      
+
       const dataUsuarios = resUsuarios.data.data;
       setUsuarios(dataUsuarios.results ? dataUsuarios.results : (Array.isArray(dataUsuarios) ? dataUsuarios : []));
       setTotalCount(dataUsuarios.count !== undefined ? dataUsuarios.count : (dataUsuarios.results ? dataUsuarios.results.length : dataUsuarios.length));
 
       const dataRoles = resRoles.data.data;
       setRolesDisponibles(dataRoles.results ? dataRoles.results : (Array.isArray(dataRoles) ? dataRoles : []));
-      
+
       const dataSucursales = resSucursales.data.results || resSucursales.data;
       setSucursalesDisponibles(Array.isArray(dataSucursales) ? dataSucursales : []);
     } catch (error) {
-      console.error("Error al cargar datos:", error);
+      console.error('Error al cargar datos:', error);
     } finally {
       setLoading(false);
     }
@@ -69,11 +78,11 @@ export default function UsuariosPage() {
   const handleOpen = (user = null) => {
     if (user) {
       setEditingId(user.id_usuario);
-      reset({ 
-        username: user.username, 
-        email: user.email, 
-        nombres: user.nombres, 
-        apellidos: user.apellidos 
+      reset({
+        username: user.username,
+        email: user.email,
+        nombres: user.nombres,
+        apellidos: user.apellidos
       });
       setSelectedRoles(user.roles ? user.roles.map(r => r.id_rol) : []);
       setSelectedSucursales(user.sucursales ? user.sucursales.map(s => s.id_sucursal) : []);
@@ -91,7 +100,7 @@ export default function UsuariosPage() {
   const onSubmit = async (data) => {
     try {
       const payload = { ...data, roles_ids: selectedRoles, sucursales_ids: selectedSucursales };
-      
+
       if (editingId) {
         if (!payload.password) delete payload.password;
         await api.put(`seguridad/usuarios/${editingId}/`, payload);
@@ -100,7 +109,7 @@ export default function UsuariosPage() {
       }
       handleClose();
       fetchData();
-      
+
       Swal.fire({
         icon: 'success',
         title: editingId ? 'Usuario actualizado' : 'Usuario creado correctamente',
@@ -110,9 +119,9 @@ export default function UsuariosPage() {
     } catch (error) {
       let errorMessage = 'Revisa los datos ingresados.';
       if (error.response?.data?.errores) {
-        const errors = error.response.data.errores;
-        const firstKey = Object.keys(errors)[0];
-        errorMessage = `${firstKey}: ${errors[firstKey][0]}`;
+        const responseErrors = error.response.data.errores;
+        const firstKey = Object.keys(responseErrors)[0];
+        errorMessage = `${firstKey}: ${responseErrors[firstKey][0]}`;
       } else if (error.response?.data?.mensaje) {
         errorMessage = error.response.data.mensaje;
       }
@@ -123,7 +132,7 @@ export default function UsuariosPage() {
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: '¿Estás seguro?',
-      text: "El usuario será desactivado del sistema.",
+      text: 'El usuario será desactivado del sistema.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -137,7 +146,7 @@ export default function UsuariosPage() {
         await api.delete(`seguridad/usuarios/${id}/`);
         fetchData();
         Swal.fire('Desactivado', 'El usuario ha sido desactivado.', 'success');
-      } catch (error) {
+      } catch {
         Swal.fire('Error', 'No se pudo desactivar el usuario.', 'error');
       }
     }
@@ -154,98 +163,189 @@ export default function UsuariosPage() {
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h5" fontWeight="bold" color="slate.800">
-          Gestión de Usuarios
-        </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', md: 'center' },
+          gap: 2,
+          flexDirection: { xs: 'column', md: 'row' },
+        }}
+      >
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{ color: C.brandLight, fontWeight: 800, letterSpacing: 0.6, lineHeight: 1 }}
+          >
+            Seguridad / Usuarios
+          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: C.text, mt: 0.6 }}>
+            Gestión de Usuarios
+          </Typography>
+          <Typography variant="body2" sx={{ color: C.textMuted, mt: 0.5 }}>
+            Administra accesos, roles y sucursales asignadas al personal.
+          </Typography>
+        </Box>
+
         {puedeCrear && (
           <Button
             variant="contained"
             startIcon={<Plus size={18} />}
             onClick={() => handleOpen()}
-            sx={{ borderRadius: '8px', textTransform: 'none' }}
+            sx={{ px: 2.2, alignSelf: { xs: 'stretch', sm: 'auto' } }}
           >
             Nuevo Usuario
           </Button>
         )}
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper
+        sx={{
+          width: '100%',
+          overflow: 'hidden',
+          borderRadius: '8px',
+          border: `1px solid ${C.border}`,
+          boxShadow: S.card,
+          backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)`,
+        }}
+      >
         <TableContainer>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Usuario</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Nombre Completo</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Roles</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Sucursales</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Estado</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600 }}>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
+          <Table sx={{ minWidth: 960 }}>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  <CircularProgress size={30} />
-                </TableCell>
+                <TableCell>Usuario</TableCell>
+                <TableCell>Nombre Completo</TableCell>
+                <TableCell>Roles</TableCell>
+                <TableCell>Sucursales</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Estado</TableCell>
+                <TableCell align="right">Acciones</TableCell>
               </TableRow>
-            ) : usuarios.map((user) => (
-              <TableRow key={user.id_usuario} hover>
-                <TableCell fontWeight="500">{user.username}</TableCell>
-                <TableCell>{user.nombres} {user.apellidos}</TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {user.roles && user.roles.map(rol => (
-                      <Chip key={rol.id_rol} label={rol.nombre} size="small" variant="outlined" color="primary" />
-                    ))}
-                    {(!user.roles || user.roles.length === 0) && (
-                      <Typography variant="body2" color="text.secondary">Sin rol</Typography>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
+                    <CircularProgress size={30} />
+                  </TableCell>
+                </TableRow>
+              ) : usuarios.map((user) => (
+                <TableRow key={user.id_usuario} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.4 }}>
+                      <Box
+                        sx={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: '50%',
+                          display: 'grid',
+                          placeItems: 'center',
+                          bgcolor: alpha(C.brand, 0.16),
+                          color: C.brandLight,
+                          border: `1px solid ${alpha(C.brandLight, 0.28)}`,
+                          fontWeight: 800,
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        {getInitials(user)}
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: C.text }}>
+                          {user.username}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: C.text }}>{user.nombres} {user.apellidos}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {user.roles && user.roles.map(rol => (
+                        <Chip
+                          key={rol.id_rol}
+                          icon={<ShieldCheck size={14} />}
+                          label={rol.nombre}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          sx={{ bgcolor: alpha(C.brand, 0.08) }}
+                        />
+                      ))}
+                      {(!user.roles || user.roles.length === 0) && (
+                        <Typography variant="body2" color="text.secondary">Sin rol</Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {user.sucursales && user.sucursales.map(suc => (
+                        <Chip
+                          key={suc.id_sucursal}
+                          icon={<Building2 size={14} />}
+                          label={suc.nombre}
+                          size="small"
+                          variant="outlined"
+                          color="secondary"
+                          sx={{ bgcolor: alpha(C.blue, 0.08) }}
+                        />
+                      ))}
+                      {(!user.sucursales || user.sucursales.length === 0) && (
+                        <Typography variant="body2" color="text.secondary">Ninguna</Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: C.textMuted }}>
+                      <Mail size={15} />
+                      <Typography variant="body2" sx={{ color: C.textMuted }}>
+                        {user.email}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                      color={user.estado === 'activo' ? 'success' : 'default'}
+                      size="small"
+                      sx={{
+                        bgcolor: user.estado === 'activo' ? alpha(C.emerald, 0.14) : alpha('#ffffff', 0.06),
+                        color: user.estado === 'activo' ? '#6ee7b7' : C.textMuted,
+                        border: `1px solid ${user.estado === 'activo' ? alpha(C.emerald, 0.28) : C.border}`,
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    {puedeEditar && (
+                      <IconButton
+                        color="secondary"
+                        onClick={() => handleOpen(user)}
+                        size="small"
+                        sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}
+                      >
+                        <Edit size={18} />
+                      </IconButton>
                     )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {user.sucursales && user.sucursales.map(suc => (
-                      <Chip key={suc.id_sucursal} label={suc.nombre} size="small" variant="outlined" color="secondary" />
-                    ))}
-                    {(!user.sucursales || user.sucursales.length === 0) && (
-                      <Typography variant="body2" color="text.secondary">Ninguna</Typography>
+                    {puedeEliminar && (
+                      <IconButton
+                        color="error"
+                        onClick={() => handleDelete(user.id_usuario)}
+                        size="small"
+                        sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
                     )}
-                  </Box>
-                </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={user.estado === 'activo' ? 'Activo' : 'Inactivo'} 
-                    color={user.estado === 'activo' ? 'success' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  {puedeEditar && (
-                    <IconButton color="primary" onClick={() => handleOpen(user)} size="small" sx={{ mr: 1 }}>
-                      <Edit size={18} />
-                    </IconButton>
-                  )}
-                  {puedeEliminar && (
-                    <IconButton color="error" onClick={() => handleDelete(user.id_usuario)} size="small">
-                      <Trash2 size={18} />
-                    </IconButton>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {!loading && usuarios.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                  No se encontraron usuarios.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!loading && usuarios.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 7, color: 'text.secondary' }}>
+                    No se encontraron usuarios.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
           </Table>
         </TableContainer>
 
@@ -262,11 +362,38 @@ export default function UsuariosPage() {
         )}
       </Paper>
 
-      {/* Modal Crear/Editar */}
       <Dialog open={openModal} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogTitle fontWeight="bold">
-            {editingId ? 'Editar Usuario' : 'Nuevo Usuario'}
+          <DialogTitle
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              pb: 1.5,
+            }}
+          >
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: alpha(C.brand, 0.14),
+                border: `1px solid ${alpha(C.brandLight, 0.24)}`,
+                color: C.brandLight,
+              }}
+            >
+              <UserRound size={19} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: C.text }}>
+                {editingId ? 'Editar Usuario' : 'Nuevo Usuario'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: C.textMuted }}>
+                {editingId ? 'Actualiza los accesos del usuario.' : 'Registra un nuevo usuario en el sistema.'}
+              </Typography>
+            </Box>
           </DialogTitle>
           <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 3 }}>
             <TextField
@@ -284,7 +411,7 @@ export default function UsuariosPage() {
               size="small"
               {...register('email')}
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
               <TextField
                 label="Nombres"
                 fullWidth
@@ -302,7 +429,7 @@ export default function UsuariosPage() {
                 helperText={errors.apellidos?.message}
               />
             </Box>
-            
+
             <FormControl fullWidth size="small">
               <InputLabel id="roles-label">Roles Asignados</InputLabel>
               <Select
@@ -356,7 +483,7 @@ export default function UsuariosPage() {
             </FormControl>
 
             <TextField
-              label={editingId ? "Nueva Contraseña (dejar en blanco para no cambiar)" : "Contraseña"}
+              label={editingId ? 'Nueva Contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
               type="password"
               fullWidth
               size="small"
@@ -365,9 +492,9 @@ export default function UsuariosPage() {
               helperText={errors.password?.message}
             />
           </DialogContent>
-          <DialogActions sx={{ p: 2, pt: 1 }}>
-            <Button onClick={handleClose} color="inherit" sx={{ textTransform: 'none' }}>Cancelar</Button>
-            <Button type="submit" variant="contained" sx={{ textTransform: 'none' }}>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleClose} color="inherit">Cancelar</Button>
+            <Button type="submit" variant="contained">
               {editingId ? 'Guardar Cambios' : 'Crear Usuario'}
             </Button>
           </DialogActions>

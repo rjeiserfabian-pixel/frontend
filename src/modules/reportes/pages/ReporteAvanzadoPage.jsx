@@ -114,11 +114,11 @@ function RenderVentasGeneral({ data }) {
       </div>
 
       <div style={{ padding: '0 24px 24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'stretch' }}>
-        <div style={{ flex: '2 1 420px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', background: '#fff' }}>
-          <h4 style={{ fontSize: '0.9rem', color: '#0f172a', marginBottom: '2px', marginTop: 0 }}>Repuestos más rentables</h4>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '12px' }}>Top 10 del periodo, ordenado por utilidad generada (no por ventas)</p>
+        <div style={{ flex: '2 1 420px', border: '1px solid rgba(148,163,184,.16)', borderRadius: '8px', padding: '16px', background: '#162235' }}>
+          <h4 style={{ fontSize: '0.9rem', color: '#f8fafc', marginBottom: '2px', marginTop: 0 }}>Repuestos más rentables</h4>
+          <p style={{ fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '12px' }}>Top 10 del periodo, ordenado por utilidad generada (no por ventas)</p>
           {data.top_repuestos.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#64748b', padding: '24px 0' }}>Sin ventas de repuestos en este periodo.</p>
+            <p style={{ textAlign: 'center', color: '#cbd5e1', padding: '24px 0' }}>Sin ventas de repuestos en este periodo.</p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table className="reporte-table">
@@ -147,28 +147,28 @@ function RenderVentasGeneral({ data }) {
           )}
         </div>
 
-        <div style={{ flex: '1 1 260px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', background: '#fff' }}>
-          <h4 style={{ fontSize: '0.9rem', color: '#0f172a', marginBottom: '2px', marginTop: 0 }}>Repuestos vs. mano de obra</h4>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '14px' }}>De dónde viene la utilidad</p>
+        <div style={{ flex: '1 1 260px', border: '1px solid rgba(148,163,184,.16)', borderRadius: '8px', padding: '16px', background: '#162235' }}>
+          <h4 style={{ fontSize: '0.9rem', color: '#f8fafc', marginBottom: '2px', marginTop: 0 }}>Repuestos vs. mano de obra</h4>
+          <p style={{ fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '14px' }}>De dónde viene la utilidad</p>
 
-          <div style={{ display: 'flex', height: '10px', width: '100%', borderRadius: '99px', overflow: 'hidden', background: '#f1f5f9', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', height: '10px', width: '100%', borderRadius: '99px', overflow: 'hidden', background: '#0b1220', marginBottom: '16px' }}>
             <div style={{ width: `${pctRepuestos}%`, background: '#0ea5e9' }} />
             <div style={{ width: `${pctManoObra}%`, background: '#f59e0b' }} />
           </div>
 
           <div style={{ marginBottom: '14px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#64748b', marginBottom: '2px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '2px' }}>
               <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#0ea5e9', display: 'inline-block' }} /> Repuestos
             </span>
-            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>S/ {Number(rvm.utilidad_repuestos).toFixed(2)}</span>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>de S/ {Number(rvm.ventas_repuestos).toFixed(2)} vendido</p>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc' }}>S/ {Number(rvm.utilidad_repuestos).toFixed(2)}</span>
+            <p style={{ fontSize: '0.72rem', color: '#cbd5e1', margin: 0 }}>de S/ {Number(rvm.ventas_repuestos).toFixed(2)} vendido</p>
           </div>
           <div>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#64748b', marginBottom: '2px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '2px' }}>
               <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#f59e0b', display: 'inline-block' }} /> Mano de Obra
             </span>
-            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>S/ {Number(rvm.utilidad_mano_obra).toFixed(2)}</span>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>100% margen (sin costo)</p>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc' }}>S/ {Number(rvm.utilidad_mano_obra).toFixed(2)}</span>
+            <p style={{ fontSize: '0.72rem', color: '#cbd5e1', margin: 0 }}>100% margen (sin costo)</p>
           </div>
         </div>
       </div>
@@ -214,7 +214,7 @@ function RenderRentabilidad({ data, filtros }) {
       </div>
 
       {data.generado_credito > 0 && (
-        <div style={{ margin: '-12px 24px 12px', padding: '8px 14px', background: '#fefce8', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '0.82rem', color: '#854d0e' }}>
+        <div style={{ margin: '-12px 24px 12px', padding: '8px 14px', background: 'rgba(245,158,11,0.13)', border: '1px solid rgba(245,158,11,0.42)', borderRadius: '8px', fontSize: '0.82rem', color: '#fde68a' }}>
           + S/ {Number(data.generado_credito).toFixed(2)} generado a crédito en el periodo (aún no cobrado, no incluido en el ingreso).
         </div>
       )}
@@ -240,7 +240,7 @@ function RenderRentabilidad({ data, filtros }) {
 
       {data.egresos_por_concepto.length > 0 && (
         <div style={{ padding: '0 24px 20px' }}>
-          <h4 style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '8px' }}>Egresos por concepto</h4>
+          <h4 style={{ fontSize: '0.85rem', color: '#e2e8f0', marginBottom: '8px' }}>Egresos por concepto</h4>
           <div style={{ overflowX: 'auto' }}>
             <table className="reporte-table">
               <thead><tr><th>Concepto</th><th>Total</th></tr></thead>
@@ -258,7 +258,7 @@ function RenderRentabilidad({ data, filtros }) {
       )}
 
       <div style={{ padding: '0 24px 24px' }}>
-        <h4 style={{ fontSize: '0.85rem', color: '#334155', marginBottom: '8px' }}>Tendencia diaria</h4>
+        <h4 style={{ fontSize: '0.85rem', color: '#e2e8f0', marginBottom: '8px' }}>Tendencia diaria</h4>
         <RenderTabla data={data.serie_diaria} columns={columnasSerie} filtros={filtros} />
       </div>
     </>

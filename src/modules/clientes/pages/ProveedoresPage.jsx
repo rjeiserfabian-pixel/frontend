@@ -3,11 +3,16 @@ import {
   Box, Typography, Button, TextField, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, Paper, IconButton, InputAdornment, TablePagination 
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, Search as SearchIcon } from 'lucide-react';
 import ProveedoresForm from '../components/ProveedoresForm';
 import { useProveedores } from '../hooks/useProveedores';
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const ProveedoresPage = () => {
   const { tienePermiso } = usePermisos();
@@ -81,20 +86,20 @@ const ProveedoresPage = () => {
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
       
       {/* HEADER */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white', p: 3, borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography variant="h5" fontWeight="bold" color="text.primary">
+          <Typography variant="h5" fontWeight="bold" sx={{ color: C.text }}>
             Gestión de Proveedores
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: C.textMuted, mt: 0.5 }}>
             Administra el listado de proveedores de la empresa.
           </Typography>
         </Box>
       </Box>
 
       {/* TOOLBAR */}
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid', borderColor: 'grey.200' }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
           <TextField
             size="small"
             placeholder="Buscar por DNI, RUC o Nombre..."
@@ -123,7 +128,7 @@ const ProveedoresPage = () => {
         {/* TABLE */}
         <TableContainer>
           <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell><strong>Tipo</strong></TableCell>
                 <TableCell><strong>N° Documento</strong></TableCell>
@@ -156,12 +161,22 @@ const ProveedoresPage = () => {
                     <TableCell>{proveedor.direccion || '-'}</TableCell>
                     <TableCell align="center">
                       {puedeEditar && (
-                        <IconButton color="primary" onClick={() => handleOpenModal(proveedor)}>
+                        <IconButton
+                          color="secondary"
+                          onClick={() => handleOpenModal(proveedor)}
+                          size="small"
+                          sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}
+                        >
                           <Edit size={18} />
                         </IconButton>
                       )}
                       {puedeEliminar && (
-                      <IconButton color="error" onClick={() => handleDelete(proveedor.id)}>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleDelete(proveedor.id)}
+                        size="small"
+                        sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}
+                      >
                         <Trash2 size={18} />
                       </IconButton>
                       )}

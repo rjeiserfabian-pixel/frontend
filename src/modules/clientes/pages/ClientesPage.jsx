@@ -5,12 +5,17 @@ import {
   TextField, Box, CircularProgress, TablePagination 
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, Car } from 'lucide-react';
 import { useClientes } from '../hooks/useClientes';
 import ClientesForm from '../components/ClientesForm';
 import VehiculosClienteModal from '../components/VehiculosClienteModal';
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const ClientesPage = () => {
   const { tienePermiso } = usePermisos();
@@ -82,7 +87,20 @@ const ClientesPage = () => {
       </Box>
 
       {/* BARRA DE BÚSQUEDA */}
-      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
+      <Paper
+        sx={{
+          p: 2,
+          mb: 3,
+          display: 'flex',
+          gap: 2,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          borderRadius: '8px',
+          border: `1px solid ${C.border}`,
+          boxShadow: S.card,
+          backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)`,
+        }}
+      >
         <TextField
           label="Buscar (DNI/RUC/Nombre)"
           variant="outlined"
@@ -98,7 +116,16 @@ const ClientesPage = () => {
         <Box sx={{ flexGrow: 1 }} />
       </Paper>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper
+        sx={{
+          width: '100%',
+          overflow: 'hidden',
+          borderRadius: '8px',
+          border: `1px solid ${C.border}`,
+          boxShadow: S.card,
+          backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)`,
+        }}
+      >
         {loading && clientes.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -107,7 +134,7 @@ const ClientesPage = () => {
           <>
             <TableContainer>
               <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                   <TableRow>
                     <TableCell><strong>Documento</strong></TableCell>
                     <TableCell><strong>Cliente</strong></TableCell>
@@ -133,16 +160,31 @@ const ClientesPage = () => {
                         <TableCell>{row.telefono || '-'}</TableCell>
                         <TableCell>{row.direccion || '-'}</TableCell>
                         <TableCell align="center">
-                          <IconButton color="default" onClick={() => setVehiculosClienteId(row.id)} title="Ver vehículos">
+                          <IconButton
+                            onClick={() => setVehiculosClienteId(row.id)}
+                            title="Ver vehículos"
+                            size="small"
+                            sx={{ mr: 0.75, color: C.textMuted, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}
+                          >
                             <Car size={18} />
                           </IconButton>
                           {puedeEditar && (
-                            <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                            <IconButton
+                              color="secondary"
+                              onClick={() => handleOpenModal(row)}
+                              size="small"
+                              sx={{ mr: 0.75, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}
+                            >
                               <Edit size={18} />
                             </IconButton>
                           )}
                           {puedeEliminar && (
-                            <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                            <IconButton
+                              color="error"
+                              onClick={() => handleDelete(row.id)}
+                              size="small"
+                              sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}
+                            >
                               <Trash2 size={18} />
                             </IconButton>
                           )}

@@ -4,12 +4,17 @@ import {
   TableContainer, TableHead, TableRow, IconButton, 
   CircularProgress, TablePagination, TextField 
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, Search, History } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import VehiculosForm from '../components/VehiculosForm';
 import HistorialVehiculoModal from '../components/HistorialVehiculoModal';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function VehiculosPage() {
   const { tienePermiso } = usePermisos();
@@ -101,7 +106,7 @@ export default function VehiculosPage() {
       </Box>
 
       {/* BARRA DE BÚSQUEDA */}
-      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
+      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(135deg, ${alpha(C.brand, 0.06)}, transparent 42%)` }}>
         <TextField 
           label="Buscar (Placa/Marca)"
           variant="outlined"
@@ -117,7 +122,7 @@ export default function VehiculosPage() {
         <Box sx={{ flexGrow: 1 }} />
       </Paper>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         {loading && vehiculos.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -125,7 +130,7 @@ export default function VehiculosPage() {
         ) : (
           <TableContainer>
             <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
                   <TableCell><strong>Placa</strong></TableCell>
                   <TableCell><strong>Marca</strong></TableCell>
@@ -148,23 +153,23 @@ export default function VehiculosPage() {
                 ) : (
                   vehiculos.map((row) => (
                     <TableRow key={row.id} hover>
-                      <TableCell>{row.placa}</TableCell>
-                      <TableCell>{row.marca}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#bae6fd' }}>{row.placa}</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>{row.marca}</TableCell>
                       <TableCell>{row.modelo}</TableCell>
                       <TableCell>{row.clase || '-'}</TableCell>
                       <TableCell>{row.color || '-'}</TableCell>
                       <TableCell align="right">{row.kilometraje_actual ? `${row.kilometraje_actual} km` : '-'}</TableCell>
                       <TableCell align="center">
-                        <IconButton color="default" onClick={() => setHistorialVehiculoId(row.id)} title="Ver historial">
+                        <IconButton onClick={() => setHistorialVehiculoId(row.id)} title="Ver historial" sx={{ color: C.textMuted, mr: 1, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}>
                           <History size={18} />
                         </IconButton>
                         {puedeEditar && (
-                          <IconButton color="primary" onClick={() => handleOpenModal(row)}>
+                          <IconButton color="secondary" onClick={() => handleOpenModal(row)} size="small" sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}>
                             <Edit size={18} />
                           </IconButton>
                         )}
                         {puedeEliminar && (
-                          <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                          <IconButton color="error" onClick={() => handleDelete(row.id)} size="small" sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}>
                             <Trash2 size={18} />
                           </IconButton>
                         )}

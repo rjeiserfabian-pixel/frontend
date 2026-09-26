@@ -4,9 +4,14 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Chip, CircularProgress, TablePagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Wallet, DollarSign, Truck, Inbox } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function CuentasPorPagarPage() {
   const [proveedores, setProveedores] = useState([]);
@@ -58,8 +63,8 @@ export default function CuentasPorPagarPage() {
     <Box sx={{ p: 3 }}>
       {/* HEADER */}
       <Box sx={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-        borderRadius: 4, color: 'white', p: 3, mb: 3,
+        background: `linear-gradient(135deg, ${C.bgElevated}, ${C.surfaceSoft})`,
+        border: `1px solid ${C.border}`, borderRadius: '8px', color: 'white', p: 3, mb: 3,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
         boxShadow: '0 8px 24px rgba(30,41,59,0.25)'
       }}>
@@ -78,17 +83,17 @@ export default function CuentasPorPagarPage() {
         </Box>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+      <Paper elevation={0} sx={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f1f5f9' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>DOCUMENTO (RUC/DNI)</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>PROVEEDOR</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>DEUDA TOTAL HISTÓRICA</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>ESTADO</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem' }}>ACCIONES</TableCell>
+              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DOCUMENTO (RUC/DNI)</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>PROVEEDOR</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DEUDA TOTAL HISTÓRICA</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ESTADO</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ACCIONES</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -105,8 +110,8 @@ export default function CuentasPorPagarPage() {
                 </TableRow>
               ) : (
                 proveedores.map((row) => (
-                  <TableRow key={row.proveedor__id} hover sx={{ '&:hover': { bgcolor: '#f8fafc' } }}>
-                    <TableCell sx={{ color: '#64748b' }}>{row.proveedor__numero_documento}</TableCell>
+                  <TableRow key={row.proveedor__id} hover>
+                    <TableCell sx={{ color: '#7dd3fc', fontWeight: 700 }}>{row.proveedor__numero_documento}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.proveedor__nombre_o_razon_social}</TableCell>
                     <TableCell align="right">S/ {Number(row.total_deuda || 0).toFixed(2)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: row.saldo_pendiente_total > 0 ? '#dc2626' : '#16a34a' }}>
@@ -118,7 +123,7 @@ export default function CuentasPorPagarPage() {
                         size="small"
                         onClick={() => handleOpenProveedor(row)}
                         title="Ver Deudas del Proveedor"
-                        sx={{ bgcolor: '#f1f5f9', color: '#475569', '&:hover': { bgcolor: '#e2e8f0' } }}
+                        sx={{ bgcolor: alpha(C.blue, 0.08), color: C.blue, border: `1px solid ${alpha(C.blue, 0.18)}`, '&:hover': { bgcolor: alpha(C.blue, 0.16) } }}
                       >
                         <DollarSign size={18} />
                       </IconButton>

@@ -5,8 +5,13 @@ import {
   Chip, Grid, FormControl, InputLabel, Select, MenuItem,
   TablePagination, TextField, Autocomplete
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { inventarioService } from '../services/inventarioService';
 import Swal from 'sweetalert2';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 // Mapa de colores por tipo de movimiento
 const TIPO_COLORES = {
@@ -131,7 +136,7 @@ export default function KardexPage() {
       </Box>
 
       {/* Panel de Filtros */}
-      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', boxShadow: 1 }}>
+      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <Autocomplete
           size="small"
           options={repuestos}
@@ -155,7 +160,7 @@ export default function KardexPage() {
       </Paper>
 
       {/* Tabla de Movimientos */}
-      <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -164,7 +169,7 @@ export default function KardexPage() {
           <>
             <TableContainer>
               <Table size="small">
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                   <TableRow>
                     <TableCell><strong>Fecha</strong></TableCell>
                     <TableCell><strong>Repuesto</strong></TableCell>

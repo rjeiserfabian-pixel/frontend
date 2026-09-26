@@ -4,16 +4,23 @@ import {
   TableContainer, TableHead, TableRow, Chip, IconButton, CircularProgress,
   TextField, MenuItem, Autocomplete, TablePagination
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Plus, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const ESTADOS = [
   'RECEPCIONADO', 'INSPECCION', 'ESPERANDO_APROBACION', 'APROBADO',
   'FINALIZADO', 'FACTURADO', 'CANCELADO'
 ];
+const DEFAULT_ROWS_PER_PAGE = 10;
+const SERVER_BATCH_SIZE = 25;
 
 export default function OrdenesTrabajoPage() {
   const { tienePermiso } = usePermisos();
@@ -26,7 +33,7 @@ export default function OrdenesTrabajoPage() {
 
   // Paginación
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
   const [totalCount, setTotalCount] = useState(0);
 
   // Filtros
@@ -60,17 +67,30 @@ export default function OrdenesTrabajoPage() {
   const fetchOrdenes = async () => {
     try {
       setLoading(true);
-      const params = { page: page + 1 };
+      const params = {};
       if (filtroEstado) params.estado = filtroEstado;
       if (filtroMecanico) params.mecanico_asignado = filtroMecanico.id_usuario;
       if (filtroPlaca) params.placa = filtroPlaca;
       if (filtroFechaDesde) params.fecha_desde = filtroFechaDesde;
       if (filtroFechaHasta) params.fecha_hasta = filtroFechaHasta;
 
-      const data = await tallerService.getOrdenes(params);
-      const list = data.results || data;
-      setOrdenes(Array.isArray(list) ? list : []);
-      setTotalCount(data.count !== undefined ? data.count : (Array.isArray(list) ? list.length : 0));
+      const firstRowIndex = page * rowsPerPage;
+      const serverPage = Math.floor(firstRowIndex / SERVER_BATCH_SIZE) + 1;
+      const serverOffset = firstRowIndex % SERVER_BATCH_SIZE;
+      const requiredBatches = Math.ceil((serverOffset + rowsPerPage) / SERVER_BATCH_SIZE);
+      const serverPages = Array.from({ length: requiredBatches }, (_, index) => serverPage + index);
+
+      const responses = await Promise.all(
+        serverPages.map((currentPage) => tallerService.getOrdenes({ ...params, page: currentPage }))
+      );
+      const serverRows = responses.flatMap((data) => {
+        const list = data.results || data;
+        return Array.isArray(list) ? list : [];
+      });
+
+      setOrdenes(serverRows.slice(serverOffset, serverOffset + rowsPerPage));
+      const firstResponse = responses[0];
+      setTotalCount(firstResponse.count !== undefined ? firstResponse.count : serverRows.length);
     } catch (error) {
       console.error('Error fetching ordenes:', error);
     } finally {
@@ -122,7 +142,7 @@ export default function OrdenesTrabajoPage() {
         )}
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3, borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+      <Paper sx={{ p: 2, mb: 3, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(135deg, ${alpha(C.brand, 0.06)}, transparent 42%)` }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
           <TextField
             select
@@ -158,7 +178,7 @@ export default function OrdenesTrabajoPage() {
             size="small"
             label="Desde"
             InputLabelProps={{ shrink: true }}
-            inputProps={{ style: { colorScheme: 'light' } }}
+            inputProps={{ style: { colorScheme: 'dark' } }}
             sx={{ width: 160 }}
             value={filtroFechaDesde}
             onChange={(e) => cambiarFiltro(setFiltroFechaDesde)(e.target.value)}
@@ -168,7 +188,7 @@ export default function OrdenesTrabajoPage() {
             size="small"
             label="Hasta"
             InputLabelProps={{ shrink: true }}
-            inputProps={{ style: { colorScheme: 'light' } }}
+            inputProps={{ style: { colorScheme: 'dark' } }}
             sx={{ width: 160 }}
             value={filtroFechaHasta}
             onChange={(e) => cambiarFiltro(setFiltroFechaHasta)(e.target.value)}
@@ -181,11 +201,11 @@ export default function OrdenesTrabajoPage() {
         </Box>
       </Paper>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+      <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
         <TableContainer sx={{ maxHeight: 'calc(100vh - 320px)' }}>
           <Table stickyHeader>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableCell>Nro Orden</TableCell>
                 <TableCell>Fecha Ingreso</TableCell>
                 <TableCell>Placa</TableCell>
@@ -211,7 +231,7 @@ export default function OrdenesTrabajoPage() {
               ) : (
                 ordenes.map((orden) => (
                   <TableRow key={orden.id} hover>
-                    <TableCell fontWeight="500">OT-{orden.numero}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#bae6fd' }}>OT-{orden.numero}</TableCell>
                     <TableCell>{new Date(orden.fecha_ingreso).toLocaleString()}</TableCell>
                     <TableCell>
                       <Chip label={orden.vehiculo_placa} size="small" variant="outlined" />
@@ -226,7 +246,7 @@ export default function OrdenesTrabajoPage() {
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <IconButton onClick={() => navigate(`/taller/ordenes/${orden.id}`)} color="primary">
+                      <IconButton onClick={() => navigate(`/taller/ordenes/${orden.id}`)} color="primary" sx={{ bgcolor: alpha(C.blue, 0.09), border: `1px solid ${alpha(C.blue, 0.2)}` }}>
                         <Eye size={20} />
                       </IconButton>
                     </TableCell>

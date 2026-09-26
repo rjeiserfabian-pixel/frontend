@@ -5,8 +5,13 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, 
   TextField, Button, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const TIPOS_DOCUMENTO = {
   RECIBO_INGRESO: 'Recibo de Ingreso',
@@ -130,19 +135,19 @@ const SeriesInternasPage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center p-6 rounded-lg" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            <Settings className="text-blue-600" size={32} />
+          <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color: C.text }}>
+            <Settings color="#7dd3fc" size={32} />
             Configuración de Series Internas
           </h1>
           <p className="text-slate-500 mt-1">Administra los correlativos internos para Recibos, Créditos, Guías de Remisión, Proformas y Notas de Traslado.</p>
         </div>
       </div>
 
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col shadow-sm">
+      <div className="flex-1 rounded-lg p-6 flex flex-col" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">
+          <h2 className="text-lg font-semibold" style={{ color: C.text }}>
             Listado de Series
           </h2>
           {puedeCrear && (
@@ -150,50 +155,50 @@ const SeriesInternasPage = () => {
               variant="contained"
               startIcon={<Plus size={20} />}
               onClick={() => handleOpenModal()}
-              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+              sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}
             >
               Nueva Serie
             </Button>
           )}
         </div>
 
-        <div className="w-full overflow-hidden border border-slate-200 rounded-xl shadow-none">
+        <div className="w-full overflow-hidden rounded-lg shadow-none" style={{ border: `1px solid ${C.border}` }}>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50">
+              <thead style={{ backgroundColor: alpha(C.surfaceSoft, 0.92), color: '#bae6fd' }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Sucursal</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Documento</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Prefijo</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Correlativo</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-slate-600 border-b border-slate-200">Ejemplo</th>
-                  <th className="px-6 py-3 text-right text-sm font-medium text-slate-600 border-b border-slate-200">Acciones</th>
+                  <th className="px-6 py-3 text-left text-sm font-bold text-sky-200 border-b border-slate-700">Sucursal</th>
+                  <th className="px-6 py-3 text-left text-sm font-bold text-sky-200 border-b border-slate-700">Documento</th>
+                  <th className="px-6 py-3 text-left text-sm font-bold text-sky-200 border-b border-slate-700">Prefijo</th>
+                  <th className="px-6 py-3 text-left text-sm font-bold text-sky-200 border-b border-slate-700">Correlativo</th>
+                  <th className="px-6 py-3 text-left text-sm font-bold text-sky-200 border-b border-slate-700">Ejemplo</th>
+                  <th className="px-6 py-3 text-right text-sm font-bold text-sky-200 border-b border-slate-700">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y" style={{ color: C.text, borderColor: C.border }}>
                 {series.length === 0 ? (
-                  <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No hay series registradas</td></tr>
+                  <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-300">No hay series registradas</td></tr>
                 ) : series.map((serie) => (
-                  <tr key={serie.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800">{serie.sucursal_nombre}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                  <tr key={serie.id} className="transition-colors" style={{ color: C.text }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{serie.sucursal_nombre}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-200">
                       {TIPOS_DOCUMENTO[serie.tipo_documento] || serie.tipo_documento}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{serie.prefijo}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{serie.correlativo_actual}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-mono font-semibold border border-blue-100">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-sky-200">{serie.prefijo}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-200">{serie.correlativo_actual}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-200">
+                      <span className="bg-sky-500/15 text-sky-200 px-2.5 py-1 rounded-md text-xs font-mono font-semibold border border-sky-500/35">
                         {serie.prefijo}-{String(serie.correlativo_actual + 1).padStart(serie.longitud_correlativo, '0')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {puedeEditar && (
-                        <button onClick={() => handleOpenModal(serie)} className="text-blue-600 hover:text-blue-800 mx-3 transition-colors" title="Editar">
+                        <button onClick={() => handleOpenModal(serie)} className="inline-flex items-center justify-center w-8 h-8 rounded-md text-sky-300 bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/20 mx-1 transition-colors" title="Editar">
                           <Edit size={18} />
                         </button>
                       )}
                       {puedeEliminar && (
-                      <button onClick={() => handleDelete(serie.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Eliminar">
+                      <button onClick={() => handleDelete(serie.id)} className="inline-flex items-center justify-center w-8 h-8 rounded-md text-rose-300 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition-colors" title="Eliminar">
                         <Trash2 size={18} />
                       </button>
                       )}
@@ -215,10 +220,10 @@ const SeriesInternasPage = () => {
           style: { borderRadius: '12px' }
         }}
       >
-        <DialogTitle className="font-bold text-slate-800">
+        <DialogTitle sx={{ fontWeight: 800, color: C.text, bgcolor: C.surface, borderBottom: `1px solid ${C.border}` }}>
           {editId ? 'Editar Serie' : 'Nueva Serie'}
         </DialogTitle>
-        <DialogContent dividers className="flex flex-col gap-5 pt-5 pb-5">
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 3, pb: 3, bgcolor: C.bgElevated, borderColor: C.border }}>
           <FormControl fullWidth size="small">
             <InputLabel>Sucursal</InputLabel>
             <Select
@@ -279,14 +284,14 @@ const SeriesInternasPage = () => {
             helperText="Cantidad de dígitos para el número. Ej. 6 para 000001"
           />
         </DialogContent>
-        <DialogActions className="p-4 bg-slate-50 border-t border-slate-200">
-          <Button onClick={handleCloseModal} color="inherit" className="text-slate-600 hover:bg-slate-200">
+        <DialogActions sx={{ p: 2, bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}` }}>
+          <Button onClick={handleCloseModal} color="inherit" variant="outlined" sx={{ color: '#e2e8f0', borderColor: C.border }}>
             Cancelar
           </Button>
           <Button 
             onClick={handleSave} 
             variant="contained" 
-            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+            sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark }, borderRadius: '8px' }}
           >
             Guardar
           </Button>

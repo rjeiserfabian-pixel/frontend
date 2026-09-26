@@ -6,6 +6,7 @@ import {
   Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup, Alert,
   LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -13,6 +14,10 @@ import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 const PASOS_ORDEN = [
   'RECEPCIONADO',
@@ -23,9 +28,9 @@ const PASOS_ORDEN = [
 ];
 
 const SEVERIDAD_CONFIG = {
-  ALTA: { label: 'Alta', color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
-  MEDIA: { label: 'Media', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
-  BAJA: { label: 'Baja', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+  ALTA: { label: 'Alta', color: '#fda4af', textColor: '#500724', bg: '#35161c', border: '#7f1d2d' },
+  MEDIA: { label: 'Media', color: '#fcd34d', textColor: '#451a03', bg: '#34270f', border: '#854d0e' },
+  BAJA: { label: 'Baja', color: '#bae6fd', textColor: '#082f49', bg: '#10253a', border: '#155e75' },
 };
 
 export default function DetalleOrdenPage() {
@@ -580,15 +585,15 @@ export default function DetalleOrdenPage() {
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
       
       {/* Header & Stepper */}
-      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '20px', border: '1px solid', borderColor: 'divider', background: 'linear-gradient(to right bottom, #ffffff, #f8fafc)' }}>
+      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, background: `linear-gradient(135deg, ${alpha(C.brand, 0.08)}, transparent 44%), ${C.surface}` }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={() => navigate('/taller/ordenes')} sx={{ bgcolor: 'white', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: 'grey.50' } }}>
+            <IconButton onClick={() => navigate('/taller/ordenes')} sx={{ bgcolor: alpha('#ffffff', 0.05), border: `1px solid ${C.border}`, '&:hover': { bgcolor: alpha(C.blue, 0.1) } }}>
               <ArrowLeft size={20} />
             </IconButton>
             <Box>
               <Typography variant="h4" fontWeight="800" color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Settings size={28} className="text-slate-700" />
+                <Settings size={28} className="text-sky-300" />
                 OT-{orden.numero}
               </Typography>
               <Typography variant="body2" color="text.secondary" fontWeight="500">
@@ -695,7 +700,7 @@ export default function DetalleOrdenPage() {
           {/* Vehiculo Card */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="subtitle1" fontWeight="700" mb={3} display="flex" alignItems="center" gap={1}>
-                <Box sx={{ p: 1, bgcolor: 'slate.100', borderRadius: 2 }}><Wrench size={18} className="text-slate-700" /></Box>
+                <Box sx={{ p: 1, bgcolor: alpha(C.blue, 0.12), borderRadius: 2 }}><Wrench size={18} className="text-sky-300" /></Box>
                 Datos del Vehículo
               </Typography>
               
@@ -725,7 +730,7 @@ export default function DetalleOrdenPage() {
           {/* Cliente Card */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="subtitle1" fontWeight="700" mb={3} display="flex" alignItems="center" gap={1}>
-                <Box sx={{ p: 1, bgcolor: 'slate.100', borderRadius: 2 }}><User size={18} className="text-slate-700" /></Box>
+                <Box sx={{ p: 1, bgcolor: alpha(C.blue, 0.12), borderRadius: 2 }}><User size={18} className="text-sky-300" /></Box>
                 Datos del Cliente
               </Typography>
               
@@ -748,7 +753,7 @@ export default function DetalleOrdenPage() {
             </Paper>
 
           {/* Asignacion Card */}
-          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%', bgcolor: 'slate.50' }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '8px', border: `1px solid ${C.border}`, height: '100%', bgcolor: alpha('#ffffff', 0.025) }}>
               <Typography variant="subtitle1" fontWeight="700" mb={2}>Responsables</Typography>
               <Box mb={2}>
                 <Typography variant="caption" color="text.secondary" fontWeight="600">Recepcionista</Typography>
@@ -778,7 +783,7 @@ export default function DetalleOrdenPage() {
               </Box>
 
               {alertaSinAsignar && (
-                <Box sx={{ mt: 2, p: 1.5, borderRadius: '10px', bgcolor: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ mt: 2, p: 1.5, borderRadius: '8px', bgcolor: alpha(C.brand, 0.14), border: `1px solid ${alpha(C.brandLight, 0.38)}`, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <AlertTriangle size={16} className="text-red-600" style={{ flexShrink: 0 }} />
                   <Typography variant="caption" fontWeight="700" color="#b91c1c">
                     Sin mecánico asignado hace {formatTiempoEnTaller(horasEnTaller)}
@@ -790,7 +795,7 @@ export default function DetalleOrdenPage() {
           {/* Resumen Económico y Tiempos */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="subtitle1" fontWeight="700" mb={3} display="flex" alignItems="center" gap={1}>
-                <Box sx={{ p: 1, bgcolor: 'slate.100', borderRadius: 2 }}><Coins size={18} className="text-slate-700" /></Box>
+                <Box sx={{ p: 1, bgcolor: alpha(C.blue, 0.12), borderRadius: 2 }}><Coins size={18} className="text-sky-300" /></Box>
                 Resumen y Tiempos
               </Typography>
 
@@ -840,7 +845,7 @@ export default function DetalleOrdenPage() {
           
           {/* Actions Banner based on status */}
           {orden.estado === 'RECEPCIONADO' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: '#fff0f2', border: '1px solid', borderColor: '#ffe4e6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: alpha(C.brand, 0.13), border: `1px solid ${alpha(C.brandLight, 0.34)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight="700" color="#be123c" mb={0.5}>El vehículo está en recepción</Typography>
                 <Typography variant="body2" color="#e11d48">Asigna un mecánico para iniciar la inspección técnica o genera la cotización directamente si ya hay servicios.</Typography>
@@ -850,7 +855,7 @@ export default function DetalleOrdenPage() {
                   <Button
                     variant="outlined"
                     size="large"
-                    sx={{ color: '#be123c', borderColor: '#be123c', '&:hover': { bgcolor: '#ffe4e6', borderColor: '#9f1239' }, borderRadius: '12px', fontWeight: 600, px: 3 }}
+                    sx={{ color: '#fda4af', borderColor: alpha(C.brandLight, 0.5), '&:hover': { bgcolor: alpha(C.brand, 0.18), borderColor: C.brandLight }, borderRadius: '8px', fontWeight: 700, px: 3 }}
                     onClick={handleGenerarCotizacion}
                   >
                     Generar Cotización Directa
@@ -871,13 +876,13 @@ export default function DetalleOrdenPage() {
           )}
 
           {orden.estado === 'ESPERANDO_APROBACION' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: isExpirada ? '#fef2f2' : '#f0fdf4', border: '1px solid', borderColor: isExpirada ? '#fecaca' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: isExpirada ? alpha(C.brand, 0.14) : alpha(C.emerald, 0.14), border: `1px solid ${isExpirada ? alpha(C.brandLight, 0.38) : alpha(C.emerald, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
-                <Typography variant="h6" fontWeight="700" color={isExpirada ? "#991b1b" : "#166534"} mb={0.5} display="flex" alignItems="center" gap={1.5}>
+                <Typography variant="h6" fontWeight="700" color={isExpirada ? '#fda4af' : '#6ee7b7'} mb={0.5} display="flex" alignItems="center" gap={1.5}>
                   {isExpirada ? "Cotización Expirada" : "Esperando Aprobación del Cliente"}
-                  <Chip label={`Total: S/ ${totalCotizado.toFixed(2)}`} size="small" sx={{ fontWeight: 700, bgcolor: 'white' }} />
+                  <Chip label={`Total: S/ ${totalCotizado.toFixed(2)}`} size="small" sx={{ fontWeight: 700, bgcolor: alpha('#ffffff', 0.1), color: C.text, border: `1px solid ${C.border}` }} />
                 </Typography>
-                <Typography variant="body2" color={isExpirada ? "#7f1d1d" : "#15803d"}>
+                <Typography variant="body2" color={isExpirada ? '#fecdd3' : '#d1fae5'}>
                   {isExpirada
                     ? `La cotización expiró el ${new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString()}. Edite la fecha de vencimiento para poder aprobarla.`
                     : `La cotización ha sido generada (Vence: ${orden.fecha_vencimiento_cotizacion ? new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString() : 'N/A'}). Registra la confirmación del cliente para comenzar los trabajos.`}
@@ -888,7 +893,7 @@ export default function DetalleOrdenPage() {
                   <Button
                     variant="outlined"
                     size="large"
-                    sx={{ color: '#0f172a', borderColor: '#cbd5e1', '&:hover': { bgcolor: '#f1f5f9' }, borderRadius: '12px', fontWeight: 600 }}
+                    sx={{ color: C.text, borderColor: C.border, '&:hover': { bgcolor: alpha(C.blue, 0.1), borderColor: alpha(C.blue, 0.45) }, borderRadius: '8px', fontWeight: 700 }}
                     onClick={handleEditarFechaVencimiento}
                   >
                     Editar Fecha
@@ -944,7 +949,7 @@ export default function DetalleOrdenPage() {
                     const pct = aprobados.length ? (completados / aprobados.length) * 100 : 0;
                     const completo = aprobados.length > 0 && pct === 100;
                     return (
-                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: completo ? '#86efac' : 'divider', borderLeft: '4px solid', borderLeftColor: completo ? '#22c55e' : '#f59e0b', bgcolor: 'slate.50', height: '100%' }}>
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: '8px', border: `1px solid ${completo ? alpha(C.emerald, 0.42) : C.border}`, borderLeft: '4px solid', borderLeftColor: completo ? C.emerald : C.amber, bgcolor: alpha('#ffffff', 0.025), height: '100%' }}>
                     <Typography variant="subtitle1" fontWeight="700" mb={1} display="flex" justifyContent="space-between">
                       Servicios Aprobados
                       <Chip label={`${completados}/${aprobados.length}`} size="small" color={completo ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
@@ -959,7 +964,7 @@ export default function DetalleOrdenPage() {
                     )}
                     <Box display="flex" flexDirection="column" gap={2}>
                       {orden.servicios.filter(s => s.aprobado_cliente).map(s => (
-                        <Paper key={s.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white' }}>
+                        <Paper key={s.id} elevation={0} sx={{ p: 2, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#ffffff', 0.035) }}>
                           <Typography variant="body2" fontWeight="600">{s.descripcion}</Typography>
                           <Button 
                             variant={s.completado ? "contained" : "outlined"}
@@ -990,7 +995,7 @@ export default function DetalleOrdenPage() {
                     const pct = aprobados.length ? (instalados / aprobados.length) * 100 : 0;
                     const completo = aprobados.length > 0 && pct === 100;
                     return (
-                  <Paper elevation={0} sx={{ p: 3, borderRadius: '16px', border: '1px solid', borderColor: completo ? '#86efac' : 'divider', borderLeft: '4px solid', borderLeftColor: completo ? '#22c55e' : '#f59e0b', bgcolor: 'slate.50', height: '100%' }}>
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: '8px', border: `1px solid ${completo ? alpha(C.emerald, 0.42) : C.border}`, borderLeft: '4px solid', borderLeftColor: completo ? C.emerald : C.amber, bgcolor: alpha('#ffffff', 0.025), height: '100%' }}>
                     <Typography variant="subtitle1" fontWeight="700" mb={1} display="flex" justifyContent="space-between">
                       Repuestos Aprobados
                       <Chip label={`${instalados}/${aprobados.length}`} size="small" color={completo ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
@@ -1005,7 +1010,7 @@ export default function DetalleOrdenPage() {
                     )}
                     <Box display="flex" flexDirection="column" gap={2}>
                       {orden.repuestos.filter(r => r.aprobado_cliente).map(r => (
-                        <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'white' }}>
+                        <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#ffffff', 0.035) }}>
                           <Box>
                             <Typography variant="body2" fontWeight="600">{r.repuesto_detalle?.nombre}</Typography>
                             <Typography variant="caption" color="text.secondary">Cant: {parseFloat(r.cantidad)}</Typography>
@@ -1036,7 +1041,7 @@ export default function DetalleOrdenPage() {
           )}
 
           {orden.estado === 'FINALIZADO' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '20px', bgcolor: '#eff6ff', border: '1px solid', borderColor: '#bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: alpha(C.blue, 0.14), border: `1px solid ${alpha(C.blue, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight="700" color="#1e3a8a" mb={0.5}>Orden de Trabajo Finalizada</Typography>
                 <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja.</Typography>
@@ -1057,7 +1062,7 @@ export default function DetalleOrdenPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 3 }}>
             {/* Inspección */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ p: 3, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                   <ClipboardList size={20} className="text-slate-500" />
                   1. Inspección y Hallazgos
@@ -1100,17 +1105,19 @@ export default function DetalleOrdenPage() {
                         <Grid size={{ xs: 12, sm: 6 }} key={h.id}>
                           <Box sx={{ p: 2, border: '1px solid', borderColor: sev.border, borderLeft: '4px solid', borderLeftColor: sev.color, borderRadius: '12px', bgcolor: sev.bg }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                              <Typography variant="caption" color="text.secondary" fontWeight="600" display="flex" alignItems="center" gap={1}>
-                                Hallazgo #{i+1}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                                <Typography component="span" variant="caption" sx={{ color: C.text, fontWeight: 700, fontSize: '0.72rem' }}>
+                                  Hallazgo #{i+1}
+                                </Typography>
                                 <Chip
                                   label={sev.label}
                                   size="small"
-                                  sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700, bgcolor: sev.color, color: 'white' }}
+                                  sx={{ height: '22px', fontSize: '0.72rem', fontWeight: 800, bgcolor: sev.color, color: sev.textColor, border: `1px solid ${alpha(sev.color, 0.82)}`, '& .MuiChip-label': { px: 0.9 } }}
                                 />
                                 {yaCotizado && (
-                                  <Chip label="Cotizado" size="small" color="success" variant="outlined" sx={{ height: '18px', fontSize: '0.65rem', fontWeight: 700 }} />
+                                  <Chip label="Cotizado" size="small" color="success" variant="outlined" sx={{ height: '22px', fontSize: '0.72rem', fontWeight: 800, color: '#6ee7b7', borderColor: 'rgba(16, 185, 129, 0.6)', '& .MuiChip-label': { px: 0.9 } }} />
                                 )}
-                              </Typography>
+                              </Box>
                               {(puedeEditarSubrecursos || puedeEliminarSubrecursos) && (
                                 <Box sx={{ display: 'flex', gap: 0.25 }}>
                                   {puedeEditarSubrecursos && (
@@ -1149,7 +1156,7 @@ export default function DetalleOrdenPage() {
 
             {/* Servicios */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ p: 3, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                   <Wrench size={20} className="text-slate-500" />
                   2. Servicios y Mano de Obra a Cotizar
@@ -1191,7 +1198,7 @@ export default function DetalleOrdenPage() {
                           {s.aprobado_cliente ? (
                             <Chip label="Aprobado" color="success" size="small" sx={{ fontWeight: 600, borderRadius: '6px' }} />
                           ) : (
-                            <Chip label="Pendiente" size="small" sx={{ fontWeight: 600, borderRadius: '6px', bgcolor: 'slate.100', color: 'slate.600' }} />
+                            <Chip label="Pendiente" size="small" sx={{ fontWeight: 700, borderRadius: '6px', bgcolor: alpha(C.amber, 0.14), color: '#fcd34d', border: `1px solid ${alpha(C.amber, 0.3)}` }} />
                           )}
                         </TableCell>
                         <TableCell align="center">
@@ -1216,7 +1223,7 @@ export default function DetalleOrdenPage() {
                 </TableBody>
                 {orden.servicios.length > 0 && (
                   <TableBody>
-                    <TableRow sx={{ bgcolor: 'slate.50' }}>
+                    <TableRow sx={{ bgcolor: alpha(C.blue, 0.07) }}>
                       <TableCell sx={{ fontWeight: 700, borderBottom: 'none' }}>Total</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main', borderBottom: 'none' }}>
                         S/ {orden.servicios.reduce((sum, s) => sum + parseFloat(s.precio_estimado || 0), 0).toFixed(2)}
@@ -1231,7 +1238,7 @@ export default function DetalleOrdenPage() {
 
             {/* Repuestos */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: 'slate.50', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ p: 3, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                   <Package size={20} className="text-slate-500" />
                   3. Repuestos y Materiales
@@ -1299,7 +1306,7 @@ export default function DetalleOrdenPage() {
                 </TableBody>
                 {orden.repuestos.length > 0 && (
                   <TableBody>
-                    <TableRow sx={{ bgcolor: 'slate.50' }}>
+                    <TableRow sx={{ bgcolor: alpha(C.blue, 0.07) }}>
                       <TableCell colSpan={3} sx={{ fontWeight: 700, borderBottom: 'none' }}>Total</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main', borderBottom: 'none' }}>
                         S/ {orden.repuestos.reduce((sum, r) => sum + (parseFloat(r.cantidad || 0) * parseFloat(r.precio_unitario || 0)), 0).toFixed(2)}

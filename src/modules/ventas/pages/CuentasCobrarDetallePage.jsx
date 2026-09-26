@@ -5,12 +5,17 @@ import {
   TableHead, TableRow, Button, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, Grid, Card, CardContent, Divider
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, DollarSign, X, Plus, Trash2, Wrench, FileText, Eye, Printer, Wallet, CheckCircle, Calendar, History, CreditCard, Banknote, User, Receipt, Package, Phone, MapPin } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { useReactToPrint } from 'react-to-print';
 import TicketReciboAbono from '../components/TicketReciboAbono';
 import { notificarCobroRegistrado } from '../../../shared/utils/vencidasEvents';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 // Helper de Iconos de Método
 const getMetodoIcon = (metodo) => {
@@ -26,12 +31,12 @@ const getMetodoIcon = (metodo) => {
 
 // Tarjeta de información con encabezado a color, usada en Cliente/Venta/Repuestos
 const InfoCard = ({ icon, title, accent, children }) => (
-  <Paper elevation={0} sx={{ p: 3, height: '100%', borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.04)' }}>
+  <Paper elevation={0} sx={{ p: 3, height: '100%', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card }}>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2.5 }}>
       <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${accent}1A`, color: accent, display: 'flex' }}>
         {icon}
       </Box>
-      <Typography variant="subtitle1" fontWeight={800} color="#1e293b">{title}</Typography>
+      <Typography variant="subtitle1" fontWeight={800} color={C.text}>{title}</Typography>
     </Box>
     {children}
   </Paper>
@@ -40,10 +45,10 @@ const InfoCard = ({ icon, title, accent, children }) => (
 // Fila etiqueta/valor usada dentro de InfoCard
 const InfoField = ({ icon, label, children }) => (
   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
-    {icon && <Box sx={{ color: '#94a3b8', mt: 0.3 }}>{icon}</Box>}
+    {icon && <Box sx={{ color: '#7dd3fc', mt: 0.3 }}>{icon}</Box>}
     <Box sx={{ minWidth: 0 }}>
-      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{label}</Typography>
-      <Typography variant="body1" fontWeight={700} sx={{ wordBreak: 'break-word', color: '#1e293b' }}>{children}</Typography>
+      <Typography variant="caption" sx={{ color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3 }}>{label}</Typography>
+      <Typography variant="body1" fontWeight={700} sx={{ wordBreak: 'break-word', color: C.text }}>{children}</Typography>
     </Box>
   </Box>
 );
@@ -335,11 +340,11 @@ export default function CuentasCobrarDetallePage() {
               {cuenta.venta_fecha ? new Date(cuenta.venta_fecha).toLocaleString() : 'N/A'}
             </InfoField>
             <InfoField label="Monto Financiado">S/ {Number(cuenta.monto_financiado).toFixed(2)}</InfoField>
-            <Box sx={{ mt: 2.5, p: 1.8, borderRadius: 2, bgcolor: cuenta.saldo_pendiente > 0 ? '#fef2f2' : '#f0fdf4', border: '1px solid', borderColor: cuenta.saldo_pendiente > 0 ? '#fecaca' : '#bbf7d0' }}>
-              <Typography variant="caption" sx={{ color: cuenta.saldo_pendiente > 0 ? '#991b1b' : '#166534', fontWeight: 700, textTransform: 'uppercase' }}>
+            <Box sx={{ mt: 2.5, p: 1.8, borderRadius: 2, bgcolor: cuenta.saldo_pendiente > 0 ? alpha(C.brand, 0.14) : alpha(C.emerald, 0.14), border: '1px solid', borderColor: cuenta.saldo_pendiente > 0 ? alpha(C.brand, 0.45) : alpha(C.emerald, 0.45) }}>
+              <Typography variant="caption" sx={{ color: cuenta.saldo_pendiente > 0 ? '#fca5a5' : '#a7f3d0', fontWeight: 800, textTransform: 'uppercase' }}>
                 Saldo Pendiente Total
               </Typography>
-              <Typography variant="h6" fontWeight={800} sx={{ color: cuenta.saldo_pendiente > 0 ? '#dc2626' : '#16a34a' }}>
+              <Typography variant="h6" fontWeight={800} sx={{ color: cuenta.saldo_pendiente > 0 ? '#fda4af' : '#6ee7b7' }}>
                 S/ {Number(cuenta.saldo_pendiente).toFixed(2)}
               </Typography>
             </Box>
@@ -391,7 +396,7 @@ export default function CuentasCobrarDetallePage() {
           <Grid container spacing={3}>
             {servicios.map((detalle) => (
               <Grid size={{ xs: 12, sm: 6, md: 4 }} key={detalle.id}>
-                <Box sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}>
+                <Box sx={{ p: 2, border: `1px solid ${C.border}`, borderRadius: '8px', bgcolor: alpha('#ffffff', 0.025) }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <FileText size={18} color="#10b981" style={{ marginRight: 8 }} />
                     <Typography variant="subtitle2" sx={{ fontWeight: 'bold', flex: 1 }}>
@@ -415,13 +420,13 @@ export default function CuentasCobrarDetallePage() {
       </Typography>
       <TableContainer component={Paper}>
         <Table size="small">
-          <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+          <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
             <TableRow>
-              <TableCell><strong>Nro</strong></TableCell>
-              <TableCell><strong>F. Vencimiento</strong></TableCell>
-              <TableCell align="right"><strong>Monto Cuota</strong></TableCell>
-              <TableCell align="right"><strong>Saldo Pendiente</strong></TableCell>
-              <TableCell align="center"><strong>Estado</strong></TableCell>
+              <TableCell sx={{ color: '#bae6fd', fontWeight: 800 }}>Nro</TableCell>
+              <TableCell sx={{ color: '#bae6fd', fontWeight: 800 }}>F. Vencimiento</TableCell>
+              <TableCell align="right" sx={{ color: '#bae6fd', fontWeight: 800 }}>Monto Cuota</TableCell>
+              <TableCell align="right" sx={{ color: '#bae6fd', fontWeight: 800 }}>Saldo Pendiente</TableCell>
+              <TableCell align="center" sx={{ color: '#bae6fd', fontWeight: 800 }}>Estado</TableCell>
               <TableCell align="center"><strong>Acción</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -475,9 +480,9 @@ export default function CuentasCobrarDetallePage() {
       </TableContainer>
 
       {/* MODAL DE PAGO MÚLTIPLE */}
-      <Dialog open={openPago} onClose={handleClosePago} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
+      <Dialog open={openPago} onClose={handleClosePago} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '8px', overflow: 'hidden' } }}>
         <Box sx={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          background: `linear-gradient(135deg, ${C.bgElevated}, ${C.surfaceSoft})`,
           color: 'white', px: 3, py: 2.5,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
@@ -498,7 +503,7 @@ export default function CuentasCobrarDetallePage() {
             <X size={20} />
           </IconButton>
         </Box>
-        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
+        <DialogContent sx={{ bgcolor: C.bgElevated, p: 3 }}>
           <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'flex-start' }}>
             <FormControl size="small" sx={{ flex: 2 }}>
               <InputLabel>Método de Pago</InputLabel>
@@ -589,7 +594,7 @@ export default function CuentasCobrarDetallePage() {
           )}
 
         </DialogContent>
-        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
+        <DialogActions sx={{ bgcolor: alpha('#000000', 0.16), px: 3, py: 2 }}>
           <Button onClick={handleClosePago} variant="outlined" color="inherit">Cancelar</Button>
           <Button
             onClick={confirmarPago}
@@ -611,15 +616,15 @@ export default function CuentasCobrarDetallePage() {
         fullWidth
         PaperProps={{ 
           sx: { 
-            borderRadius: 4,
+            borderRadius: '8px',
             overflow: 'hidden',
-            bgcolor: '#f4f7fc', 
+            bgcolor: C.bgElevated,
           } 
         }}
       >
         {/* Header Dark Blue */}
         <Box sx={{ 
-          bgcolor: '#0f172a', 
+          bgcolor: C.bgElevated,
           color: 'white', 
           pt: 3, 
           pb: 5, 
@@ -660,8 +665,8 @@ export default function CuentasCobrarDetallePage() {
           <Paper elevation={0} sx={{ 
             mt: -2, 
             mb: 4, 
-            borderRadius: 3, 
-            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            border: `1px solid ${C.border}`,
             position: 'relative',
             zIndex: 1,
             boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
@@ -680,8 +685,8 @@ export default function CuentasCobrarDetallePage() {
             }}>
               <Box display="flex" flexDirection="column" gap={1.5}>
                 <Box sx={{ 
-                  bgcolor: '#eff6ff', 
-                  color: '#3b82f6', 
+                  bgcolor: alpha(C.blue, 0.14),
+                  color: '#7dd3fc',
                   p: 1.5, 
                   borderRadius: '50%',
                   display: 'flex',
@@ -694,12 +699,12 @@ export default function CuentasCobrarDetallePage() {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.5}>COMPROBANTE / CUOTA</Typography>
-                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#1e293b', lineHeight: 1.2, mt: 0.5 }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ color: C.text, lineHeight: 1.2, mt: 0.5 }}>
                     {cuenta?.venta_serie || 'Sin comprobante'}
                   </Typography>
                   <Box display="flex" flexDirection="column" mt={1.5}>
                     <Typography variant="caption" color="text.secondary">Vencimiento:</Typography>
-                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ color: C.textMuted, fontWeight: 500 }}>
                       {cuotaHistorial?.fecha_vencimiento || '-'}
                     </Typography>
                   </Box>
@@ -708,7 +713,7 @@ export default function CuentasCobrarDetallePage() {
             </Box>
 
             {/* Divider */}
-            <Box sx={{ width: '1px', bgcolor: '#e2e8f0', my: 2 }} />
+            <Box sx={{ width: '1px', bgcolor: C.border, my: 2 }} />
 
             {/* Right: Total Pagado */}
             <Box sx={{ 
@@ -720,8 +725,8 @@ export default function CuentasCobrarDetallePage() {
             }}>
               <Box display="flex" flexDirection="column" gap={1.5}>
                 <Box sx={{ 
-                  bgcolor: '#ecfdf5', 
-                  color: '#10b981', 
+                  bgcolor: alpha(C.emerald, 0.14),
+                  color: '#6ee7b7',
                   p: 1.5, 
                   borderRadius: '50%',
                   display: 'flex',
@@ -734,7 +739,7 @@ export default function CuentasCobrarDetallePage() {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.5}>TOTAL PAGADO</Typography>
-                  <Typography variant="h5" fontWeight="bold" sx={{ color: '#1e293b', lineHeight: 1.2, mt: 0.5 }}>
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: C.text, lineHeight: 1.2, mt: 0.5 }}>
                     S/ {parseFloat((cuotaHistorial?.monto || 0) - (cuotaHistorial?.saldo_pendiente || 0)).toFixed(2)}
                   </Typography>
                   <Chip 
@@ -743,8 +748,8 @@ export default function CuentasCobrarDetallePage() {
                     icon={<CheckCircle size={14} />}
                     sx={{ 
                       mt: 1.5,
-                      bgcolor: cuotaHistorial?.estado === 'PAGADA' ? '#ecfdf5' : '#fff7ed',
-                      color: cuotaHistorial?.estado === 'PAGADA' ? '#10b981' : '#ea580c',
+                      bgcolor: cuotaHistorial?.estado === 'PAGADA' ? alpha(C.emerald, 0.14) : alpha(C.amber, 0.16),
+                      color: cuotaHistorial?.estado === 'PAGADA' ? '#6ee7b7' : '#fcd34d',
                       fontWeight: 600,
                       '& .MuiChip-icon': { color: 'inherit' }
                     }} 
@@ -758,19 +763,19 @@ export default function CuentasCobrarDetallePage() {
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} px={1}>
             <Box display="flex" alignItems="center" gap={1.5}>
               <History size={22} color="#3b82f6" />
-              <Typography variant="h6" fontWeight="bold" sx={{ color: '#1e293b' }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: C.text }}>
                 Historial de Pagos
               </Typography>
             </Box>
             <Chip 
               label={`${cuotaHistorial?.pagos?.length || 0} registro${(cuotaHistorial?.pagos?.length || 0) !== 1 ? 's' : ''}`}
               size="small"
-              sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 600, px: 1 }}
+              sx={{ bgcolor: alpha(C.blue, 0.14), color: '#7dd3fc', border: `1px solid ${alpha(C.blue, 0.3)}`, fontWeight: 700, px: 1 }}
             />
           </Box>
 
           {/* Table */}
-          <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+          <Paper elevation={0} sx={{ border: `1px solid ${C.border}`, borderRadius: '8px', overflow: 'hidden' }}>
             {!cuotaHistorial?.pagos || cuotaHistorial.pagos.length === 0 ? (
               <Box p={6} textAlign="center">
                 <Typography color="text.secondary" fontWeight={500}>No hay pagos registrados para esta cuota.</Typography>
@@ -778,13 +783,13 @@ export default function CuentasCobrarDetallePage() {
             ) : (
               <TableContainer>
                 <Table size="medium">
-                  <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                  <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                     <TableRow>
-                      <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>FECHA</TableCell>
-                      <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>MÉTODO</TableCell>
-                      <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }}>MONTO</TableCell>
-                      <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }} align="right">ESTADO</TableCell>
-                      <TableCell sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.75rem', py: 2 }} align="center">RECIBO</TableCell>
+                      <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>FECHA</TableCell>
+                      <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>MÉTODO</TableCell>
+                      <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }}>MONTO</TableCell>
+                      <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }} align="right">ESTADO</TableCell>
+                      <TableCell sx={{ color: '#bae6fd', fontWeight: 800, fontSize: '0.75rem', py: 2 }} align="center">RECIBO</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -792,8 +797,8 @@ export default function CuentasCobrarDetallePage() {
                       <TableRow key={pago.operacion_id || pago.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                         <TableCell>
                           <Box display="flex" alignItems="center" gap={1.5}>
-                            <Calendar size={18} color="#94a3b8" />
-                            <Typography variant="body2" fontWeight={600} color="#334155">
+                            <Calendar size={18} color="#7dd3fc" />
+                            <Typography variant="body2" fontWeight={700} color={C.text}>
                               {new Date(pago.fecha_pago).toLocaleDateString()} {new Date(pago.fecha_pago).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </Typography>
                           </Box>
@@ -801,7 +806,7 @@ export default function CuentasCobrarDetallePage() {
                         <TableCell>
                           <Box display="flex" alignItems="center" gap={1.5}>
                             {getMetodoIcon(pago.metodo_pago_nombre)}
-                            <Typography variant="body2" fontWeight={600} color="#334155">
+                            <Typography variant="body2" fontWeight={700} color={C.text}>
                               {pago.subpagos && pago.subpagos.length > 1 ? 'Múltiple' : (pago.referencia ? `${pago.metodo_pago_nombre} (Op: ${pago.referencia})` : pago.metodo_pago_nombre)}
                             </Typography>
                           </Box>
@@ -817,8 +822,8 @@ export default function CuentasCobrarDetallePage() {
                             size="small"
                             icon={<CheckCircle size={14} />}
                             sx={{ 
-                              bgcolor: '#ecfdf5',
-                              color: '#10b981',
+                              bgcolor: alpha(C.emerald, 0.14),
+                              color: '#6ee7b7',
                               fontWeight: 600,
                               '& .MuiChip-icon': { color: 'inherit' }
                             }} 
@@ -830,7 +835,7 @@ export default function CuentasCobrarDetallePage() {
                             color="primary" 
                             onClick={() => handlePrintAbono(pago)}
                             title="Imprimir Recibo"
-                            sx={{ bgcolor: '#eff6ff', '&:hover': { bgcolor: '#dbeafe' } }}
+                            sx={{ bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.2)}`, '&:hover': { bgcolor: alpha(C.blue, 0.16) } }}
                           >
                             <Printer size={16} color="#3b82f6" />
                           </IconButton>
@@ -854,10 +859,10 @@ export default function CuentasCobrarDetallePage() {
               borderRadius: 2, 
               textTransform: 'none', 
               fontWeight: 600,
-              borderColor: '#cbd5e1',
-              color: '#475569',
+              borderColor: C.border,
+              color: C.text,
               px: 3,
-              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' }
+              '&:hover': { bgcolor: alpha(C.blue, 0.1), borderColor: alpha(C.blue, 0.45) }
             }}
           >
             Cerrar

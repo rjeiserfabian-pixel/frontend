@@ -5,10 +5,14 @@ import {
   InputAdornment, Box, Typography, FormControlLabel, Switch, IconButton
 } from '@mui/material';
 import { X, Wallet } from 'lucide-react';
+import { alpha } from '@mui/material/styles';
 import Swal from 'sweetalert2';
 import { comprasService } from '../services/comprasApi';
 import { ventasService } from '../../ventas/services/ventasApi';
 import { notificarPagoRegistrado } from '../../../shared/utils/vencidasEvents';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
 
 export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -113,9 +117,9 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
   if (!cuenta) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '8px', overflow: 'hidden', bgcolor: C.bgElevated, border: `1px solid ${C.border}` } }}>
       <Box sx={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+        background: `linear-gradient(135deg, ${C.bgElevated} 0%, ${C.surfaceSoft} 100%)`,
         color: 'white', px: 3, py: 2.5,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
@@ -133,11 +137,11 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
         </IconButton>
       </Box>
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ bgcolor: '#f8fafc', p: 3 }}>
+        <DialogContent sx={{ bgcolor: C.bgElevated, p: 3 }}>
 
-          <Box sx={{ mb: 3, p: 2, bgcolor: '#eff6ff', borderRadius: 2, border: '1px solid', borderColor: '#bfdbfe' }}>
-            <Typography variant="body2" color="text.secondary">Deuda actual (Saldo):</Typography>
-            <Typography variant="h5" fontWeight="bold" color="primary.main">
+          <Box sx={{ mb: 3, p: 2, bgcolor: alpha(C.blue, 0.12), borderRadius: 2, border: '1px solid', borderColor: alpha(C.blue, 0.38) }}>
+            <Typography variant="body2" sx={{ color: '#cbd5e1', fontWeight: 700 }}>Deuda actual (Saldo):</Typography>
+            <Typography variant="h5" fontWeight="bold" sx={{ color: '#7dd3fc' }}>
               S/ {parseFloat(cuenta.saldo_pendiente).toFixed(2)}
             </Typography>
           </Box>
@@ -204,7 +208,7 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
             />
           )}
 
-          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: formData.afecta_caja ? '#eff6ff' : '#f1f5f9', borderRadius: 2, border: '1px solid', borderColor: formData.afecta_caja ? '#bfdbfe' : '#e2e8f0' }}>
+          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: formData.afecta_caja ? alpha(C.blue, 0.1) : alpha(C.surfaceSoft, 0.72), borderRadius: 2, border: '1px solid', borderColor: formData.afecta_caja ? alpha(C.blue, 0.35) : C.border }}>
             <FormControlLabel
               control={
                 <Switch
@@ -214,7 +218,7 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
               }
               label="Afecta a Caja"
             />
-            <Typography variant="caption" display="block" color="text.secondary" sx={{ pl: '1px' }}>
+            <Typography variant="caption" display="block" sx={{ pl: '1px', color: '#cbd5e1' }}>
               {formData.afecta_caja
                 ? 'Se descontará como egreso de tu caja abierta (pago en efectivo/físico desde el cajón).'
                 : 'No se tocará ninguna caja (ej. transferencia bancaria hecha fuera del sistema de caja).'}
@@ -222,8 +226,8 @@ export default function ModalAbonar({ open, onClose, cuenta, onSuccess }) {
           </Box>
 
         </DialogContent>
-        <DialogActions sx={{ bgcolor: '#f8fafc', px: 3, py: 2 }}>
-          <Button onClick={onClose} variant="outlined" color="inherit" disabled={loading}>
+        <DialogActions sx={{ bgcolor: C.bgElevated, borderTop: `1px solid ${C.border}`, px: 3, py: 2 }}>
+          <Button onClick={onClose} variant="outlined" color="inherit" disabled={loading} sx={{ color: '#e2e8f0', borderColor: C.border }}>
             Cancelar
           </Button>
           <Button

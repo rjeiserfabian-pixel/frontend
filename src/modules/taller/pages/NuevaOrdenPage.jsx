@@ -4,6 +4,7 @@ import {
   FormControlLabel, Checkbox, Divider, Autocomplete, CircularProgress, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,10 @@ import api from '../../../core/api/axios';
 import VehiculosForm from '../../vehiculos/components/VehiculosForm';
 import ClientesForm from '../../clientes/components/ClientesForm';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
 
 export default function NuevaOrdenPage() {
   const navigate = useNavigate();
@@ -181,24 +186,24 @@ export default function NuevaOrdenPage() {
       <div className="flex items-center gap-3">
         <button 
           onClick={() => navigate('/taller/ordenes')} 
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900 focus:outline-none"
+          className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white focus:outline-none"
         >
           <ArrowLeft size={24} />
         </button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Recepción de Vehículo</h1>
-          <p className="text-sm text-slate-500 font-medium">Registra el ingreso y los servicios requeridos.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Recepción de Vehículo</h1>
+          <p className="text-sm text-slate-300 font-medium">Registra el ingreso y los servicios requeridos.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-8">
+      <div className="rounded-lg border p-6 md:p-8" style={{ background: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%), ${C.surface}`, borderColor: C.border, boxShadow: S.card }}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
           
           {/* SECCION 1: Datos del vehiculo */}
           <section className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">1</div>
-              <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Datos del Cliente y Vehículo</h2>
+              <h2 className="text-lg font-semibold text-white tracking-tight">Datos del Cliente y Vehículo</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
@@ -334,14 +339,14 @@ export default function NuevaOrdenPage() {
 
           {/* SECCION 2: Plantilla Preventiva */}
           <section className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">2</div>
-              <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Plantilla Preventiva (Checklist)</h2>
+              <h2 className="text-lg font-semibold text-white tracking-tight">Plantilla Preventiva (Checklist)</h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
               {plantillas.length === 0 ? (
-                <p className="text-sm text-slate-500 font-medium">No hay plantillas configuradas.</p>
+                <p className="text-sm text-slate-300 font-medium">No hay plantillas configuradas.</p>
               ) : (
                 plantillas.map((plantilla) => (
                   <FormControlLabel
@@ -354,10 +359,10 @@ export default function NuevaOrdenPage() {
                       />
                     }
                     label={
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-slate-100">
                         {plantilla.nombre} 
-                        {plantilla.precio_base ? <span className="text-slate-400"> (S/ {plantilla.precio_base})</span> : ''} 
-                        {plantilla.tiempo_estimado_minutos ? <span className="text-slate-400"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
+                        {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
+                        {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
                       </span>
                     }
                   />
@@ -368,9 +373,9 @@ export default function NuevaOrdenPage() {
 
           {/* SECCION 3: Correctivo */}
           <section className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">3</div>
-              <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Motivo de Ingreso Adicional / Correctivo</h2>
+              <h2 className="text-lg font-semibold text-white tracking-tight">Motivo de Ingreso Adicional / Correctivo</h2>
             </div>
             
             <div className="flex flex-col gap-4 mt-2">
@@ -396,7 +401,7 @@ export default function NuevaOrdenPage() {
                       newList.splice(index, 1);
                       setMotivosList(newList.length ? newList : ['']);
                     }}
-                    sx={{ mt: 0.5, color: '#ef4444', '&:hover': { bgcolor: '#fef2f2', color: '#dc2626' } }}
+                    sx={{ mt: 0.5, color: C.brandLight, '&:hover': { bgcolor: alpha(C.brand, 0.14), color: '#fda4af' } }}
                   >
                     <X size={20} />
                   </IconButton>
@@ -406,7 +411,7 @@ export default function NuevaOrdenPage() {
                 variant="outlined" 
                 startIcon={<Plus size={18} />}
                 onClick={() => setMotivosList([...motivosList, ''])}
-                sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: '10px', borderColor: '#e2e8f0', color: '#334155', textTransform: 'none', fontWeight: 600, '&:hover': { borderColor: '#cbd5e1', bgcolor: '#f8fafc' } }}
+                sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: '8px', borderColor: C.border, color: C.text, textTransform: 'none', fontWeight: 700, '&:hover': { borderColor: alpha(C.blue, 0.5), bgcolor: alpha(C.blue, 0.09) } }}
               >
                 Agregar Motivo
               </Button>
@@ -414,7 +419,7 @@ export default function NuevaOrdenPage() {
           </section>
 
           {/* Footer Actions */}
-          <div className="flex justify-end pt-6 mt-4 border-t border-slate-100">
+          <div className="flex justify-end pt-6 mt-4 border-t border-slate-700">
             <Button
               type="submit"
               variant="contained"
