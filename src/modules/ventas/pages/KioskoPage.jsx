@@ -74,6 +74,38 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
   );
 };
 
+// Selector obligatorio de tipo de combustible (paso 2): filtra el catálogo
+// del paso 3 y, si el vehículo no tenía este dato guardado, se persiste al
+// generar el ticket (ver generarTicket).
+const SelectorCombustible = ({ valor, onChange }) => {
+  const opciones = [
+    { value: 'GASOLINA', label: 'Gasolinero' },
+    { value: 'PETROLEO', label: 'Petrolero' },
+  ];
+  return (
+    <div className="w-full">
+      <label className="block text-slate-400 text-sm font-medium mb-2">
+        <span className="text-[#e50914] font-bold">*</span> Tipo de combustible (obligatorio)
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        {opciones.map(op => (
+          <button
+            key={op.value}
+            type="button"
+            onClick={() => onChange(op.value)}
+            className={"py-3 rounded-xl font-bold border-2 transition-all " + (valor === op.value ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#0b0f19] border-slate-700 text-slate-300 hover:border-slate-500")}
+          >
+            {op.label}
+          </button>
+        ))}
+      </div>
+      {!valor && (
+        <p className="text-[#e50914] text-xs mt-1">Debes elegir el tipo de combustible para continuar.</p>
+      )}
+    </div>
+  );
+};
+
 // Teclado en pantalla para el buscador de repuestos del paso 3: a diferencia
 // del de Placa, necesita espacio (búsquedas de varias palabras, ej. "filtro
 // de aceite") y no tiene límite de longitud ni botón "Confirmar" — la
@@ -169,6 +201,7 @@ export const KioskoPage = () => {
   const [repuestosCompatibles, setRepuestosCompatibles] = useState([]);
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
   const [kilometraje, setKilometraje] = useState("");
+  const [tipoCombustible, setTipoCombustible] = useState(null);
 
   // Búsqueda y categorías del catálogo del kiosko (paso 3). Ambas siempre se
   // aplican DENTRO de los repuestos ya compatibles con el vehículo elegido
@@ -249,7 +282,7 @@ export const KioskoPage = () => {
       const anio = vehiculo.anio_fabricacion || vehiculo.anio || null;
       if (!marca) return;
       setLoadingRepuestos(true);
-      inventarioService.getRepuestosCompatibles(marca, modelo, anio, null, kioskoConfig?.token, {
+      inventarioService.getRepuestosCompatibles(marca, modelo, anio, tipoCombustible, kioskoConfig?.token, {
         search: busquedaDebounced,
         categoria: categoriaSeleccionada,
       })
@@ -260,7 +293,7 @@ export const KioskoPage = () => {
         .catch(() => { setRepuestosCompatibles([]); setCategoriasDisponibles([]); })
         .finally(() => setLoadingRepuestos(false));
     }
-  }, [step, vehiculo, kioskoConfig, busquedaDebounced, categoriaSeleccionada]);
+  }, [step, vehiculo, kioskoConfig, busquedaDebounced, categoriaSeleccionada, tipoCombustible]);
 
   const handleNext = () => setStep(p => p + 1);
   const handleBack = () => setStep(p => p - 1);
@@ -317,10 +350,12 @@ export const KioskoPage = () => {
       const res = await api.get(`/vehiculos/kiosko/buscar-vehiculo/?placa=${placa}`);
       const { origen, data: vData } = res.data;
       setVehiculo(vData);
+      setTipoCombustible(vData?.tipo_combustible || null);
     } catch (e) {
       console.error(e);
       // Si no se encuentra (404) o hay error de la API externa, crear un borrador
       setVehiculo({ placa, marca: '', modelo: '' });
+      setTipoCombustible(null);
     } finally {
       setLoading(false);
     }
@@ -347,7 +382,7 @@ export const KioskoPage = () => {
 
   const resetAll = () => {
     setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]);
-    setRepuestosCompatibles([]); setKilometraje("");
+    setRepuestosCompatibles([]); setKilometraje(""); setTipoCombustible(null);
     setBusquedaRepuesto(""); setBusquedaDebounced(""); setCategoriaSeleccionada(null); setCategoriasDisponibles([]);
     setTecladoBusquedaAbierto(false);
   };
@@ -410,6 +445,11 @@ export const KioskoPage = () => {
             // Endpoint público para vincular cliente al vehículo
             await apiInst.post(`/vehiculos/${vehiculo.id}/kiosko/vincular-cliente/`, { cliente_id: finalClienteId });
           }
+          // El vehículo ya existía pero no tenía combustible guardado: se completa
+          // (aditivo, el backend nunca sobrescribe un valor ya registrado).
+          if (!vehiculo.tipo_combustible && tipoCombustible) {
+            await apiInst.post(`/vehiculos/${vehiculo.id}/kiosko/actualizar-combustible/`, { tipo_combustible: tipoCombustible });
+          }
         } else {
           // Vehículo nuevo: crearlo vía endpoint público del kiosko
           const nuevoVehiculo = {
@@ -425,6 +465,7 @@ export const KioskoPage = () => {
             numero_serie: vehiculo.numero_serie || null,
             color: vehiculo.color || null,
             kilometraje_actual: kilometraje ? parseInt(kilometraje, 10) : null,
+            tipo_combustible: tipoCombustible,
             clientes: [finalClienteId],
           };
           const resVeh = await apiInst.post('/vehiculos/kiosko/crear-vehiculo/', nuevoVehiculo);
@@ -660,9 +701,13 @@ export const KioskoPage = () => {
                         )}
                       </div>
 
+                      <div className="w-full mt-5">
+                        <SelectorCombustible valor={tipoCombustible} onChange={setTipoCombustible} />
+                      </div>
+
                       <button
                         onClick={handleNext}
-                        disabled={!kilometraje}
+                        disabled={!kilometraje || !tipoCombustible}
                         className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
                       >
                         Buscar Repuestos <ArrowRight size={24} />
@@ -699,10 +744,11 @@ export const KioskoPage = () => {
                             <span className="flex items-center text-slate-400 font-medium px-2 text-sm">km</span>
                           </div>
                         </div>
+                        <SelectorCombustible valor={tipoCombustible} onChange={setTipoCombustible} />
                       </div>
                       <button
                         onClick={handleNext}
-                        disabled={!vehiculo.marca?.trim() || !vehiculo.modelo?.trim() || !kilometraje}
+                        disabled={!vehiculo.marca?.trim() || !vehiculo.modelo?.trim() || !kilometraje || !tipoCombustible}
                         className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
                       >
                         Buscar Repuestos <ArrowRight size={24} />
@@ -948,6 +994,43 @@ export const KioskoPage = () => {
         {/* TICKET PARA IMPRESION (Usando react-to-print) */}
         <div style={{ display: 'none' }}>
           <div id="ticket-impresion" ref={printRef} style={{ width: '80mm', padding: '10px', color: '#000', background: '#fff', fontFamily: 'monospace', fontSize: '12px' }}>
+            <style>
+              {`
+                @media print {
+                  html, body, #root {
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                  }
+                  body * {
+                    visibility: hidden;
+                  }
+                  #ticket-impresion, #ticket-impresion * {
+                    visibility: visible;
+                  }
+                  #ticket-impresion {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 80mm;
+                    margin: 0;
+                    padding: 5mm;
+                    box-sizing: border-box;
+                    color: #000000 !important;
+                    background: #ffffff !important;
+                    color-scheme: light;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                  }
+                  #ticket-impresion * {
+                    color: #000000 !important;
+                  }
+                  @page {
+                    size: 80mm auto;
+                    margin: 0;
+                  }
+                }
+              `}
+            </style>
             <div style={{ textAlign: "center", marginBottom: "10px" }}>
               <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "bold", textTransform: "uppercase" }}>{empresaNombre}</h2>
               <p style={{ margin: 0 }}>Ticket de Kiosko</p>

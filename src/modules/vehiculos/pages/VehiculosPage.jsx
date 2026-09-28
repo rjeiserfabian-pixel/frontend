@@ -136,6 +136,7 @@ export default function VehiculosPage() {
                   <TableCell><strong>Marca</strong></TableCell>
                   <TableCell><strong>Modelo</strong></TableCell>
                   <TableCell><strong>Clase</strong></TableCell>
+                  <TableCell><strong>Combustible</strong></TableCell>
                   <TableCell><strong>Color</strong></TableCell>
                   <TableCell align="right"><strong>Kilometraje</strong></TableCell>
                   <TableCell align="center"><strong>Acciones</strong></TableCell>
@@ -144,7 +145,7 @@ export default function VehiculosPage() {
               <TableBody>
                 {vehiculos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={7} align="center">
                       <Typography variant="body1" color="textSecondary" sx={{ py: 3 }}>
                         No hay vehículos registrados.
                       </Typography>
@@ -157,6 +158,7 @@ export default function VehiculosPage() {
                       <TableCell sx={{ fontWeight: 700 }}>{row.marca}</TableCell>
                       <TableCell>{row.modelo}</TableCell>
                       <TableCell>{row.clase || '-'}</TableCell>
+                      <TableCell>{row.tipo_combustible === 'GASOLINA' ? 'Gasolinero' : row.tipo_combustible === 'PETROLEO' ? 'Petrolero' : '-'}</TableCell>
                       <TableCell>{row.color || '-'}</TableCell>
                       <TableCell align="right">{row.kilometraje_actual ? `${row.kilometraje_actual} km` : '-'}</TableCell>
                       <TableCell align="center">

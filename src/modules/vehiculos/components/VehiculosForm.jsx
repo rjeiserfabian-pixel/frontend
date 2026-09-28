@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Dialog, DialogTitle, DialogContent, DialogActions, Button, 
-  TextField, CircularProgress, IconButton, Grid, Box
+  Dialog, DialogTitle, DialogContent, DialogActions, Button,
+  TextField, CircularProgress, IconButton, Grid, Box, MenuItem
 } from '@mui/material';
 import { Search as SearchIcon, Close as CloseIcon } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
@@ -21,6 +21,7 @@ const schema = z.object({
   clase: z.string().optional(),
   tipo: z.string().optional(),
   uso: z.string().optional(),
+  tipo_combustible: z.string().optional(),
   anio_fabricacion: z.union([z.string(), z.number()]).optional(),
   numero_asientos: z.union([z.string(), z.number()]).optional(),
   kilometraje_actual: z.union([z.string(), z.number()]).optional(),
@@ -32,8 +33,8 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
   const { control, handleSubmit, reset, setValue, getValues, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '', 
-      color: '', clase: '', tipo: '', uso: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
+      placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '',
+      color: '', clase: '', tipo: '', uso: '', tipo_combustible: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
     }
   });
 
@@ -49,14 +50,15 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
         clase: vehiculoEdit.clase || '',
         tipo: vehiculoEdit.tipo || '',
         uso: vehiculoEdit.uso || '',
+        tipo_combustible: vehiculoEdit.tipo_combustible || '',
         anio_fabricacion: vehiculoEdit.anio_fabricacion || '',
         numero_asientos: vehiculoEdit.numero_asientos || '',
         kilometraje_actual: vehiculoEdit.kilometraje_actual || '',
       });
     } else {
       reset({
-        placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '', 
-        color: '', clase: '', tipo: '', uso: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
+        placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '',
+        color: '', clase: '', tipo: '', uso: '', tipo_combustible: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
       });
     }
   }, [vehiculoEdit, open, reset]);
@@ -253,6 +255,15 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
             <Grid size={{ xs: 12, sm: 4 }}>
               <Controller name="uso" control={control} render={({ field }) => (
                 <TextField {...field} label="Uso" fullWidth />
+              )}/>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Controller name="tipo_combustible" control={control} render={({ field }) => (
+                <TextField {...field} select label="Combustible" fullWidth>
+                  <MenuItem value="">No especifica</MenuItem>
+                  <MenuItem value="GASOLINA">Gasolinero</MenuItem>
+                  <MenuItem value="PETROLEO">Petrolero</MenuItem>
+                </TextField>
               )}/>
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>

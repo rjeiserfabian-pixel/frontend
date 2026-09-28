@@ -6,7 +6,7 @@ import {
   CircularProgress, Chip, MenuItem, FormControlLabel, Switch
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Monitor, Link as LinkIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Monitor, Link as LinkIcon, ClipboardCopy, CarFront, MapPin } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { kioskoService } from '../services/kioskoService';
@@ -53,18 +53,36 @@ const formatFecha = (iso) => {
 // URL completa y lista para pegar en el navegador del equipo físico — antes
 // solo se mostraba el código a secas y había que armarla a mano.
 const urlActivacion = (codigo) => `${window.location.origin}/kiosko/activar/${codigo}`;
+const urlEstadoVehiculo = (sucursalId) => `${window.location.origin}/estado-vehiculo?sucursal=${sucursalId}`;
 
 const copiarEnlaceActivacion = async (codigo) => {
   const url = urlActivacion(codigo);
   try {
     await navigator.clipboard.writeText(url);
     Swal.fire({
-      toast: true, position: 'top', timer: 1800, showConfirmButton: false,
+      toast: true, position: 'top-end', timer: 1800, showConfirmButton: false,
       icon: 'success', title: 'Enlace copiado',
     });
   } catch {
     // Sin permiso de portapapeles (ej. HTTP sin TLS): mostramos el enlace para copiarlo a mano.
     Swal.fire({ title: 'Enlace de activación', html: `<code style="word-break:break-all;">${url}</code>`, confirmButtonText: 'Cerrar' });
+  }
+};
+
+const copiarEnlaceEstadoVehiculo = async (sucursal) => {
+  const url = urlEstadoVehiculo(sucursal.id);
+  try {
+    await navigator.clipboard.writeText(url);
+    Swal.fire({
+      toast: true, position: 'top-end', timer: 1800, showConfirmButton: false,
+      icon: 'success', title: `Link copiado: ${sucursal.nombre}`,
+    });
+  } catch {
+    Swal.fire({
+      title: `Link de ${sucursal.nombre}`,
+      html: `<code style="word-break:break-all;">${url}</code>`,
+      confirmButtonText: 'Cerrar',
+    });
   }
 };
 
@@ -156,13 +174,142 @@ export default function KioskosPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight="bold" display="flex" alignItems="center" gap={1}>
-            <Monitor size={24} /> Kioskos
+            <Monitor size={24} /> Kioskos y Estado de Vehiculo
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Terminales de autoservicio registrados y la sucursal a la que pertenece cada uno.
+            Gestiona los links publicos por sucursal y las terminales fisicas de autoservicio.
+          </Typography>
+        </Box>
+      </Box>
+
+      <Paper
+        sx={{
+          mb: 3,
+          overflow: 'hidden',
+          bgcolor: alpha(C.surface, 0.98),
+          border: `1px solid ${alpha('#38bdf8', 0.32)}`,
+          borderRadius: '8px',
+          boxShadow: S.card,
+        }}
+      >
+        <Box
+          sx={{
+            px: 2,
+            py: 1.75,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 2,
+            borderBottom: `1px solid ${C.border}`,
+            backgroundImage: `linear-gradient(90deg, ${alpha('#38bdf8', 0.14)}, transparent 58%)`,
+          }}
+        >
+          <Box>
+            <Typography variant="h6" fontWeight={800} display="flex" alignItems="center" gap={1}>
+              <CarFront size={22} /> Links de Estado de Vehiculo
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Enlaces publicos por sucursal para que el cliente consulte solo el estado de esa sede.
+            </Typography>
+          </Box>
+          <Chip label="Consulta publica" color="info" variant="outlined" size="small" />
+        </Box>
+
+        <TableContainer>
+          <Table>
+            <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.78) }}>
+              <TableRow>
+                <TableCell width="28%"><strong>Sucursal</strong></TableCell>
+                <TableCell><strong>Link para compartir</strong></TableCell>
+                <TableCell width="140" align="center"><strong>Accion</strong></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : sucursales.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    No hay sucursales activas para generar links publicos.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sucursales.map((sucursal) => {
+                  const link = urlEstadoVehiculo(sucursal.id);
+                  return (
+                    <TableRow key={sucursal.id} hover>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                          <Box
+                            sx={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: '8px',
+                              display: 'grid',
+                              placeItems: 'center',
+                              color: '#7dd3fc',
+                              bgcolor: alpha('#38bdf8', 0.12),
+                              border: `1px solid ${alpha('#38bdf8', 0.28)}`,
+                            }}
+                          >
+                            <MapPin size={18} />
+                          </Box>
+                          <Box>
+                            <Typography fontWeight={800}>{sucursal.nombre}</Typography>
+                            <Typography variant="caption" color="text.secondary">Estado de vehiculo</Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          value={link}
+                          fullWidth
+                          size="small"
+                          InputProps={{
+                            readOnly: true,
+                            sx: {
+                              fontFamily: 'monospace',
+                              fontSize: '0.82rem',
+                              color: C.text,
+                              bgcolor: alpha('#020617', 0.28),
+                            },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<ClipboardCopy size={16} />}
+                          onClick={() => copiarEnlaceEstadoVehiculo(sucursal)}
+                          sx={{ whiteSpace: 'nowrap' }}
+                        >
+                          Copiar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={800} display="flex" alignItems="center" gap={1}>
+            <Monitor size={22} /> Terminales de Kiosko
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Kioskos fisicos registrados para generar tickets de venta.
           </Typography>
         </Box>
         {puedeCrear && (

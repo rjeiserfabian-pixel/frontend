@@ -5,7 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   CircularProgress, Grid, MenuItem, Select, InputLabel, FormControl, Divider,
   Drawer, Chip, Tooltip, Popover, List, ListItem, ListItemText,
-  TablePagination, TableSortLabel, Autocomplete
+  TablePagination, TableSortLabel, Autocomplete, FormControlLabel, Switch
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, X, Warehouse, Tag, Download, FileText, Search } from 'lucide-react';
@@ -41,6 +41,7 @@ export default function RepuestosPage() {
   const [filterCategoria, setFilterCategoria] = useState('');
   const [filterMarca, setFilterMarca] = useState('');
   const [filterUbicacion, setFilterUbicacion] = useState('');
+  const [filterKiosko, setFilterKiosko] = useState('');
   const [orderBy, setOrderBy] = useState('');
   const [order, setOrder] = useState('asc');
 
@@ -94,6 +95,7 @@ export default function RepuestosPage() {
         categoria: filterCategoria,
         marca: filterMarca,
         ubicacion: filterUbicacion,
+        visible_en_kiosko: filterKiosko,
         ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined
       };
       
@@ -127,7 +129,7 @@ export default function RepuestosPage() {
       fetchData();
     }, 400); // debounce para no saturar al buscar
     return () => clearTimeout(delayDebounceFn);
-  }, [page, searchQuery, filterCategoria, filterMarca, filterUbicacion, orderBy, order]);
+  }, [page, searchQuery, filterCategoria, filterMarca, filterUbicacion, filterKiosko, orderBy, order]);
 
   const handleOpenModal = (repuesto = null) => {
     if (repuesto) {
@@ -146,6 +148,7 @@ export default function RepuestosPage() {
         precio_por_mayor: repuesto.precio_por_mayor,
         precio_cash: repuesto.precio_cash,
         precio_lista: repuesto.precio_lista,
+        visible_en_kiosko: Boolean(repuesto.visible_en_kiosko),
         aplicaciones: repuesto.aplicaciones || []
       });
     } else {
@@ -153,6 +156,7 @@ export default function RepuestosPage() {
       reset({ 
         codigo: '', codigo_barra: '', nombre: '', categoria: '', marca: '', unidad_medida: '', viscosidad: '', tipo_igv: '', stock: 0,
         precio_compra: '', precio_por_mayor: '', precio_cash: '', precio_lista: '',
+        visible_en_kiosko: false,
         aplicaciones: [] 
       });
     }
@@ -388,7 +392,7 @@ export default function RepuestosPage() {
 
   const handleExportExcel = async () => {
     try {
-      const params = { search: searchQuery, categoria: filterCategoria, marca: filterMarca, ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined };
+      const params = { search: searchQuery, categoria: filterCategoria, marca: filterMarca, visible_en_kiosko: filterKiosko, ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined };
       const blob = await inventarioService.exportarExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -403,7 +407,7 @@ export default function RepuestosPage() {
 
   const handleExportPDF = async () => {
     try {
-      const params = { search: searchQuery, categoria: filterCategoria, marca: filterMarca, ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined };
+      const params = { search: searchQuery, categoria: filterCategoria, marca: filterMarca, visible_en_kiosko: filterKiosko, ordering: orderBy ? (order === 'desc' ? `-${orderBy}` : orderBy) : undefined };
       const blob = await inventarioService.exportarPDF(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -441,6 +445,33 @@ export default function RepuestosPage() {
   const handleMarcaChange = (newValue) => {
     setFilterMarca(newValue ? newValue.id : '');
     setPage(0);
+  };
+
+  const handleKioskoFilterChange = (event) => {
+    setFilterKiosko(event.target.value);
+    setPage(0);
+  };
+
+  const handleToggleKiosko = async (repuesto) => {
+    if (!puedeEditar) return;
+    const nuevoValor = !repuesto.visible_en_kiosko;
+    try {
+      await inventarioService.patchRepuesto(repuesto.id, { visible_en_kiosko: nuevoValor });
+      setRepuestos(prev => prev.map(item => (
+        item.id === repuesto.id ? { ...item, visible_en_kiosko: nuevoValor } : item
+      )));
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: nuevoValor ? 'Repuesto visible en kiosko' : 'Repuesto oculto del kiosko',
+        showConfirmButton: false,
+        timer: 2200,
+      });
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo actualizar la visibilidad en kiosko', 'error');
+    }
   };
 
   return (
@@ -498,6 +529,18 @@ export default function RepuestosPage() {
           renderInput={(params) => <TextField {...params} label="Marca" variant="outlined" />}
           noOptionsText="No se encontraron marcas"
         />
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Kiosko</InputLabel>
+          <Select
+            label="Kiosko"
+            value={filterKiosko}
+            onChange={handleKioskoFilterChange}
+          >
+            <MenuItem value="">Todos</MenuItem>
+            <MenuItem value="true">En kiosko</MenuItem>
+            <MenuItem value="false">No en kiosko</MenuItem>
+          </Select>
+        </FormControl>
         
         <Box sx={{ flexGrow: 1 }} />
         
@@ -535,6 +578,7 @@ export default function RepuestosPage() {
                   <TableCell><strong>Marca</strong></TableCell>
                   <TableCell><strong>Ubicación</strong></TableCell>
                   <TableCell><strong>Stock</strong></TableCell>
+                  <TableCell align="center"><strong>Kiosko</strong></TableCell>
                   <TableCell>
                     <TableSortLabel active={orderBy === 'precio_lista'} direction={orderBy === 'precio_lista' ? order : 'asc'} onClick={() => handleRequestSort('precio_lista')}>
                       <strong>P. Lista</strong>
@@ -546,7 +590,7 @@ export default function RepuestosPage() {
               <TableBody>
                 {repuestos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">No hay repuestos registrados.</TableCell>
+                    <TableCell colSpan={10} align="center">No hay repuestos registrados.</TableCell>
                   </TableRow>
                 ) : (
                   repuestos.map((row) => {
@@ -604,6 +648,25 @@ export default function RepuestosPage() {
                       <TableCell>
                         <Chip label={stockNum} color={stockColor} size="small" variant={stockColor === 'error' ? 'filled' : 'outlined'} />
                       </TableCell>
+                      <TableCell align="center">
+                        {puedeEditar ? (
+                          <Tooltip title={row.visible_en_kiosko ? 'Ocultar del kiosko' : 'Mostrar en kiosko'}>
+                            <Switch
+                              checked={Boolean(row.visible_en_kiosko)}
+                              onChange={() => handleToggleKiosko(row)}
+                              color="success"
+                              size="small"
+                            />
+                          </Tooltip>
+                        ) : (
+                          <Chip
+                            label={row.visible_en_kiosko ? 'Si' : 'No'}
+                            color={row.visible_en_kiosko ? 'success' : 'default'}
+                            size="small"
+                            variant={row.visible_en_kiosko ? 'filled' : 'outlined'}
+                          />
+                        )}
+                      </TableCell>
                       <TableCell>S/ {row.precio_lista}</TableCell>
                       <TableCell align="center">
                         <Tooltip title="Ver Precios / Descuentos">
@@ -651,7 +714,7 @@ export default function RepuestosPage() {
       </Paper>
 
       {/* Modal Formulario Complejo */}
-      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="lg" fullWidth>
         <DialogTitle>{editingId ? 'Editar Repuesto' : 'Nuevo Repuesto'}</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent dividers>
@@ -758,6 +821,25 @@ export default function RepuestosPage() {
                   )}
                 />
               </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Controller
+                  name="visible_en_kiosko"
+                  control={control}
+                  defaultValue={false}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={Boolean(field.value)}
+                          onChange={(event) => field.onChange(event.target.checked)}
+                          color="success"
+                        />
+                      }
+                      label="Mostrar en kiosko"
+                    />
+                  )}
+                />
+              </Grid>
             </Grid>
 
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Especificaciones (Opcional)</Typography>
@@ -792,7 +874,7 @@ export default function RepuestosPage() {
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="subtitle1" fontWeight="bold">Aplicaciones Compatibles (Vehículos)</Typography>
-              <Button variant="outlined" size="small" onClick={() => append({ marca_vehiculo: '', modelo_vehiculo: '', motor: '', anio_desde: '', anio_hasta: '' })}>
+              <Button variant="outlined" size="small" onClick={() => append({ marca_vehiculo: '', modelo_vehiculo: '', tipo_combustible: '', anio_desde: '', anio_hasta: '' })}>
                 + Agregar Regla
               </Button>
             </Box>
@@ -802,7 +884,18 @@ export default function RepuestosPage() {
                 <Box sx={{ display: 'flex', gap: 2, width: '100%', flexWrap: 'wrap' }}>
                   <TextField label="Marca Vehículo (Ej. FIAT)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.marca_vehiculo`, { required: true })} error={!!errors?.aplicaciones?.[index]?.marca_vehiculo} helperText="Obligatorio" />
                   <TextField label="Modelo (Opcional)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.modelo_vehiculo`)} helperText="Vacío = toda la marca" />
-                  <TextField label="Motor (Opcional)" size="small" sx={{ flex: '1 1 120px' }} {...register(`aplicaciones.${index}.motor`)} />
+                  <Controller
+                    name={`aplicaciones.${index}.tipo_combustible`}
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                      <TextField {...field} label="Combustible" select size="small" sx={{ flex: '1 1 150px' }} helperText="Vacío = ambos">
+                        <MenuItem value="">Ambos (sin restricción)</MenuItem>
+                        <MenuItem value="GASOLINA">Gasolinero</MenuItem>
+                        <MenuItem value="PETROLEO">Petrolero</MenuItem>
+                      </TextField>
+                    )}
+                  />
                   <TextField label="Año Desde" size="small" type="number" sx={{ flex: '0 1 100px' }} inputProps={{ min: 1900, max: 2099 }} {...register(`aplicaciones.${index}.anio_desde`, { min: 1900, max: 2099 })} helperText="Vacío = sin límite" />
                   <TextField label="Año Hasta" size="small" type="number" sx={{ flex: '0 1 100px' }} inputProps={{ min: 1900, max: 2099 }} {...register(`aplicaciones.${index}.anio_hasta`, { min: 1900, max: 2099 })} helperText="Vacío = sin límite" />
                   <IconButton color="error" onClick={() => remove(index)} sx={{ mt: 1 }}>

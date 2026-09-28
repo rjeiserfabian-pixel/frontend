@@ -156,6 +156,20 @@ export default function NuevaOrdenPage() {
 
       const newOrden = await tallerService.crearOrden(payload);
 
+      // Vincula cliente y vehículo si aún no lo estaban (aditivo: el endpoint
+      // solo agrega, nunca desvincula a otros dueños ya asociados).
+      const vehiculoSel = vehiculos.find(v => v.id === formData.vehiculo_id);
+      const yaVinculado = vehiculoSel?.clientes?.some(c => (c.id || c) === formData.cliente_id);
+      if (!yaVinculado) {
+        try {
+          await api.post(`vehiculos/${formData.vehiculo_id}/vincular-cliente/`, {
+            cliente_id: formData.cliente_id,
+          });
+        } catch (linkErr) {
+          console.error('Error vinculando cliente y vehículo:', linkErr);
+        }
+      }
+
       // Crear servicios preventivos dinámicos seleccionados
       for (const plantilla of plantillas) {
         if (preventivo[plantilla.id]) {
@@ -176,9 +190,16 @@ export default function NuevaOrdenPage() {
     }
   };
 
-  // Filtrar vehículos según el cliente seleccionado
-  const vehiculosFiltrados = formData.cliente_id 
-    ? vehiculos.filter(v => v.clientes && v.clientes.some(c => (c.id || c) === formData.cliente_id))
+  // No se ocultan vehículos no vinculados aún al cliente seleccionado: esta
+  // pantalla es precisamente donde se vincula un vehículo existente a un
+  // cliente. Solo se ordenan primero los que ya le pertenecen, como ayuda
+  // visual, sin excluir el resto.
+  const vehiculosFiltrados = formData.cliente_id
+    ? [...vehiculos].sort((a, b) => {
+        const aPertenece = a.clientes?.some(c => (c.id || c) === formData.cliente_id) ? 0 : 1;
+        const bPertenece = b.clientes?.some(c => (c.id || c) === formData.cliente_id) ? 0 : 1;
+        return aPertenece - bPertenece;
+      })
     : vehiculos;
 
   return (
@@ -228,21 +249,12 @@ export default function NuevaOrdenPage() {
                     }}
                     getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
                     onChange={(e, val) => {
-                      const newClientId = val?.id || null;
-                      let newVehiculoId = formData.vehiculo_id;
-                      
-                      // Si hay un vehículo seleccionado y se escoge un cliente diferente
-                      // verificamos si el vehículo le pertenece. Si no, lo limpiamos.
-                      if (newClientId && newVehiculoId) {
-                        const vehiculoSel = vehiculos.find(v => v.id === newVehiculoId);
-                        const pertenece = vehiculoSel?.clientes?.some(c => (c.id || c) === newClientId);
-                        if (!pertenece) newVehiculoId = null;
-                      }
-
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        cliente_id: newClientId,
-                        vehiculo_id: newVehiculoId
+                      // No se limpia el vehículo ya seleccionado aunque todavía no
+                      // esté vinculado a este cliente: se vinculan al registrar la
+                      // orden (ver handleSubmit), nunca se desvincula nada aquí.
+                      setFormData(prev => ({
+                        ...prev,
+                        cliente_id: val?.id || null,
                       }));
                     }}
                     renderInput={(params) => <TextField {...params} label="Buscar Cliente *" error={!!formErrors.cliente} helperText={formErrors.cliente} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
@@ -274,14 +286,16 @@ export default function NuevaOrdenPage() {
                     }}
                     getOptionLabel={(option) => `${option.placa} - ${option.marca} ${option.modelo}`}
                     onChange={(e, val) => {
+                      // Solo se autocompleta el cliente si el usuario todavía no
+                      // eligió uno; si ya hay un cliente seleccionado no se
+                      // sobrescribe (se vinculará al registrar la orden).
                       let suggestedClientId = formData.cliente_id;
-                      // Si el vehículo tiene clientes asignados, auto-seleccionamos el propietario
-                      if (val && val.clientes && val.clientes.length > 0) {
+                      if (!suggestedClientId && val && val.clientes && val.clientes.length > 0) {
                         suggestedClientId = val.clientes[0].id || val.clientes[0];
                       }
-                      
-                      setFormData(prev => ({ 
-                        ...prev, 
+
+                      setFormData(prev => ({
+                        ...prev,
                         vehiculo_id: val?.id || null,
                         kilometraje: val?.kilometraje_actual || '',
                         cliente_id: val ? suggestedClientId : prev.cliente_id

@@ -6,6 +6,7 @@ import {
 import api from '../../../core/api/axios';
 
 const ConsultaVehiculoPage = () => {
+  const sucursalId = new URLSearchParams(window.location.search).get('sucursal');
   const [placa, setPlaca] = useState('');
   const [dni, setDni] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,9 @@ const ConsultaVehiculoPage = () => {
     setResult(null);
 
     try {
-      const res = await api.post('/taller/public/consulta-vehiculo/', { placa, dni });
+      const payload = { placa, dni };
+      if (sucursalId) payload.sucursal_id = sucursalId;
+      const res = await api.post('/taller/public/consulta-vehiculo/', payload);
       setResult(res.data);
     } catch (err) {
       if (err.response && err.response.data && err.response.data.error) {

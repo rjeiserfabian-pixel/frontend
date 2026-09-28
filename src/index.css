@@ -58,10 +58,26 @@ body {
 }
 
 /* SweetAlert2 integrado al tema premium del panel */
-.swal2-container.swal2-backdrop-show,
-.swal2-container.swal2-noanimation {
+.swal2-container.swal2-backdrop-show:not(.swal2-toast-shown),
+.swal2-container.swal2-noanimation:not(.swal2-toast-shown) {
   background: rgba(2, 6, 23, 0.72) !important;
   backdrop-filter: blur(8px);
+}
+
+body.swal2-toast-shown .swal2-container,
+.swal2-container.swal2-toast-shown,
+.swal2-container:has(.swal2-toast) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+body.swal2-toast-shown .swal2-container .swal2-popup,
+.swal2-container.swal2-toast-shown .swal2-popup,
+.swal2-container:has(.swal2-toast) .swal2-popup {
+  pointer-events: auto;
 }
 
 .swal2-popup {

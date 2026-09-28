@@ -69,6 +69,7 @@ export const inventarioService = {
     if (params.ordering) query.append('ordering', params.ordering);
     if (params.sucursal) query.append('sucursal', params.sucursal);
     if (params.ubicacion) query.append('ubicacion', params.ubicacion);
+    if (params.visible_en_kiosko !== undefined && params.visible_en_kiosko !== '') query.append('visible_en_kiosko', params.visible_en_kiosko);
     if (params.page_size) query.append('page_size', params.page_size);
 
     const response = await api.get(`${URL_REPUESTOS}?${query.toString()}`);
@@ -80,6 +81,10 @@ export const inventarioService = {
   },
   updateRepuesto: async (id, data) => {
     const response = await api.put(`${URL_REPUESTOS}${id}/`, data);
+    return response.data;
+  },
+  patchRepuesto: async (id, data) => {
+    const response = await api.patch(`${URL_REPUESTOS}${id}/`, data);
     return response.data;
   },
   deleteRepuesto: async (id) => {
@@ -101,12 +106,12 @@ export const inventarioService = {
   // opciones: { search, categoria, pageSize } — search/categoria siempre se
   // aplican DENTRO del subconjunto compatible con el vehículo (lo garantiza
   // el backend), nunca sobre el catálogo completo.
-  getRepuestosCompatibles: async (marca, modelo, anio, motor, kioskoToken, opciones = {}) => {
+  getRepuestosCompatibles: async (marca, modelo, anio, tipoCombustible, kioskoToken, opciones = {}) => {
     const { search, categoria, pageSize } = opciones;
     let query = `?marca=${encodeURIComponent(marca)}`;
     if (modelo) query += `&modelo=${encodeURIComponent(modelo)}`;
     if (anio)   query += `&anio=${encodeURIComponent(anio)}`;
-    if (motor)  query += `&motor=${encodeURIComponent(motor)}`;
+    if (tipoCombustible) query += `&tipo_combustible=${encodeURIComponent(tipoCombustible)}`;
     // Cuando viene de un kiosko registrado, el backend usa esto para calcular
     // el stock real de ESA sucursal (stock_disponible_sucursal) en vez del
     // stock global de toda la empresa.

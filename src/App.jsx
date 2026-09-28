@@ -23,6 +23,7 @@ import KardexPage from './modules/inventario/pages/KardexPage';
 import TrasladosPage from './modules/inventario/pages/TrasladosPage';
 import GuiasRemisionPage from './modules/inventario/pages/GuiasRemisionPage';
 import RevisionPreciosPage from './modules/inventario/pages/RevisionPreciosPage';
+import ComprobantesElectronicosPage from './modules/facturacion/pages/ComprobantesElectronicosPage';
 import ClientesPage from './modules/clientes/pages/ClientesPage';
 import ProveedoresPage from './modules/clientes/pages/ProveedoresPage';
 import TransportistasPage from './modules/clientes/pages/TransportistasPage';
@@ -109,6 +110,7 @@ function App() {
           <Route path="/inventario/guias-remision" element={<GuiasRemisionPage />} />
           <Route path="/inventario/revision-precios" element={<RevisionPreciosPage />} />
           <Route path="/inventario/impuestos" element={<ConfiguracionIgvPage />} />
+          <Route path="/facturacion/comprobantes" element={<ComprobantesElectronicosPage />} />
           <Route path="/taller/ordenes" element={<OrdenesTrabajoPage />} />
           <Route path="/taller/ordenes/nueva" element={<NuevaOrdenPage />} />
           <Route path="/taller/ordenes/:id" element={<DetalleOrdenPage />} />
