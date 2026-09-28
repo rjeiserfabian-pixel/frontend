@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Search, Car, Wrench, CheckCircle, Clock, ShieldCheck, 
   ArrowRight, AlertCircle, FileText
@@ -12,6 +12,23 @@ const ConsultaVehiculoPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [empresaNombre, setEmpresaNombre] = useState('OMEGA AUTOMOTRIZ');
+
+  useEffect(() => {
+    const fetchEmpresa = async () => {
+      try {
+        const res = await api.get('/seguridad/empresa/');
+        const razonSocial = res.data?.data?.razon_social;
+        if (razonSocial) {
+          setEmpresaNombre(razonSocial);
+        }
+      } catch (err) {
+        console.error('Error al obtener la configuracion de empresa', err);
+      }
+    };
+
+    fetchEmpresa();
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -49,7 +66,7 @@ const ConsultaVehiculoPage = () => {
         
         <div className="relative z-10 flex flex-col h-full p-12">
           <div className="flex items-center gap-3 mb-12">
-            <span className="text-3xl font-black italic tracking-tighter text-white uppercase">OMEGA AUTOMATRIZ</span>
+            <span className="text-3xl font-black italic tracking-tighter text-white uppercase">{empresaNombre}</span>
           </div>
           
           <div className="mt-12">
@@ -78,7 +95,7 @@ const ConsultaVehiculoPage = () => {
           
           {/* Título móvil */}
           <div className="lg:hidden mb-8 text-center">
-            <h2 className="text-2xl font-black italic text-white">OMEGA AUTOMATRIZ</h2>
+            <h2 className="text-2xl font-black italic text-white uppercase">{empresaNombre}</h2>
             <p className="text-slate-400 mt-2">Consulta de Estado de Vehículo</p>
           </div>
 

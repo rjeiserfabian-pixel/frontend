@@ -1065,16 +1065,45 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   }, [initialOrder]);
 
 
+  const normalizarBusquedaProducto = (valor = '') => String(valor || '').trim();
+
   const buscarRepuestos = async (query = '') => {
-    if (query.length === 1) return;
+    const termino = normalizarBusquedaProducto(query);
+    if (termino.length === 1) return;
     setCargandoProductos(true);
     try {
-      const res = await inventarioService.getRepuestos({ search: query });
+      const res = await inventarioService.getRepuestos({ search: termino });
       setResultadosProductos(res.results || res);
     } catch (error) {
       console.error(error);
     } finally {
       setCargandoProductos(false);
+    }
+  };
+
+  const getEtiquetaProducto = (producto) => {
+    if (!producto || typeof producto === 'string') return producto || '';
+    const codigo = producto.codigo || 'Sin codigo';
+    const nombre = producto.nombre || '';
+    const codigoBarra = producto.codigo_barra ? ` | Barras: ${producto.codigo_barra}` : '';
+    return `${codigo} - ${nombre}${codigoBarra}`;
+  };
+
+  const seleccionarProductoConEnter = (event) => {
+    if (event.key !== 'Enter') return;
+    const termino = normalizarBusquedaProducto(busquedaProducto).toLowerCase();
+    if (!termino) return;
+
+    const productoExacto = resultadosProductos.find((producto) => {
+      const codigo = normalizarBusquedaProducto(producto?.codigo).toLowerCase();
+      const codigoBarra = normalizarBusquedaProducto(producto?.codigo_barra).toLowerCase();
+      return codigo === termino || codigoBarra === termino;
+    });
+    const producto = productoExacto || (resultadosProductos.length === 1 ? resultadosProductos[0] : null);
+
+    if (producto && getStockDisponible(producto) > 0) {
+      event.preventDefault();
+      agregarAlCarrito(producto);
     }
   };
 
@@ -1682,7 +1711,7 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
               sx={{ mb: 3 }}
               freeSolo
               options={resultadosProductos}
-              getOptionLabel={(option) => typeof option === 'string' ? option : `${option.codigo || ''} - ${option.nombre}`}
+              getOptionLabel={getEtiquetaProducto}
               getOptionDisabled={(option) => getStockDisponible(option) <= 0}
               renderOption={(props, option) => {
                 const stockOption = getStockDisponible(option);
@@ -1691,8 +1720,17 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                 const { key, ...otherProps } = props;
                 return (
                   <li key={key || option.id} {...otherProps} style={{ color: agotado ? '#aaa' : 'inherit', cursor: agotado ? 'not-allowed' : 'pointer', opacity: agotado ? 0.7 : 1 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="body2">{option.codigo} - {option.nombre}</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="body2" fontWeight="bold">{option.codigo} - {option.nombre}</Typography>
+                        {option.codigo_barra ? (
+                          <Chip
+                            size="small"
+                            label={`Barras: ${option.codigo_barra}`}
+                            sx={{ height: 20, fontSize: 11, fontWeight: 700 }}
+                          />
+                        ) : null}
+                      </Box>
                       {agotado ? (
                         <Typography variant="caption" color="error" fontWeight="bold">AGOTADO</Typography>
                       ) : (
@@ -1716,8 +1754,10 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
               renderInput={(params) => (
                 <TextField 
                   {...params} 
-                  placeholder="Buscar repuesto..." 
+                  placeholder="Buscar por codigo, codigo de barras o nombre..." 
                   size="small"
+                  helperText="Tambien puedes escanear el codigo de barras y presionar Enter."
+                  onKeyDown={seleccionarProductoConEnter}
                   InputProps={{
                     ...(params.InputProps || {}),
                     startAdornment: <InputAdornment position="start"><Search size={18} /></InputAdornment>,

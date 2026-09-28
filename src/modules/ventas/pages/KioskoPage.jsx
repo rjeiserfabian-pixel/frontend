@@ -77,11 +77,34 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
 // Selector obligatorio de tipo de combustible (paso 2): filtra el catálogo
 // del paso 3 y, si el vehículo no tenía este dato guardado, se persiste al
 // generar el ticket (ver generarTicket).
-const SelectorCombustible = ({ valor, onChange }) => {
+const SelectorCombustible = ({ valor, onChange, bloqueado = false }) => {
   const opciones = [
     { value: 'GASOLINA', label: 'Gasolinero' },
     { value: 'PETROLEO', label: 'Petrolero' },
   ];
+  const combustibleRegistrado = opciones.find(op => op.value === valor)?.label || 'Registrado';
+
+  if (bloqueado) {
+    return (
+      <div className="w-full">
+        <label className="block text-slate-400 text-sm font-medium mb-2">
+          Tipo de combustible registrado
+        </label>
+        <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-left">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-white font-bold">{combustibleRegistrado}</span>
+            <span className="text-[11px] uppercase tracking-wide text-emerald-300 border border-emerald-400/30 rounded-full px-2 py-1">
+              Bloqueado
+            </span>
+          </div>
+          <p className="text-emerald-200/80 text-xs mt-2">
+            Este dato ya esta registrado en el sistema y no se puede cambiar desde el kiosko.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <label className="block text-slate-400 text-sm font-medium mb-2">
@@ -195,6 +218,7 @@ export const KioskoPage = () => {
   const [dni, setDni] = useState("");
   const [placa, setPlaca] = useState("");
   const [vehiculo, setVehiculo] = useState(null);
+  const [vehiculoOrigen, setVehiculoOrigen] = useState(null);
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(false);
   const [carrito, setCarrito] = useState([]);
@@ -202,6 +226,7 @@ export const KioskoPage = () => {
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
   const [kilometraje, setKilometraje] = useState("");
   const [tipoCombustible, setTipoCombustible] = useState(null);
+  const combustibleBloqueado = vehiculoOrigen === 'local' && Boolean(vehiculo?.tipo_combustible);
 
   // Búsqueda y categorías del catálogo del kiosko (paso 3). Ambas siempre se
   // aplican DENTRO de los repuestos ya compatibles con el vehículo elegido
@@ -350,11 +375,13 @@ export const KioskoPage = () => {
       const res = await api.get(`/vehiculos/kiosko/buscar-vehiculo/?placa=${placa}`);
       const { origen, data: vData } = res.data;
       setVehiculo(vData);
+      setVehiculoOrigen(origen);
       setTipoCombustible(vData?.tipo_combustible || null);
     } catch (e) {
       console.error(e);
       // Si no se encuentra (404) o hay error de la API externa, crear un borrador
       setVehiculo({ placa, marca: '', modelo: '' });
+      setVehiculoOrigen('nuevo');
       setTipoCombustible(null);
     } finally {
       setLoading(false);
@@ -381,7 +408,7 @@ export const KioskoPage = () => {
   };
 
   const resetAll = () => {
-    setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setCarrito([]);
+    setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setVehiculoOrigen(null); setCarrito([]);
     setRepuestosCompatibles([]); setKilometraje(""); setTipoCombustible(null);
     setBusquedaRepuesto(""); setBusquedaDebounced(""); setCategoriaSeleccionada(null); setCategoriasDisponibles([]);
     setTecladoBusquedaAbierto(false);
@@ -538,12 +565,9 @@ export const KioskoPage = () => {
           <div className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/bg-taller.jpg')" }} />
           <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#0b0f19]/80 via-transparent to-[#0b0f19]" />
           <div className="relative z-10 flex flex-col h-full p-12">
-            <div className="flex items-center gap-3 mb-12">
-              <span className="text-3xl font-black italic tracking-tighter text-white uppercase">{empresaNombre}</span>
-            </div>
-            <div className="mt-12">
+            <div className="mt-8">
               <h1 className="text-4xl font-black italic mb-4 leading-tight">BIENVENIDO A <br/><span className="text-[#e50914] uppercase">{empresaNombre}</span></h1>
-              <p className="text-xl text-slate-300 font-light max-w-sm">Encuentra los mejores repuestos para tu vehiculo en nuestro catalogo interactivo.</p>
+              <p className="text-xl text-slate-300 font-light max-w-sm">Encuentra repuestos compatibles para tu vehiculo de forma rapida y sencilla.</p>
             </div>
           </div>
           <div className="relative z-10 grid grid-cols-2 gap-6 p-8 bg-[#0b0f19]/80 backdrop-blur-md border-t border-slate-800/50 mt-auto">
@@ -702,7 +726,11 @@ export const KioskoPage = () => {
                       </div>
 
                       <div className="w-full mt-5">
-                        <SelectorCombustible valor={tipoCombustible} onChange={setTipoCombustible} />
+                        <SelectorCombustible
+                          valor={tipoCombustible}
+                          onChange={setTipoCombustible}
+                          bloqueado={combustibleBloqueado}
+                        />
                       </div>
 
                       <button
@@ -744,7 +772,11 @@ export const KioskoPage = () => {
                             <span className="flex items-center text-slate-400 font-medium px-2 text-sm">km</span>
                           </div>
                         </div>
-                        <SelectorCombustible valor={tipoCombustible} onChange={setTipoCombustible} />
+                        <SelectorCombustible
+                          valor={tipoCombustible}
+                          onChange={setTipoCombustible}
+                          bloqueado={combustibleBloqueado}
+                        />
                       </div>
                       <button
                         onClick={handleNext}
