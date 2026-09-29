@@ -35,6 +35,7 @@ const VehiculosTransportePage = lazy(() => import('./modules/vehiculos/pages/Veh
 const KioskoPage = lazy(() => import('./modules/ventas/pages/KioskoPage'));
 const KioskosPage = lazy(() => import('./modules/ventas/pages/KioskosPage'));
 const POSPage = lazy(() => import('./modules/ventas/pages/POSPage'));
+const ProformasPage = lazy(() => import('./modules/ventas/pages/ProformasPage'));
 const ConfiguracionVentasPage = lazy(() => import('./modules/ventas/pages/ConfiguracionVentasPage'));
 const ConfiguracionIgvPage = lazy(() => import('./modules/inventario/pages/ConfiguracionIgvPage'));
 const RegistroManualVentasPage = lazy(() => import('./modules/ventas/pages/RegistroManualVentasPage'));
@@ -133,6 +134,7 @@ function App() {
                 <Route path="/configuracion/vehiculos-transporte" element={<VehiculosTransportePage />} />
                 <Route path="/configuracion/kioskos" element={<KioskosPage />} />
                 <Route path="/ventas/pos" element={<POSPage />} />
+                <Route path="/ventas/proformas" element={<ProformasPage />} />
                 <Route path="/ventas/registro-manual" element={<RegistroManualVentasPage />} />
                 <Route path="/ventas/configuracion" element={<ConfiguracionVentasPage />} />
                 <Route path="/cuentas/por-cobrar" element={<CuentasCobrarResumenPage />} />

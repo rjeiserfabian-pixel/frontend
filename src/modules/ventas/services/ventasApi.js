@@ -53,6 +53,37 @@ export const ventasService = {
     return response.data;
   },
 
+  getProformas: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const response = await apiClient.get(`/proformas/${queryString ? `?${queryString}` : ''}`);
+    return response.data;
+  },
+
+  crearProforma: async (payload) => {
+    const response = await apiClient.post('/proformas/', payload);
+    return response.data;
+  },
+
+  actualizarProforma: async (id, payload) => {
+    const response = await apiClient.put(`/proformas/${id}/`, payload);
+    return response.data;
+  },
+
+  eliminarProforma: async (id) => {
+    const response = await apiClient.delete(`/proformas/${id}/`);
+    return response.data;
+  },
+
+  convertirProformaAPos: async (id) => {
+    const response = await apiClient.post(`/proformas/${id}/convertir-a-pos/`);
+    return response.data;
+  },
+
+  descargarProformaPdf: async (id) => {
+    const response = await apiClient.get(`/proformas/${id}/pdf/`, { responseType: 'blob' });
+    return response.data;
+  },
+
   // ==========================================
   // MANTENIMIENTOS
   // ==========================================

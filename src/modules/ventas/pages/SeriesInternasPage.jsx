@@ -18,6 +18,7 @@ const TIPOS_DOCUMENTO = {
   CREDITO: 'Código de Crédito',
   GUIA_REMISION: 'Guía de Remisión',
   PROFORMA: 'Proforma / Cotización',
+  PROFORMA_VENTAS: 'Proformas',
   TRASLADO: 'Nota de Traslado',
 };
 
@@ -248,6 +249,7 @@ const SeriesInternasPage = () => {
               <MenuItem value="CREDITO">Código de Crédito (CRED)</MenuItem>
               <MenuItem value="GUIA_REMISION">Guía de Remisión (GR)</MenuItem>
               <MenuItem value="PROFORMA">Proforma / Cotización (COT)</MenuItem>
+              <MenuItem value="PROFORMA_VENTAS">Proformas (PR)</MenuItem>
               <MenuItem value="TRASLADO">Nota de Traslado (TR)</MenuItem>
             </Select>
           </FormControl>
