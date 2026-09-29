@@ -132,5 +132,26 @@ export const tallerService = {
   eliminarTipoServicio: async (id) => {
     const response = await api.delete(`taller/tipos-servicio/${id}/`);
     return response.data;
-  }
+  },
+
+  // Plantillas Correctivas
+  getPlantillasCorrectivas: async (params) => {
+    const response = await api.get('taller/plantillas-correctivas/', { params });
+    return response.data;
+  },
+
+  crearPlantillaCorrectiva: async (data) => {
+    const response = await api.post('taller/plantillas-correctivas/', data);
+    return response.data;
+  },
+
+  actualizarPlantillaCorrectiva: async (id, data) => {
+    const response = await api.put(`taller/plantillas-correctivas/${id}/`, data);
+    return response.data;
+  },
+
+  eliminarPlantillaCorrectiva: async (id) => {
+    const response = await api.delete(`taller/plantillas-correctivas/${id}/`);
+    return response.data;
+  },
 };

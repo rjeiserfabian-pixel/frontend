@@ -27,6 +27,7 @@ export default function NuevaOrdenPage() {
   const [vehiculos, setVehiculos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
+  const [plantillasCorrectivas, setPlantillasCorrectivas] = useState([]);
   const [tiposServicio, setTiposServicio] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -40,7 +41,8 @@ export default function NuevaOrdenPage() {
   const [modalError, setModalError] = useState('');
 
   const [preventivo, setPreventivo] = useState({});
-  const [motivosList, setMotivosList] = useState(['']); // Start with one empty item
+  const [correctivo, setCorrectivo] = useState({});
+  const [observaciones, setObservaciones] = useState('');
 
   // Quick Registration Modals
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
@@ -52,6 +54,7 @@ export default function NuevaOrdenPage() {
     fetchVehiculos();
     fetchClientes();
     fetchPlantillas();
+    fetchPlantillasCorrectivas();
     fetchTiposServicio();
   }, []);
 
@@ -62,6 +65,15 @@ export default function NuevaOrdenPage() {
       setPlantillas(res.results || res);
     } catch (err) {
       console.error('Error cargando plantillas:', err);
+    }
+  };
+
+  const fetchPlantillasCorrectivas = async () => {
+    try {
+      const res = await tallerService.getPlantillasCorrectivas({ activo: true });
+      setPlantillasCorrectivas(res.results || res);
+    } catch (err) {
+      console.error('Error cargando plantillas correctivas:', err);
     }
   };
 
@@ -143,15 +155,12 @@ export default function NuevaOrdenPage() {
     try {
       setLoading(true);
       
-      const motivosLlenos = motivosList.filter(m => m.trim() !== '');
-      const motivosString = motivosLlenos.map(m => `- ${m.trim()}`).join('\n');
-      
       const payload = {
         cliente: formData.cliente_id,
         vehiculo: formData.vehiculo_id,
         tipo_servicio: formData.tipo_servicio_id,
         kilometraje_ingreso: formData.kilometraje ? parseInt(formData.kilometraje) : null,
-        motivo_ingreso: motivosString
+        motivo_ingreso: observaciones.trim() || null
       };
 
       const newOrden = await tallerService.crearOrden(payload);
@@ -173,6 +182,17 @@ export default function NuevaOrdenPage() {
       // Crear servicios preventivos dinámicos seleccionados
       for (const plantilla of plantillas) {
         if (preventivo[plantilla.id]) {
+          await tallerService.crearServicio({ 
+            orden: newOrden.id, 
+            descripcion: plantilla.nombre,
+            precio_estimado: plantilla.precio_base || 0
+          });
+        }
+      }
+
+      // Crear servicios correctivos dinámicos seleccionados
+      for (const plantilla of plantillasCorrectivas) {
+        if (correctivo[plantilla.id]) {
           await tallerService.crearServicio({ 
             orden: newOrden.id, 
             descripcion: plantilla.nombre,
@@ -389,46 +409,54 @@ export default function NuevaOrdenPage() {
           <section className="flex flex-col gap-4">
             <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
               <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">3</div>
-              <h2 className="text-lg font-semibold text-white tracking-tight">Motivo de Ingreso Adicional / Correctivo</h2>
+              <h2 className="text-lg font-semibold text-white tracking-tight">Plantillas Correctivas (Checklist)</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
+              {plantillasCorrectivas.length === 0 ? (
+                <p className="text-sm text-slate-300 font-medium">No hay plantillas correctivas configuradas.</p>
+              ) : (
+                plantillasCorrectivas.map((plantilla) => (
+                  <FormControlLabel
+                    key={plantilla.id}
+                    control={
+                      <Checkbox
+                        checked={correctivo[plantilla.id] || false}
+                        onChange={(e) => setCorrectivo({ ...correctivo, [plantilla.id]: e.target.checked })}
+                        sx={{ color: 'slate.300', '&.Mui-checked': { color: 'slate.900' } }}
+                      />
+                    }
+                    label={
+                      <span className="text-sm font-medium text-slate-100">
+                        {plantilla.nombre} 
+                        {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
+                        {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
+                      </span>
+                    }
+                  />
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* SECCION 4: Observaciones */}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">4</div>
+              <h2 className="text-lg font-semibold text-white tracking-tight">Observaciones</h2>
             </div>
             
             <div className="flex flex-col gap-4 mt-2">
-              {motivosList.map((motivo, index) => (
-                <div key={index} className="flex gap-3 items-start group">
-                  <TextField
-                    fullWidth
-                    size="small"
-                    multiline
-                    minRows={2}
-                    placeholder="Ej. Revisión de suspensión, ruido al frenar..."
-                    value={motivo}
-                    onChange={(e) => {
-                      const newList = [...motivosList];
-                      newList[index] = e.target.value;
-                      setMotivosList(newList);
-                    }}
-                    InputProps={{ sx: { borderRadius: '12px' } }}
-                  />
-                  <IconButton 
-                    onClick={() => {
-                      const newList = [...motivosList];
-                      newList.splice(index, 1);
-                      setMotivosList(newList.length ? newList : ['']);
-                    }}
-                    sx={{ mt: 0.5, color: C.brandLight, '&:hover': { bgcolor: alpha(C.brand, 0.14), color: '#fda4af' } }}
-                  >
-                    <X size={20} />
-                  </IconButton>
-                </div>
-              ))}
-              <Button 
-                variant="outlined" 
-                startIcon={<Plus size={18} />}
-                onClick={() => setMotivosList([...motivosList, ''])}
-                sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: '8px', borderColor: C.border, color: C.text, textTransform: 'none', fontWeight: 700, '&:hover': { borderColor: alpha(C.blue, 0.5), bgcolor: alpha(C.blue, 0.09) } }}
-              >
-                Agregar Motivo
-              </Button>
+              <TextField
+                fullWidth
+                size="small"
+                multiline
+                minRows={3}
+                placeholder="Ej. Revisión de suspensión, ruido al frenar, aire acondicionado no enfría..."
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                InputProps={{ sx: { borderRadius: '12px' } }}
+              />
             </div>
           </section>
 

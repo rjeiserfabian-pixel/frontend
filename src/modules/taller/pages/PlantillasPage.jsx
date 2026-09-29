@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  FormControlLabel, Switch, Chip, TablePagination
+  FormControlLabel, Switch, Chip, TablePagination, Tabs, Tab
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
@@ -17,6 +18,7 @@ const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
 
 export default function PlantillasPage() {
+  const navigate = useNavigate();
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('PLANTILLAS_TALLER.CREAR');
   const puedeEditar = tienePermiso('PLANTILLAS_TALLER.EDITAR');
@@ -27,7 +29,7 @@ export default function PlantillasPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   
-  // Paginación
+  // PaginaciÃ³n
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
@@ -99,10 +101,10 @@ export default function PlantillasPage() {
 
       if (editingId) {
         await tallerService.actualizarPlantilla(editingId, dataToSend);
-        Swal.fire('Éxito', 'Plantilla actualizada correctamente', 'success');
+        Swal.fire('Ã‰xito', 'Plantilla actualizada correctamente', 'success');
       } else {
         await tallerService.crearPlantilla(dataToSend);
-        Swal.fire('Éxito', 'Plantilla creada correctamente', 'success');
+        Swal.fire('Ã‰xito', 'Plantilla creada correctamente', 'success');
       }
       handleCloseModal();
       fetchPlantillas();
@@ -137,13 +139,13 @@ export default function PlantillasPage() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: '¿Estás seguro?',
-      text: "La plantilla se eliminará permanentemente.",
+      title: 'Â¿EstÃ¡s seguro?',
+      text: "La plantilla se eliminarÃ¡ permanentemente.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'SÃ­, eliminar',
       cancelButtonText: 'Cancelar'
     });
 
@@ -162,7 +164,7 @@ export default function PlantillasPage() {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h5" fontWeight="bold">Plantillas de Servicio Preventivo</Typography>
+        <Typography variant="h5" fontWeight="bold">Plantillas de Servicio</Typography>
         {puedeCrear && (
           <Button
             variant="contained"
@@ -172,6 +174,18 @@ export default function PlantillasPage() {
             Nueva Plantilla
           </Button>
         )}
+            </Box>
+
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs 
+          value="/taller/plantillas" 
+          onChange={(e, newValue) => navigate(newValue)}
+          textColor="primary"
+          indicatorColor="primary"
+        >
+          <Tab label="Servicios Preventivos" value="/taller/plantillas" />
+          <Tab label="Servicios Correctivos" value="/taller/plantillas-correctivas" />
+        </Tabs>
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
@@ -180,7 +194,7 @@ export default function PlantillasPage() {
             <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell><strong>Nombre</strong></TableCell>
-                <TableCell><strong>Descripción</strong></TableCell>
+                <TableCell><strong>DescripciÃ³n</strong></TableCell>
                 <TableCell align="right"><strong>Precio Base (S/)</strong></TableCell>
                 <TableCell align="right"><strong>Tiempo Est. (Min)</strong></TableCell>
                 <TableCell align="center"><strong>Estado</strong></TableCell>
@@ -240,7 +254,7 @@ export default function PlantillasPage() {
             onPageChange={(e, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
             rowsPerPageOptions={[25]}
-            labelRowsPerPage="Filas por página:"
+            labelRowsPerPage="Filas por pÃ¡gina:"
           />
         )}
       </Paper>
@@ -259,7 +273,7 @@ export default function PlantillasPage() {
             />
             
             <TextField
-              label="Descripción (opcional)"
+              label="DescripciÃ³n (opcional)"
               fullWidth
               multiline
               rows={2}
@@ -302,7 +316,7 @@ export default function PlantillasPage() {
                       onChange={(e) => field.onChange(e.target.checked)}
                     />
                   }
-                  label="Activo (Visible en recepción)"
+                  label="Activo (Visible en recepciÃ³n)"
                 />
               )}
             />
@@ -324,3 +338,4 @@ export default function PlantillasPage() {
     </Box>
   );
 }
+

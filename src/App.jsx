@@ -46,6 +46,7 @@ const OrdenesTrabajoPage = lazy(() => import('./modules/taller/pages/OrdenesTrab
 const NuevaOrdenPage = lazy(() => import('./modules/taller/pages/NuevaOrdenPage'));
 const DetalleOrdenPage = lazy(() => import('./modules/taller/pages/DetalleOrdenPage'));
 const PlantillasPage = lazy(() => import('./modules/taller/pages/PlantillasPage'));
+const PlantillasCorrectivasPage = lazy(() => import('./modules/taller/pages/PlantillasCorrectivasPage'));
 const TiposServicioPage = lazy(() => import('./modules/taller/pages/TiposServicioPage'));
 const ConsultaVehiculoPage = lazy(() => import('./modules/public/pages/ConsultaVehiculoPage'));
 const ComprasPage = lazy(() => import('./modules/compras/pages/ComprasPage'));
@@ -126,6 +127,7 @@ function App() {
                 <Route path="/taller/ordenes/nueva" element={<NuevaOrdenPage />} />
                 <Route path="/taller/ordenes/:id" element={<DetalleOrdenPage />} />
                 <Route path="/taller/plantillas" element={<PlantillasPage />} />
+                <Route path="/taller/plantillas-correctivas" element={<PlantillasCorrectivasPage />} />
                 <Route path="/taller/tipos-servicio" element={<TiposServicioPage />} />
                 <Route path="/vehiculos" element={<VehiculosPage />} />
                 <Route path="/contactos/clientes" element={<ClientesPage />} />
