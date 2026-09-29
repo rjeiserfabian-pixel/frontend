@@ -10,9 +10,12 @@ const ConsultaVehiculoPage = () => {
   const [placa, setPlaca] = useState('');
   const [dni, setDni] = useState('');
   const [loading, setLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [empresaNombre, setEmpresaNombre] = useState('OMEGA AUTOMOTRIZ');
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
+  const [repuestosSeleccionados, setRepuestosSeleccionados] = useState([]);
 
   useEffect(() => {
     const fetchEmpresa = async () => {
@@ -45,7 +48,15 @@ const ConsultaVehiculoPage = () => {
       const payload = { placa, dni };
       if (sucursalId) payload.sucursal_id = sucursalId;
       const res = await api.post('/taller/public/consulta-vehiculo/', payload);
-      setResult(res.data);
+      const data = res.data;
+      setResult(data);
+      if (data.orden?.cotizacion_pendiente) {
+        setServiciosSeleccionados((data.orden.servicios || []).map((item) => item.id));
+        setRepuestosSeleccionados((data.orden.repuestos || []).map((item) => item.id));
+      } else {
+        setServiciosSeleccionados([]);
+        setRepuestosSeleccionados([]);
+      }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.error) {
         setError(err.response.data.error);
@@ -56,6 +67,67 @@ const ConsultaVehiculoPage = () => {
       setLoading(false);
     }
   };
+
+  const toggleServicio = (id) => {
+    setServiciosSeleccionados((prev) => (
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    ));
+  };
+
+  const toggleRepuesto = (id) => {
+    setRepuestosSeleccionados((prev) => (
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    ));
+  };
+
+  const handleAprobarCotizacion = async () => {
+    if (serviciosSeleccionados.length === 0 && repuestosSeleccionados.length === 0) {
+      setError('Selecciona al menos un servicio o repuesto para aprobar.');
+      return;
+    }
+
+    setApproving(true);
+    setError('');
+
+    try {
+      const payload = {
+        placa,
+        dni,
+        servicios_aprobados: serviciosSeleccionados,
+        repuestos_aprobados: repuestosSeleccionados,
+      };
+      if (sucursalId) payload.sucursal_id = sucursalId;
+      await api.post('/taller/public/aprobar-cotizacion/', payload);
+
+      const consultaPayload = { placa, dni };
+      if (sucursalId) consultaPayload.sucursal_id = sucursalId;
+      const res = await api.post('/taller/public/consulta-vehiculo/', consultaPayload);
+      setResult(res.data);
+      setServiciosSeleccionados([]);
+      setRepuestosSeleccionados([]);
+    } catch (err) {
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError('No se pudo registrar la aprobación. Inténtelo de nuevo.');
+      }
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const totalSeleccionado = result?.orden?.cotizacion_pendiente
+    ? [
+      ...(result.orden.servicios || [])
+        .filter((item) => serviciosSeleccionados.includes(item.id))
+        .map((item) => parseFloat(item.precio || 0)),
+      ...(result.orden.repuestos || [])
+        .filter((item) => repuestosSeleccionados.includes(item.id))
+        .map((item) => parseFloat(item.precio || 0) * parseFloat(item.cantidad || 0)),
+    ].reduce((sum, value) => sum + value, 0)
+    : 0;
+  const cotizacionPendiente = result?.orden?.cotizacion_pendiente;
+  const cotizacionVencida = result?.orden?.cotizacion_vencida;
 
   return (
     <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden">
@@ -208,42 +280,92 @@ const ConsultaVehiculoPage = () => {
                             <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Orden de Trabajo</p>
                             <p className="text-2xl font-black text-white">#{result.orden.numero}</p>
                           </div>
-                          <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${result.orden.estado === 'FINALIZADO' ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-[#e50914]/20 text-[#e50914] border border-[#e50914]/50'}`}>
+                          <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${result.orden.estado === 'FINALIZADO' ? 'bg-green-500/20 text-green-400 border border-green-500/50' : cotizacionPendiente ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50' : 'bg-[#e50914]/20 text-[#e50914] border border-[#e50914]/50'}`}>
                             {result.orden.estado}
                           </span>
                         </div>
 
                         <div>
                           <h5 className="font-bold text-white mb-4 flex items-center gap-2">
-                            <Wrench size={18} className="text-slate-400" /> Trabajos y Repuestos
+                            <Wrench size={18} className="text-slate-400" /> {cotizacionPendiente ? 'Cotización Pendiente' : 'Trabajos y Repuestos'}
                           </h5>
+
+                          {cotizacionPendiente && (
+                            <div className={`mb-4 rounded-xl border p-4 ${cotizacionVencida ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`}>
+                              <p className={`font-bold ${cotizacionVencida ? 'text-red-300' : 'text-amber-200'}`}>
+                                {cotizacionVencida ? 'Cotización vencida' : 'Selecciona lo que autorizas realizar'}
+                              </p>
+                              <p className="text-sm text-slate-300 mt-1">
+                                Total seleccionado: <span className="font-bold text-white">S/ {totalSeleccionado.toFixed(2)}</span>
+                              </p>
+                            </div>
+                          )}
                           
                           <div className="flex flex-col gap-3">
                             {result.orden.servicios.map((s, idx) => (
-                              <div key={`srv-${idx}`} className={`p-4 rounded-xl border flex justify-between items-center ${s.completado ? 'bg-green-500/5 border-green-500/20' : 'bg-slate-800/30 border-slate-700'}`}>
+                              <div key={`srv-${idx}`} className={`p-4 rounded-xl border flex justify-between items-center gap-4 ${cotizacionPendiente ? 'bg-slate-800/30 border-slate-700' : s.completado ? 'bg-green-500/5 border-green-500/20' : 'bg-slate-800/30 border-slate-700'}`}>
                                 <div>
                                   <p className="font-medium text-white">{s.descripcion}</p>
                                   <p className="text-xs text-slate-400 mt-1">Servicio • S/ {parseFloat(s.precio).toFixed(2)}</p>
                                 </div>
-                                <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md ${s.completado ? 'text-green-400 bg-green-400/10' : 'text-amber-400 bg-amber-400/10'}`}>
-                                  {s.completado ? <CheckCircle size={14} /> : <Clock size={14} />}
-                                  {s.completado ? 'Terminado' : 'En Proceso'}
-                                </div>
+                                {cotizacionPendiente ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={serviciosSeleccionados.includes(s.id)}
+                                    disabled={cotizacionVencida}
+                                    onChange={() => toggleServicio(s.id)}
+                                    className="h-5 w-5 shrink-0 accent-[#e50914]"
+                                    aria-label={`Aprobar ${s.descripcion}`}
+                                  />
+                                ) : (
+                                  <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md ${s.completado ? 'text-green-400 bg-green-400/10' : 'text-amber-400 bg-amber-400/10'}`}>
+                                    {s.completado ? <CheckCircle size={14} /> : <Clock size={14} />}
+                                    {s.completado ? 'Terminado' : 'En Proceso'}
+                                  </div>
+                                )}
                               </div>
                             ))}
 
                             {result.orden.repuestos.map((r, idx) => (
-                              <div key={`rep-${idx}`} className={`p-4 rounded-xl border flex justify-between items-center ${r.instalado ? 'bg-green-500/5 border-green-500/20' : 'bg-slate-800/30 border-slate-700'}`}>
+                              <div key={`rep-${idx}`} className={`p-4 rounded-xl border flex justify-between items-center gap-4 ${cotizacionPendiente ? 'bg-slate-800/30 border-slate-700' : r.instalado ? 'bg-green-500/5 border-green-500/20' : 'bg-slate-800/30 border-slate-700'}`}>
                                 <div>
                                   <p className="font-medium text-white">{r.descripcion}</p>
                                   <p className="text-xs text-slate-400 mt-1">Repuesto • Cant: {parseFloat(r.cantidad)} • S/ {parseFloat(r.precio).toFixed(2)}</p>
                                 </div>
-                                <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md ${r.instalado ? 'text-green-400 bg-green-400/10' : 'text-amber-400 bg-amber-400/10'}`}>
-                                  {r.instalado ? <CheckCircle size={14} /> : <Clock size={14} />}
-                                  {r.instalado ? 'Instalado' : 'Pendiente'}
-                                </div>
+                                {cotizacionPendiente ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={repuestosSeleccionados.includes(r.id)}
+                                    disabled={cotizacionVencida}
+                                    onChange={() => toggleRepuesto(r.id)}
+                                    className="h-5 w-5 shrink-0 accent-[#e50914]"
+                                    aria-label={`Aprobar ${r.descripcion}`}
+                                  />
+                                ) : (
+                                  <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-md ${r.instalado ? 'text-green-400 bg-green-400/10' : 'text-amber-400 bg-amber-400/10'}`}>
+                                    {r.instalado ? <CheckCircle size={14} /> : <Clock size={14} />}
+                                    {r.instalado ? 'Instalado' : 'Pendiente'}
+                                  </div>
+                                )}
                               </div>
                             ))}
+
+                            {cotizacionPendiente && (
+                              <button
+                                type="button"
+                                disabled={approving || cotizacionVencida || (serviciosSeleccionados.length === 0 && repuestosSeleccionados.length === 0)}
+                                onClick={handleAprobarCotizacion}
+                                className="mt-2 w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {approving ? (
+                                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-950"></span>
+                                ) : (
+                                  <>
+                                    <CheckCircle size={20} /> Confirmar Aprobación
+                                  </>
+                                )}
+                              </button>
+                            )}
                             
                             {result.orden.servicios.length === 0 && result.orden.repuestos.length === 0 && (
                                <p className="text-sm text-slate-400 text-center py-4">No hay ítems registrados aún en esta orden.</p>
@@ -258,7 +380,7 @@ const ConsultaVehiculoPage = () => {
                   {/* Footer Resultado */}
                   {result.has_active_order && (
                     <div className="mt-auto bg-[#1f2937] p-5 border-t border-slate-700 flex justify-between items-center">
-                      <span className="text-slate-400 font-medium">Total Estimado</span>
+                      <span className="text-slate-400 font-medium">{cotizacionPendiente ? 'Total Cotizado' : 'Total Estimado'}</span>
                       <span className="text-2xl font-bold text-white">S/ {parseFloat(result.orden.total_estimado).toFixed(2)}</span>
                     </div>
                   )}

@@ -122,6 +122,14 @@ export default function DetalleOrdenPage() {
     setRepuestoModal(true);
   };
 
+  const getStockDisponibleRepuesto = (repuesto) => parseFloat(repuesto?.stock_total_disponible || 0);
+
+  const repuestosDisponiblesInventario = repuestosInventario.filter((repuesto) => getStockDisponibleRepuesto(repuesto) > 0);
+
+  const cantidadNuevoRepuesto = parseFloat(nuevoRepuesto.cantidad || 0);
+  const stockNuevoRepuesto = getStockDisponibleRepuesto(nuevoRepuesto.repuesto);
+  const cantidadRepuestoInvalida = !nuevoRepuesto.repuesto || cantidadNuevoRepuesto <= 0 || cantidadNuevoRepuesto > stockNuevoRepuesto;
+
   const handleAsignarMecanico = async () => {
     if (!selectedMecanico) return;
     try {
@@ -315,6 +323,14 @@ export default function DetalleOrdenPage() {
 
   const handleAddRepuesto = async () => {
     if (!nuevoRepuesto.repuesto) return;
+    if (cantidadRepuestoInvalida) {
+      Swal.fire(
+        'Stock insuficiente',
+        `Disponible: ${stockNuevoRepuesto}. Cantidad solicitada: ${nuevoRepuesto.cantidad || 0}.`,
+        'warning'
+      );
+      return;
+    }
     try {
       await tallerService.crearRepuesto({
         orden: id,
@@ -327,6 +343,11 @@ export default function DetalleOrdenPage() {
       fetchOrden();
     } catch (err) {
       console.error(err);
+      const mensaje = err.response?.data?.non_field_errors?.[0]
+        || err.response?.data?.error
+        || err.response?.data?.detail
+        || 'No se pudo agregar el repuesto.';
+      Swal.fire('No se pudo agregar el repuesto', mensaje, 'error');
     }
   };
 
@@ -1433,15 +1454,23 @@ export default function DetalleOrdenPage() {
         <DialogTitle><Typography variant="h6" fontWeight="700">Agregar Repuesto a Cotizar</Typography></DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <Autocomplete
-            options={repuestosInventario}
-            getOptionLabel={(option) => `${option.nombre} ${option.codigo_fabricante ? `(${option.codigo_fabricante})` : ''}`}
+            options={repuestosDisponiblesInventario}
+            getOptionLabel={(option) => `${option.nombre} ${option.codigo_fabricante ? `(${option.codigo_fabricante})` : ''} | Stock: ${getStockDisponibleRepuesto(option)}`}
             onChange={(e, val) => setNuevoRepuesto({...nuevoRepuesto, repuesto: val, precio_unitario: val?.precio_lista || 0})}
             renderInput={(params) => <TextField {...params} label="Buscar Repuesto en Inventario" fullWidth />}
+            noOptionsText="No hay repuestos con stock disponible"
           />
+          {nuevoRepuesto.repuesto && (
+            <Alert severity={cantidadRepuestoInvalida ? 'warning' : 'info'} sx={{ borderRadius: '10px' }}>
+              Stock disponible: <strong>{stockNuevoRepuesto}</strong>
+            </Alert>
+          )}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField 
               label="Cantidad" type="number" fullWidth 
               value={nuevoRepuesto.cantidad} onChange={e => setNuevoRepuesto({...nuevoRepuesto, cantidad: e.target.value})}
+              error={!!nuevoRepuesto.repuesto && cantidadRepuestoInvalida}
+              helperText={nuevoRepuesto.repuesto && cantidadRepuestoInvalida ? `Debe ser mayor a 0 y no superar ${stockNuevoRepuesto}` : ''}
             />
             <TextField 
               label="Precio Unitario (S/)" type="number" fullWidth 
@@ -1451,7 +1480,7 @@ export default function DetalleOrdenPage() {
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={() => setRepuestoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
-          <Button onClick={handleAddRepuesto} variant="contained" disabled={!nuevoRepuesto.repuesto} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Agregar</Button>
+          <Button onClick={handleAddRepuesto} variant="contained" disabled={cantidadRepuestoInvalida} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Agregar</Button>
         </DialogActions>
       </Dialog>
       
