@@ -28,6 +28,7 @@ const TrasladosPage = lazy(() => import('./modules/inventario/pages/TrasladosPag
 const GuiasRemisionPage = lazy(() => import('./modules/inventario/pages/GuiasRemisionPage'));
 const RevisionPreciosPage = lazy(() => import('./modules/inventario/pages/RevisionPreciosPage'));
 const ComprobantesElectronicosPage = lazy(() => import('./modules/facturacion/pages/ComprobantesElectronicosPage'));
+const NotasCreditoPage = lazy(() => import('./modules/facturacion/pages/NotasCreditoPage'));
 const ClientesPage = lazy(() => import('./modules/clientes/pages/ClientesPage'));
 const ProveedoresPage = lazy(() => import('./modules/clientes/pages/ProveedoresPage'));
 const TransportistasPage = lazy(() => import('./modules/clientes/pages/TransportistasPage'));
@@ -123,6 +124,7 @@ function App() {
                 <Route path="/inventario/revision-precios" element={<RevisionPreciosPage />} />
                 <Route path="/inventario/impuestos" element={<ConfiguracionIgvPage />} />
                 <Route path="/facturacion/comprobantes" element={<ComprobantesElectronicosPage />} />
+                <Route path="/ventas/notas-credito" element={<NotasCreditoPage />} />
                 <Route path="/taller/ordenes" element={<OrdenesTrabajoPage />} />
                 <Route path="/taller/ordenes/nueva" element={<NuevaOrdenPage />} />
                 <Route path="/taller/ordenes/:id" element={<DetalleOrdenPage />} />

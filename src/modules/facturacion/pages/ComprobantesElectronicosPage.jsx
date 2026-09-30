@@ -1,34 +1,32 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Box, Typography, Button, Paper, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, IconButton, CircularProgress,
-  TablePagination, Chip, MenuItem, TextField, Stack, Tooltip,
+  Box, Button, Chip, CircularProgress, IconButton, MenuItem, Paper, Stack,
+  Table, TableBody, TableCell, TableContainer, TableHead, TablePagination,
+  TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { Send, RefreshCw, Eye, FilePlus2 } from 'lucide-react';
+import { Eye, RefreshCw, Send } from 'lucide-react';
 import Swal from 'sweetalert2';
 import facturacionApi from '../facturacionApi';
 import ModalDetalleComprobante from '../components/ModalDetalleComprobante';
-import ModalPrepararComprobante from '../components/ModalPrepararComprobante';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const TIPOS_DOCUMENTO = [
   { value: '', label: 'Todos los tipos' },
   { value: '01', label: 'Factura' },
   { value: '03', label: 'Boleta' },
-  { value: '07', label: 'Nota de Crédito' },
-  { value: '08', label: 'Nota de Débito' },
-  { value: '09', label: 'Guía de Remisión' },
+  { value: '08', label: 'Nota de Debito' },
+  { value: '09', label: 'Guia de Remision' },
 ];
 
 const ESTADOS = [
   { value: '', label: 'Todos los estados' },
-  { value: 'PENDIENTE_ENVIO', label: 'Pendiente de Envío' },
+  { value: 'PENDIENTE_ENVIO', label: 'Pendiente de envio' },
   { value: 'ENVIADO', label: 'Enviado' },
   { value: 'ACEPTADO', label: 'Aceptado' },
   { value: 'RECHAZADO', label: 'Rechazado' },
   { value: 'OBSERVADO', label: 'Observado' },
-  { value: 'ERROR_CONEXION', label: 'Error de Conexión' },
-  { value: 'BAJA_SOLICITADA', label: 'Baja Solicitada' },
+  { value: 'ERROR_CONEXION', label: 'Error de conexion' },
+  { value: 'BAJA_SOLICITADA', label: 'Baja solicitada' },
   { value: 'BAJA_ACEPTADA', label: 'Anulado' },
 ];
 
@@ -56,8 +54,8 @@ export default function ComprobantesElectronicosPage() {
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [emitiendoId, setEmitiendoId] = useState(null);
+  const [sincronizando, setSincronizando] = useState(false);
   const [detalleId, setDetalleId] = useState(null);
-  const [openPreparar, setOpenPreparar] = useState(false);
 
   const fetchComprobantes = useCallback(async () => {
     try {
@@ -67,6 +65,7 @@ export default function ComprobantesElectronicosPage() {
         page_size: rowsPerPage,
         tipo_documento: filtroTipo || undefined,
         estado: filtroEstado || undefined,
+        excluir_notas_credito: true,
       });
       setComprobantes(res.data.results ?? res.data);
       setTotalCount(res.data.count ?? res.data.length);
@@ -82,11 +81,11 @@ export default function ComprobantesElectronicosPage() {
 
   const handleEmitir = async (comprobante) => {
     const confirm = await Swal.fire({
-      title: comprobante.estado === 'PENDIENTE_ENVIO' ? '¿Emitir a SUNAT?' : '¿Reintentar envío?',
+      title: comprobante.estado === 'PENDIENTE_ENVIO' ? 'Emitir a SUNAT' : 'Reintentar envio',
       text: `${comprobante.tipo_documento_display} ${comprobante.serie}-${comprobante.numero}`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Sí, enviar',
+      confirmButtonText: 'Enviar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#16a34a',
     });
@@ -109,29 +108,65 @@ export default function ComprobantesElectronicosPage() {
     }
   };
 
+  const handleSincronizarVentas = async () => {
+    setSincronizando(true);
+    try {
+      const { data } = await facturacionApi.sincronizarVentas();
+      const creados = Number(data.creados || 0);
+      Swal.fire(
+        creados > 0 ? 'Ventas sincronizadas' : 'Sin pendientes',
+        creados > 0
+          ? `Se prepararon ${creados} venta(s) para envio a SUNAT.`
+          : 'No hay facturas o boletas nuevas pendientes de preparar.',
+        creados > 0 ? 'success' : 'info',
+      );
+      fetchComprobantes();
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.detail || 'No se pudieron sincronizar las ventas.', 'error');
+    } finally {
+      setSincronizando(false);
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight={700}>Comprobantes Electrónicos</Typography>
+      <Stack direction="row" sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>Comprobantes Electronicos</Typography>
+          <Typography variant="body2" color="text.secondary">Revision y envio manual a SUNAT de facturas y boletas registradas en ventas.</Typography>
+        </Box>
         {puedeCrear && (
-          <Button variant="contained" startIcon={<FilePlus2 size={18} />} onClick={() => setOpenPreparar(true)}>
-            Preparar comprobante
+          <Button
+            variant="contained"
+            startIcon={sincronizando ? <CircularProgress color="inherit" size={18} /> : <RefreshCw size={18} />}
+            onClick={handleSincronizarVentas}
+            disabled={sincronizando}
+          >
+            Sincronizar ventas
           </Button>
         )}
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1.5} useFlexGap sx={{ mb: 2, flexWrap: 'wrap' }}>
         <TextField
-          select size="small" label="Tipo de documento" value={filtroTipo} sx={{ minWidth: 200 }}
+          select
+          size="small"
+          label="Tipo de documento"
+          value={filtroTipo}
+          sx={{ minWidth: 190 }}
           onChange={(e) => { setFiltroTipo(e.target.value); setPage(0); }}
         >
-          {TIPOS_DOCUMENTO.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+          {TIPOS_DOCUMENTO.map((tipo) => <MenuItem key={tipo.value} value={tipo.value}>{tipo.label}</MenuItem>)}
         </TextField>
         <TextField
-          select size="small" label="Estado" value={filtroEstado} sx={{ minWidth: 200 }}
+          select
+          size="small"
+          label="Estado"
+          value={filtroEstado}
+          sx={{ minWidth: 190 }}
           onChange={(e) => { setFiltroEstado(e.target.value); setPage(0); }}
         >
-          {ESTADOS.map((e) => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
+          {ESTADOS.map((estado) => <MenuItem key={estado.value} value={estado.value}>{estado.label}</MenuItem>)}
         </TextField>
       </Stack>
 
@@ -141,7 +176,7 @@ export default function ComprobantesElectronicosPage() {
             <TableHead>
               <TableRow>
                 <TableCell>Tipo</TableCell>
-                <TableCell>Serie-Número</TableCell>
+                <TableCell>Serie-numero</TableCell>
                 <TableCell>Cliente</TableCell>
                 <TableCell align="right">Total</TableCell>
                 <TableCell>Estado</TableCell>
@@ -153,25 +188,27 @@ export default function ComprobantesElectronicosPage() {
                 <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}><CircularProgress size={28} /></TableCell></TableRow>
               ) : comprobantes.length === 0 ? (
                 <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}>No hay comprobantes para mostrar.</TableCell></TableRow>
-              ) : comprobantes.map((c) => (
-                <TableRow key={c.id} hover>
-                  <TableCell>{c.tipo_documento_display}</TableCell>
-                  <TableCell>{c.serie}-{c.numero}</TableCell>
-                  <TableCell>{c.cliente_nombre || c.cliente_documento}</TableCell>
-                  <TableCell align="right">{Number(c.total).toFixed(2)}</TableCell>
-                  <TableCell><Chip size="small" label={c.estado_display} color={COLOR_ESTADO[c.estado] || 'default'} /></TableCell>
+              ) : comprobantes.map((comprobante) => (
+                <TableRow key={comprobante.id} hover>
+                  <TableCell>{comprobante.tipo_documento_display}</TableCell>
+                  <TableCell>{comprobante.serie}-{comprobante.numero}</TableCell>
+                  <TableCell>{comprobante.cliente_nombre || comprobante.cliente_documento}</TableCell>
+                  <TableCell align="right">{Number(comprobante.total).toFixed(2)}</TableCell>
+                  <TableCell><Chip size="small" label={comprobante.estado_display} color={COLOR_ESTADO[comprobante.estado] || 'default'} /></TableCell>
                   <TableCell align="center">
                     <Tooltip title="Ver detalle">
-                      <IconButton size="small" onClick={() => setDetalleId(c.id)}><Eye size={16} /></IconButton>
+                      <IconButton size="small" onClick={() => setDetalleId(comprobante.id)}><Eye size={16} /></IconButton>
                     </Tooltip>
-                    {puedeEmitir && ['PENDIENTE_ENVIO', 'RECHAZADO', 'OBSERVADO', 'ERROR_CONEXION'].includes(c.estado) && (
-                      <Tooltip title={c.estado === 'PENDIENTE_ENVIO' ? 'Emitir a SUNAT' : 'Reintentar envío'}>
+                    {puedeEmitir && ['PENDIENTE_ENVIO', 'RECHAZADO', 'OBSERVADO', 'ERROR_CONEXION'].includes(comprobante.estado) && (
+                      <Tooltip title={comprobante.estado === 'PENDIENTE_ENVIO' ? 'Emitir a SUNAT' : 'Reintentar envio'}>
                         <span>
                           <IconButton
-                            size="small" color="primary" disabled={emitiendoId === c.id}
-                            onClick={() => handleEmitir(c)}
+                            size="small"
+                            color="primary"
+                            disabled={emitiendoId === comprobante.id}
+                            onClick={() => handleEmitir(comprobante)}
                           >
-                            {emitiendoId === c.id ? <CircularProgress size={16} /> : (c.estado === 'PENDIENTE_ENVIO' ? <Send size={16} /> : <RefreshCw size={16} />)}
+                            {emitiendoId === comprobante.id ? <CircularProgress size={16} /> : (comprobante.estado === 'PENDIENTE_ENVIO' ? <Send size={16} /> : <RefreshCw size={16} />)}
                           </IconButton>
                         </span>
                       </Tooltip>
@@ -190,6 +227,8 @@ export default function ComprobantesElectronicosPage() {
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
           rowsPerPageOptions={[10, 20, 50]}
+          labelRowsPerPage="Filas por pagina:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `mas de ${to}`}`}
         />
       </Paper>
 
@@ -201,12 +240,6 @@ export default function ComprobantesElectronicosPage() {
         />
       )}
 
-      {openPreparar && (
-        <ModalPrepararComprobante
-          onClose={() => setOpenPreparar(false)}
-          onPrepared={() => { setOpenPreparar(false); fetchComprobantes(); }}
-        />
-      )}
     </Box>
   );
 }

@@ -29,7 +29,7 @@ export default function PlantillasPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   
-  // PaginaciÃ³n
+  // Paginación
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
@@ -101,10 +101,10 @@ export default function PlantillasPage() {
 
       if (editingId) {
         await tallerService.actualizarPlantilla(editingId, dataToSend);
-        Swal.fire('Ã‰xito', 'Plantilla actualizada correctamente', 'success');
+        Swal.fire('Éxito', 'Plantilla actualizada correctamente', 'success');
       } else {
         await tallerService.crearPlantilla(dataToSend);
-        Swal.fire('Ã‰xito', 'Plantilla creada correctamente', 'success');
+        Swal.fire('Éxito', 'Plantilla creada correctamente', 'success');
       }
       handleCloseModal();
       fetchPlantillas();
@@ -139,13 +139,13 @@ export default function PlantillasPage() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: 'Â¿EstÃ¡s seguro?',
-      text: "La plantilla se eliminarÃ¡ permanentemente.",
+      title: '¿Estás seguro?',
+      text: "La plantilla se eliminará permanentemente.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
-      confirmButtonText: 'SÃ­, eliminar',
+      confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     });
 
@@ -194,7 +194,7 @@ export default function PlantillasPage() {
             <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
               <TableRow>
                 <TableCell><strong>Nombre</strong></TableCell>
-                <TableCell><strong>DescripciÃ³n</strong></TableCell>
+                <TableCell><strong>Descripción</strong></TableCell>
                 <TableCell align="right"><strong>Precio Base (S/)</strong></TableCell>
                 <TableCell align="right"><strong>Tiempo Est. (Min)</strong></TableCell>
                 <TableCell align="center"><strong>Estado</strong></TableCell>
@@ -254,7 +254,7 @@ export default function PlantillasPage() {
             onPageChange={(e, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
             rowsPerPageOptions={[25]}
-            labelRowsPerPage="Filas por pÃ¡gina:"
+            labelRowsPerPage="Filas por página:"
           />
         )}
       </Paper>
@@ -273,7 +273,7 @@ export default function PlantillasPage() {
             />
             
             <TextField
-              label="DescripciÃ³n (opcional)"
+              label="Descripción (opcional)"
               fullWidth
               multiline
               rows={2}
@@ -316,7 +316,7 @@ export default function PlantillasPage() {
                       onChange={(e) => field.onChange(e.target.checked)}
                     />
                   }
-                  label="Activo (Visible en recepciÃ³n)"
+                  label="Activo (Visible en recepción)"
                 />
               )}
             />
