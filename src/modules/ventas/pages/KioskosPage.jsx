@@ -6,7 +6,7 @@ import {
   CircularProgress, Chip, MenuItem, FormControlLabel, Switch
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Monitor, Link as LinkIcon, ClipboardCopy, CarFront, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, Monitor, Link as LinkIcon, ClipboardCopy, CarFront, MapPin, Wrench } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { kioskoService } from '../services/kioskoService';
@@ -54,6 +54,7 @@ const formatFecha = (iso) => {
 // solo se mostraba el código a secas y había que armarla a mano.
 const urlActivacion = (codigo) => `${window.location.origin}/kiosko/activar/${codigo}`;
 const urlEstadoVehiculo = (sucursalId) => `${window.location.origin}/estado-vehiculo?sucursal=${sucursalId}`;
+const urlConsultaRepuestos = () => `${window.location.origin}/consulta-repuestos`;
 
 const copiarEnlaceActivacion = async (codigo) => {
   const url = urlActivacion(codigo);
@@ -80,6 +81,23 @@ const copiarEnlaceEstadoVehiculo = async (sucursal) => {
   } catch {
     Swal.fire({
       title: `Link de ${sucursal.nombre}`,
+      html: `<code style="word-break:break-all;">${url}</code>`,
+      confirmButtonText: 'Cerrar',
+    });
+  }
+};
+
+const copiarEnlaceConsultaRepuestos = async () => {
+  const url = urlConsultaRepuestos();
+  try {
+    await navigator.clipboard.writeText(url);
+    Swal.fire({
+      toast: true, position: 'top-end', timer: 1800, showConfirmButton: false,
+      icon: 'success', title: 'Link de repuestos copiado',
+    });
+  } catch {
+    Swal.fire({
+      title: 'Link de consulta de repuestos',
       html: `<code style="word-break:break-all;">${url}</code>`,
       confirmButtonText: 'Cerrar',
     });
@@ -180,7 +198,7 @@ export default function KioskosPage() {
             <Monitor size={24} /> Kioskos y Estado de Vehiculo
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Gestiona los links publicos por sucursal y las terminales fisicas de autoservicio.
+            Gestiona los links publicos de consulta y las terminales fisicas de autoservicio.
           </Typography>
         </Box>
       </Box>
@@ -209,13 +227,72 @@ export default function KioskosPage() {
         >
           <Box>
             <Typography variant="h6" fontWeight={800} display="flex" alignItems="center" gap={1}>
-              <CarFront size={22} /> Links de Estado de Vehiculo
+              <CarFront size={22} /> Links Publicos para Clientes
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Enlaces publicos por sucursal para que el cliente consulte solo el estado de esa sede.
+              Enlaces para compartir consultas de estado del vehiculo y repuestos compatibles.
             </Typography>
           </Box>
           <Chip label="Consulta publica" color="info" variant="outlined" size="small" />
+        </Box>
+
+        <Box sx={{ px: 2, py: 2, borderBottom: `1px solid ${C.border}` }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '280px 1fr 120px' },
+              gap: 2,
+              alignItems: 'center',
+              p: 1.5,
+              borderRadius: '8px',
+              bgcolor: alpha('#10b981', 0.08),
+              border: `1px solid ${alpha('#10b981', 0.22)}`,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '8px',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#6ee7b7',
+                  bgcolor: alpha('#10b981', 0.14),
+                  border: `1px solid ${alpha('#10b981', 0.3)}`,
+                }}
+              >
+                <Wrench size={18} />
+              </Box>
+              <Box>
+                <Typography fontWeight={800}>Consulta de Repuestos</Typography>
+                <Typography variant="caption" color="text.secondary">Link publico para clientes</Typography>
+              </Box>
+            </Box>
+            <TextField
+              value={urlConsultaRepuestos()}
+              fullWidth
+              size="small"
+              InputProps={{
+                readOnly: true,
+                sx: {
+                  fontFamily: 'monospace',
+                  fontSize: '0.82rem',
+                  color: C.text,
+                  bgcolor: alpha('#020617', 0.28),
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<ClipboardCopy size={16} />}
+              onClick={copiarEnlaceConsultaRepuestos}
+              sx={{ whiteSpace: 'nowrap', bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+            >
+              Copiar
+            </Button>
+          </Box>
         </Box>
 
         <TableContainer>

@@ -142,24 +142,24 @@ const ConsultaVehiculoPage = () => {
         <div className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/bg-taller.jpg')" }} />
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#0b0f19]/80 via-transparent to-[#0b0f19]" />
         
-        <div className="relative z-10 flex flex-col h-full p-12">
-          <div className="flex items-center gap-3 mb-12">
-            <span className="text-3xl font-black italic tracking-tighter text-white uppercase">{empresaNombre}</span>
+        <div className="relative z-10 flex flex-col h-full p-12 2xl:p-14">
+          <div className="flex items-center gap-3 mb-12 2xl:mb-14">
+            <span className="text-3xl 2xl:text-4xl font-black italic tracking-tighter text-white uppercase">{empresaNombre}</span>
           </div>
           
-          <div className="mt-12">
-            <h1 className="text-4xl font-black italic mb-4 leading-tight">CONSULTA EL ESTADO <br/><span className="text-[#e50914] uppercase">DE TU VEHÍCULO</span></h1>
-            <p className="text-xl text-slate-300 font-light max-w-sm">Ingresa tus datos para hacer el seguimiento en tiempo real de tu reparación o mantenimiento.</p>
+          <div className="mt-12 2xl:mt-16">
+            <h1 className="text-4xl 2xl:text-5xl font-black italic mb-4 2xl:mb-5 leading-tight">CONSULTA EL ESTADO <br/><span className="text-[#e50914] uppercase">DE TU VEHÍCULO</span></h1>
+            <p className="text-xl 2xl:text-2xl text-slate-300 font-light max-w-sm 2xl:max-w-lg">Ingresa tus datos para hacer el seguimiento en tiempo real de tu reparación o mantenimiento.</p>
           </div>
 
-          <div className="mt-auto grid grid-cols-2 gap-6 text-sm text-slate-400">
-            <div className="flex flex-col gap-2">
-              <ShieldCheck className="text-[#e50914]" size={24} />
+          <div className="mt-auto grid grid-cols-2 gap-6 2xl:gap-8 text-sm 2xl:text-base text-slate-400">
+            <div className="flex flex-col gap-2 2xl:gap-3">
+              <ShieldCheck className="text-[#e50914] w-6 h-6 2xl:w-8 2xl:h-8" />
               <span className="font-bold text-white">Seguridad Garantizada</span>
               <span>Tus datos están protegidos y son confidenciales.</span>
             </div>
-            <div className="flex flex-col gap-2">
-              <Clock className="text-[#e50914]" size={24} />
+            <div className="flex flex-col gap-2 2xl:gap-3">
+              <Clock className="text-[#e50914] w-6 h-6 2xl:w-8 2xl:h-8" />
               <span className="font-bold text-white">Seguimiento en Vivo</span>
               <span>Conoce el progreso exacto de tu vehículo al instante.</span>
             </div>
@@ -168,8 +168,8 @@ const ConsultaVehiculoPage = () => {
       </div>
 
       {/* PANEL DERECHO */}
-      <div className="flex-1 flex flex-col relative bg-[#0b0f19] p-8 lg:p-12 h-screen overflow-y-auto overflow-x-hidden custom-scrollbar">
-        <div className="max-w-4xl mx-auto w-full">
+      <div className="flex-1 flex flex-col relative bg-[#0b0f19] p-8 lg:p-12 2xl:p-14 h-screen overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="max-w-4xl 2xl:max-w-[1180px] mx-auto w-full">
           
           {/* Título móvil */}
           <div className="lg:hidden mb-8 text-center">
@@ -177,43 +177,43 @@ const ConsultaVehiculoPage = () => {
             <p className="text-slate-400 mt-2">Consulta de Estado de Vehículo</p>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-[390px_1fr] gap-8 2xl:gap-9">
             
             {/* FORMULARIO */}
-            <div className="bg-[#111827] rounded-3xl p-8 border border-slate-800 shadow-2xl flex flex-col items-center h-fit xl:sticky xl:top-12">
-              <div className="w-16 h-16 rounded-full bg-[#1f2937] flex items-center justify-center text-[#e50914] mb-6">
-                <Search size={32} />
+            <div className="bg-[#111827] rounded-3xl p-8 2xl:p-9 border border-slate-800 shadow-2xl flex flex-col items-center h-fit xl:sticky xl:top-12 2xl:top-14">
+              <div className="w-16 h-16 2xl:w-20 2xl:h-20 rounded-full bg-[#1f2937] flex items-center justify-center text-[#e50914] mb-6 2xl:mb-7">
+                <Search className="w-8 h-8 2xl:w-10 2xl:h-10" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2 text-center">Busca tu Vehículo</h3>
-              <p className="text-slate-400 mb-8 text-center text-sm">Ingresa tu placa y documento de identidad</p>
+              <h3 className="text-2xl 2xl:text-3xl font-bold text-white mb-2 2xl:mb-3 text-center">Busca tu Vehículo</h3>
+              <p className="text-slate-400 mb-8 2xl:mb-9 text-center text-sm 2xl:text-base">Ingresa tu placa y documento de identidad</p>
 
-              <form onSubmit={handleSearch} className="w-full flex flex-col gap-5">
+              <form onSubmit={handleSearch} className="w-full flex flex-col gap-5 2xl:gap-6">
                 <div>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                      <Car size={20} />
+                    <div className="absolute inset-y-0 left-0 pl-4 2xl:pl-5 flex items-center pointer-events-none text-slate-400">
+                      <Car className="w-5 h-5 2xl:w-6 2xl:h-6" />
                     </div>
                     <input
                       type="text"
                       value={placa}
                       onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                       placeholder="Placa del Vehículo (Ej. ABC-123)"
-                      className="w-full bg-[#1f2937] border border-slate-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] transition-all uppercase font-medium"
+                      className="w-full bg-[#1f2937] border border-slate-700 rounded-xl py-4 2xl:py-5 pl-12 2xl:pl-14 pr-4 2xl:pr-5 text-white placeholder-slate-500 focus:outline-none focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] transition-all uppercase font-medium 2xl:text-lg"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                      <ShieldCheck size={20} />
+                    <div className="absolute inset-y-0 left-0 pl-4 2xl:pl-5 flex items-center pointer-events-none text-slate-400">
+                      <ShieldCheck className="w-5 h-5 2xl:w-6 2xl:h-6" />
                     </div>
                     <input
                       type="text"
                       value={dni}
                       onChange={(e) => setDni(e.target.value)}
                       placeholder="DNI / RUC del Propietario"
-                      className="w-full bg-[#1f2937] border border-slate-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] transition-all font-medium"
+                      className="w-full bg-[#1f2937] border border-slate-700 rounded-xl py-4 2xl:py-5 pl-12 2xl:pl-14 pr-4 2xl:pr-5 text-white placeholder-slate-500 focus:outline-none focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] transition-all font-medium 2xl:text-lg"
                     />
                   </div>
                 </div>
@@ -228,13 +228,13 @@ const ConsultaVehiculoPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-4 w-full bg-[#e50914] hover:bg-[#b80710] text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(229,9,20,0.3)]"
+                  className="mt-4 w-full bg-[#e50914] hover:bg-[#b80710] text-white py-4 2xl:py-5 rounded-xl font-bold flex justify-center items-center gap-2 2xl:gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(229,9,20,0.3)] 2xl:text-lg"
                 >
                   {loading ? (
                     <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></span>
                   ) : (
                     <>
-                      <Search size={20} /> Consultar Estado
+                      <Search className="w-5 h-5 2xl:w-6 2xl:h-6" /> Consultar Estado
                     </>
                   )}
                 </button>
@@ -244,32 +244,32 @@ const ConsultaVehiculoPage = () => {
             {/* RESULTADOS */}
             <div className="flex flex-col h-full">
               <div className="flex items-center gap-3 mb-6">
-                <FileText className="text-[#e50914]" size={20} />
-                <h3 className="font-bold text-lg text-white">Resultado de la Consulta</h3>
+                <FileText className="text-[#e50914] w-5 h-5 2xl:w-7 2xl:h-7" />
+                <h3 className="font-bold text-lg 2xl:text-2xl text-white">Resultado de la Consulta</h3>
               </div>
 
               {!result ? (
-                <div className="flex-1 border border-dashed border-slate-700 rounded-3xl flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
-                    <Search className="text-slate-500" size={32} />
+                <div className="flex-1 border border-dashed border-slate-700 rounded-3xl flex flex-col items-center justify-center p-8 2xl:p-10 text-center min-h-[280px] 2xl:min-h-[330px]">
+                  <div className="w-16 h-16 2xl:w-20 2xl:h-20 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 2xl:mb-5">
+                    <Search className="text-slate-500 w-8 h-8 2xl:w-10 2xl:h-10" />
                   </div>
-                  <p className="text-slate-400 font-medium max-w-[200px]">Ingresa los datos para ver el detalle de tu vehículo.</p>
+                  <p className="text-slate-400 font-medium max-w-[200px] 2xl:max-w-xs 2xl:text-lg">Ingresa los datos para ver el detalle de tu vehículo.</p>
                 </div>
               ) : (
                 <div className="flex-1 bg-[#111827] rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col">
                   
                   {/* Header Resultado */}
-                  <div className="bg-slate-800/50 p-6 border-b border-slate-700">
-                    <h4 className="text-xl font-bold text-white flex items-center gap-2">
-                      <Car size={20} className="text-[#e50914]" />
+                  <div className="bg-slate-800/50 p-6 2xl:p-7 border-b border-slate-700">
+                    <h4 className="text-xl 2xl:text-2xl font-bold text-white flex items-center gap-2 2xl:gap-3">
+                      <Car className="text-[#e50914] w-5 h-5 2xl:w-7 2xl:h-7" />
                       {result.vehiculo.marca} {result.vehiculo.modelo} 
                       <span className="text-slate-400 ml-1">({result.vehiculo.placa})</span>
                     </h4>
-                    <p className="text-slate-400 text-sm mt-1">Propietario: {result.vehiculo.cliente}</p>
+                    <p className="text-slate-400 text-sm 2xl:text-base mt-1">Propietario: {result.vehiculo.cliente}</p>
                   </div>
 
                   {/* Body Resultado */}
-                  <div className="p-6 overflow-y-auto">
+                  <div className="p-6 2xl:p-7 overflow-y-auto">
                     {!result.has_active_order ? (
                       <div className="text-center py-8">
                         <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -406,8 +406,10 @@ const ConsultaVehiculoPage = () => {
                   {/* Footer Resultado */}
                   {result.has_active_order && (
                     <div className="mt-auto bg-[#1f2937] p-5 border-t border-slate-700 flex justify-between items-center">
-                      <span className="text-slate-400 font-medium">{cotizacionPendiente ? 'Total Cotizado' : 'Total Estimado'}</span>
-                      <span className="text-2xl font-bold text-white">S/ {parseFloat(result.orden.total_estimado).toFixed(2)}</span>
+                      <span className="text-slate-400 font-medium">{cotizacionPendiente ? 'Total Seleccionado' : 'Total Estimado'}</span>
+                      <span className="text-2xl font-bold text-white">
+                        S/ {(cotizacionPendiente ? totalSeleccionado : parseFloat(result.orden.total_estimado || 0)).toFixed(2)}
+                      </span>
                     </div>
                   )}
                   

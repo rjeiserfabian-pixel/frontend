@@ -130,6 +130,36 @@ export const inventarioService = {
   // ──────────────────────────────────────────────
   // NUEVOS MÉTODOS: SUCURSALES
   // ──────────────────────────────────────────────
+  getComparadorPorPlaca: async ({ marca, modelo, anio, tipoCombustible, search, categoria, page = 1, pageSize = 20 }) => {
+    const query = new URLSearchParams();
+    query.append('marca', marca);
+    if (modelo) query.append('modelo', modelo);
+    if (anio) query.append('anio', anio);
+    if (tipoCombustible) query.append('tipo_combustible', tipoCombustible);
+    if (search) query.append('search', search);
+    if (categoria) query.append('categoria', categoria);
+    query.append('page', page);
+    query.append('page_size', pageSize);
+
+    const response = await api.get(`${URL_REPUESTOS}comparador-placa/?${query.toString()}`);
+    return response.data;
+  },
+
+  getCompatiblesPublicos: async ({ marca, modelo, anio, tipoCombustible, search, categoria, page = 1, pageSize = 20 }) => {
+    const query = new URLSearchParams();
+    query.append('marca', marca);
+    if (modelo) query.append('modelo', modelo);
+    if (anio) query.append('anio', anio);
+    if (tipoCombustible) query.append('tipo_combustible', tipoCombustible);
+    if (search) query.append('search', search);
+    if (categoria) query.append('categoria', categoria);
+    query.append('page', page);
+    query.append('page_size', pageSize);
+
+    const response = await api.get(`${URL_REPUESTOS}public/compatibles/?${query.toString()}`);
+    return response.data;
+  },
+
   getSucursales: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page);

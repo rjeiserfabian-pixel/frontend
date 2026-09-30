@@ -18,6 +18,7 @@ const CategoriasPage = lazy(() => import('./modules/inventario/pages/CategoriasP
 const MarcasPage = lazy(() => import('./modules/inventario/pages/MarcasPage'));
 const UnidadesPage = lazy(() => import('./modules/inventario/pages/UnidadesPage'));
 const RepuestosPage = lazy(() => import('./modules/inventario/pages/RepuestosPage'));
+const ComparadorPlacaPage = lazy(() => import('./modules/inventario/pages/ComparadorPlacaPage'));
 const VehiculosPage = lazy(() => import('./modules/vehiculos/pages/VehiculosPage'));
 const SucursalesPage = lazy(() => import('./modules/inventario/pages/SucursalesPage'));
 const StockUbicacionesPage = lazy(() => import('./modules/inventario/pages/StockUbicacionesPage'));
@@ -50,6 +51,7 @@ const PlantillasPage = lazy(() => import('./modules/taller/pages/PlantillasPage'
 const PlantillasCorrectivasPage = lazy(() => import('./modules/taller/pages/PlantillasCorrectivasPage'));
 const TiposServicioPage = lazy(() => import('./modules/taller/pages/TiposServicioPage'));
 const ConsultaVehiculoPage = lazy(() => import('./modules/public/pages/ConsultaVehiculoPage'));
+const ConsultaRepuestosPage = lazy(() => import('./modules/public/pages/ConsultaRepuestosPage'));
 const ComprasPage = lazy(() => import('./modules/compras/pages/ComprasPage'));
 const NuevaCompraPage = lazy(() => import('./modules/compras/pages/NuevaCompraPage'));
 const CuentasPorPagarPage = lazy(() => import('./modules/compras/pages/CuentasPorPagarPage'));
@@ -99,6 +101,7 @@ function App() {
               <Route path="/kiosko" element={<KioskoPage />} />
               <Route path="/kiosko/activar/:codigo" element={<KioskoPage />} />
               <Route path="/estado-vehiculo" element={<ConsultaVehiculoPage />} />
+              <Route path="/consulta-repuestos" element={<ConsultaRepuestosPage />} />
 
               <Route element={<DashboardLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
@@ -114,6 +117,7 @@ function App() {
                 <Route path="/inventario/marcas" element={<MarcasPage />} />
                 <Route path="/inventario/unidades" element={<UnidadesPage />} />
                 <Route path="/inventario/repuestos" element={<RepuestosPage />} />
+                <Route path="/inventario/comparador-placa" element={<ComparadorPlacaPage />} />
                 <Route path="/inventario/sucursales" element={<SucursalesPage />} />
                 <Route path="/inventario/stock-ubicaciones" element={<StockUbicacionesPage />} />
                 <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
