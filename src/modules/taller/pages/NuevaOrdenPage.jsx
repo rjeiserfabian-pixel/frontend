@@ -222,6 +222,20 @@ export default function NuevaOrdenPage() {
       })
     : vehiculos;
 
+  const selectedTipo = tiposServicio.find(t => t.id === formData.tipo_servicio_id);
+  const nombreTipo = selectedTipo?.nombre?.toLowerCase() || '';
+  const isPreventivo = nombreTipo.includes('preventivo');
+  const isCorrectivo = nombreTipo.includes('correctivo');
+  
+  // Si no se selecciona nada o es un servicio general, no mostramos las plantillas.
+  const showPreventiva = !!formData.tipo_servicio_id && isPreventivo;
+  const showCorrectiva = !!formData.tipo_servicio_id && isCorrectivo;
+
+  const secNumPrev = 2;
+  const secNumCorr = showPreventiva ? 3 : 2;
+  const secNumObs = (showPreventiva ? 1 : 0) + (showCorrectiva ? 1 : 0) + 2;
+
+
   return (
     <div className="flex flex-col gap-6 w-full pb-12">
       <div className="flex items-center gap-3">
@@ -372,77 +386,81 @@ export default function NuevaOrdenPage() {
           </section>
 
           {/* SECCION 2: Plantilla Preventiva */}
-          <section className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">2</div>
-              <h2 className="text-lg font-semibold text-white tracking-tight">Plantilla Preventiva (Checklist)</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
-              {plantillas.length === 0 ? (
-                <p className="text-sm text-slate-300 font-medium">No hay plantillas configuradas.</p>
-              ) : (
-                plantillas.map((plantilla) => (
-                  <FormControlLabel
-                    key={plantilla.id}
-                    control={
-                      <Checkbox
-                        checked={preventivo[plantilla.id] || false}
-                        onChange={(e) => setPreventivo({ ...preventivo, [plantilla.id]: e.target.checked })}
-                        sx={{ color: 'slate.300', '&.Mui-checked': { color: 'slate.900' } }}
-                      />
-                    }
-                    label={
-                      <span className="text-sm font-medium text-slate-100">
-                        {plantilla.nombre} 
-                        {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
-                        {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
-                      </span>
-                    }
-                  />
-                ))
-              )}
-            </div>
-          </section>
+          {showPreventiva && (
+            <section className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">{secNumPrev}</div>
+                <h2 className="text-lg font-semibold text-white tracking-tight">Plantilla Preventiva (Checklist)</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
+                {plantillas.length === 0 ? (
+                  <p className="text-sm text-slate-300 font-medium">No hay plantillas configuradas.</p>
+                ) : (
+                  plantillas.map((plantilla) => (
+                    <FormControlLabel
+                      key={plantilla.id}
+                      control={
+                        <Checkbox
+                          checked={preventivo[plantilla.id] || false}
+                          onChange={(e) => setPreventivo({ ...preventivo, [plantilla.id]: e.target.checked })}
+                          sx={{ color: 'slate.300', '&.Mui-checked': { color: 'slate.900' } }}
+                        />
+                      }
+                      label={
+                        <span className="text-sm font-medium text-slate-100">
+                          {plantilla.nombre} 
+                          {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
+                          {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
+                        </span>
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          )}
 
           {/* SECCION 3: Correctivo */}
-          <section className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">3</div>
-              <h2 className="text-lg font-semibold text-white tracking-tight">Plantillas Correctivas (Checklist)</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
-              {plantillasCorrectivas.length === 0 ? (
-                <p className="text-sm text-slate-300 font-medium">No hay plantillas correctivas configuradas.</p>
-              ) : (
-                plantillasCorrectivas.map((plantilla) => (
-                  <FormControlLabel
-                    key={plantilla.id}
-                    control={
-                      <Checkbox
-                        checked={correctivo[plantilla.id] || false}
-                        onChange={(e) => setCorrectivo({ ...correctivo, [plantilla.id]: e.target.checked })}
-                        sx={{ color: 'slate.300', '&.Mui-checked': { color: 'slate.900' } }}
-                      />
-                    }
-                    label={
-                      <span className="text-sm font-medium text-slate-100">
-                        {plantilla.nombre} 
-                        {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
-                        {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
-                      </span>
-                    }
-                  />
-                ))
-              )}
-            </div>
-          </section>
+          {showCorrectiva && (
+            <section className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">{secNumCorr}</div>
+                <h2 className="text-lg font-semibold text-white tracking-tight">Plantillas Correctivas (Checklist)</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
+                {plantillasCorrectivas.length === 0 ? (
+                  <p className="text-sm text-slate-300 font-medium">No hay plantillas correctivas configuradas.</p>
+                ) : (
+                  plantillasCorrectivas.map((plantilla) => (
+                    <FormControlLabel
+                      key={plantilla.id}
+                      control={
+                        <Checkbox
+                          checked={correctivo[plantilla.id] || false}
+                          onChange={(e) => setCorrectivo({ ...correctivo, [plantilla.id]: e.target.checked })}
+                          sx={{ color: 'slate.300', '&.Mui-checked': { color: 'slate.900' } }}
+                        />
+                      }
+                      label={
+                        <span className="text-sm font-medium text-slate-100">
+                          {plantilla.nombre} 
+                          {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
+                          {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
+                        </span>
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          )}
 
           {/* SECCION 4: Observaciones */}
           <section className="flex flex-col gap-4">
             <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">4</div>
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">{secNumObs}</div>
               <h2 className="text-lg font-semibold text-white tracking-tight">Observaciones</h2>
             </div>
             

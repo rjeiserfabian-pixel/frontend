@@ -14,17 +14,17 @@ import { useReactToPrint } from 'react-to-print';
 
 const KIOSKO_CONFIG_KEY = 'kiosko_config';
 
-const KeyButton = ({ children, onClick, className, variant }) => {
+const KeyButton = ({ children, onClick, className, variant, disabled = false }) => {
   const v = variant || "default";
   const cls = className || "";
-  const base = "flex items-center justify-center font-bold text-xl rounded-xl transition-all shadow-sm active:scale-95";
+  const base = "flex items-center justify-center font-bold text-xl rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed disabled:active:scale-100";
   const vars = {
     default: "bg-[#1c2230] text-white hover:bg-[#2a3447] border border-slate-700/50",
     red: "bg-[#e50914] text-white hover:bg-[#b80710] border border-red-600",
     redOutline: "bg-transparent text-[#e50914] border border-[#e50914] hover:bg-[#e50914]/10",
   };
   return (
-    <button onClick={onClick} className={base + " " + (vars[v] || vars.default) + " " + cls}>
+    <button onClick={onClick} disabled={disabled} className={base + " " + (vars[v] || vars.default) + " " + cls}>
       {children}
     </button>
   );
@@ -33,22 +33,22 @@ const KeyButton = ({ children, onClick, className, variant }) => {
 const TecladoNumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
   const keys = [["1","2","3"],["4","5","6"],["7","8","9"]];
   return (
-    <div className="flex flex-col gap-3 w-full max-w-xs mx-auto">
+    <div className="flex flex-col gap-4 xl:gap-5 w-full max-w-md xl:max-w-lg mx-auto">
       {keys.map((row, i) => (
-        <div key={i} className="grid grid-cols-3 gap-3 h-16">
-          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)}>{k}</KeyButton>)}
+        <div key={i} className="grid grid-cols-3 gap-4 xl:gap-5 h-20 xl:h-24">
+          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)} className="text-3xl xl:text-4xl">{k}</KeyButton>)}
         </div>
       ))}
-      <div className="grid grid-cols-3 gap-3 h-16">
-        <KeyButton onClick={onBackspace} variant="red"><Delete size={24} /></KeyButton>
-        <KeyButton onClick={() => onKeyPress("0")}>0</KeyButton>
-        <KeyButton onClick={onConfirm} variant="red"><CheckCircle size={24} /></KeyButton>
+      <div className="grid grid-cols-3 gap-4 xl:gap-5 h-20 xl:h-24">
+        <KeyButton onClick={onBackspace} variant="red"><Delete size={34} /></KeyButton>
+        <KeyButton onClick={() => onKeyPress("0")} className="text-3xl xl:text-4xl">0</KeyButton>
+        <KeyButton onClick={onConfirm} variant="red"><CheckCircle size={34} /></KeyButton>
       </div>
     </div>
   );
 };
 
-const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
+const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm, soloNumeros = false, confirmLabel = "Buscar" }) => {
   const rows = [
     ["A","B","C","D","E","F","G"],
     ["H","I","J","K","L","M","N"],
@@ -57,18 +57,21 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
     ["3","4","5","6","7","8","9"]
   ];
   return (
-    <div className="flex flex-col gap-2 w-full max-w-xl mx-auto">
+    <div className="flex flex-col gap-2.5 xl:gap-3 w-full max-w-xl xl:max-w-2xl mx-auto">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-7 gap-2 h-14">
-          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)}>{k}</KeyButton>)}
+        <div key={i} className="grid grid-cols-7 gap-2.5 xl:gap-3 h-14 xl:h-[76px]">
+          {row.map(k => {
+            const deshabilitado = soloNumeros && !/^\d$/.test(k);
+            return <KeyButton key={k} onClick={() => onKeyPress(k)} disabled={deshabilitado} className="text-xl xl:text-2xl">{k}</KeyButton>;
+          })}
         </div>
       ))}
-      <div className="grid grid-cols-7 gap-2 h-14">
-        <KeyButton onClick={() => onKeyPress("0")}>0</KeyButton>
-        <KeyButton onClick={() => onKeyPress("-")}>-</KeyButton>
-        <KeyButton onClick={() => onKeyPress("0")}>/</KeyButton>
-        <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-2"><Delete size={20} /> Borrar</KeyButton>
-        <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-2"><CheckCircle size={20} /> Buscar</KeyButton>
+      <div className="grid grid-cols-7 gap-2.5 xl:gap-3 h-14 xl:h-[76px]">
+        <KeyButton onClick={() => onKeyPress("0")} className="text-xl xl:text-2xl">0</KeyButton>
+        <KeyButton onClick={() => onKeyPress("-")} disabled={soloNumeros} className="text-xl xl:text-2xl">-</KeyButton>
+        <KeyButton onClick={() => onKeyPress("/")} disabled={soloNumeros} className="text-xl xl:text-2xl">/</KeyButton>
+        <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-2 text-lg xl:text-xl"><Delete size={24} /> Borrar</KeyButton>
+        <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-2 text-lg xl:text-xl"><CheckCircle size={24} /> {confirmLabel}</KeyButton>
       </div>
     </div>
   );
@@ -87,17 +90,17 @@ const SelectorCombustible = ({ valor, onChange, bloqueado = false }) => {
   if (bloqueado) {
     return (
       <div className="w-full">
-        <label className="block text-slate-400 text-sm font-medium mb-2">
+        <label className="block text-slate-400 text-sm xl:text-base font-medium mb-2">
           Tipo de combustible registrado
         </label>
-        <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-left">
+        <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 xl:px-5 py-3 xl:py-4 text-left">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-white font-bold">{combustibleRegistrado}</span>
-            <span className="text-[11px] uppercase tracking-wide text-emerald-300 border border-emerald-400/30 rounded-full px-2 py-1">
+            <span className="text-white font-bold xl:text-lg">{combustibleRegistrado}</span>
+            <span className="text-[11px] xl:text-xs uppercase tracking-wide text-emerald-300 border border-emerald-400/30 rounded-full px-2 py-1">
               Bloqueado
             </span>
           </div>
-          <p className="text-emerald-200/80 text-xs mt-2">
+          <p className="text-emerald-200/80 text-xs xl:text-sm mt-2">
             Este dato ya esta registrado en el sistema y no se puede cambiar desde el kiosko.
           </p>
         </div>
@@ -107,23 +110,23 @@ const SelectorCombustible = ({ valor, onChange, bloqueado = false }) => {
 
   return (
     <div className="w-full">
-      <label className="block text-slate-400 text-sm font-medium mb-2">
+      <label className="block text-slate-400 text-sm xl:text-base font-medium mb-2">
         <span className="text-[#e50914] font-bold">*</span> Tipo de combustible (obligatorio)
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 xl:gap-4">
         {opciones.map(op => (
           <button
             key={op.value}
             type="button"
             onClick={() => onChange(op.value)}
-            className={"py-3 rounded-xl font-bold border-2 transition-all " + (valor === op.value ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#0b0f19] border-slate-700 text-slate-300 hover:border-slate-500")}
+            className={"py-3 xl:py-5 rounded-xl font-bold border-2 text-base xl:text-xl transition-all " + (valor === op.value ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#0b0f19] border-slate-700 text-slate-300 hover:border-slate-500")}
           >
             {op.label}
           </button>
         ))}
       </div>
       {!valor && (
-        <p className="text-[#e50914] text-xs mt-1">Debes elegir el tipo de combustible para continuar.</p>
+        <p className="text-[#e50914] text-xs xl:text-sm mt-1">Debes elegir el tipo de combustible para continuar.</p>
       )}
     </div>
   );
@@ -142,16 +145,16 @@ const TecladoBusqueda = ({ onKeyPress, onSpace, onBackspace, onClose }) => {
     ["Z","X","C","V","B","N","M","-","/","."],
   ];
   return (
-    <div className="flex flex-col gap-2 w-full bg-[#121826] border border-slate-800 rounded-2xl p-4">
+    <div className="flex flex-col gap-2 xl:gap-3 w-full bg-[#121826] border border-slate-800 rounded-2xl p-4 xl:p-5">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-10 gap-1.5 h-12">
-          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)} className="text-base">{k}</KeyButton>)}
+        <div key={i} className="grid grid-cols-10 gap-1.5 xl:gap-2 h-12 xl:h-16">
+          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)} className="text-base xl:text-xl">{k}</KeyButton>)}
         </div>
       ))}
-      <div className="grid grid-cols-6 gap-1.5 h-12">
-        <KeyButton onClick={onSpace} className="col-span-3 text-base">Espacio</KeyButton>
-        <KeyButton onClick={onBackspace} variant="red" className="col-span-1 flex gap-2"><Delete size={18} /></KeyButton>
-        <KeyButton onClick={onClose} variant="red" className="col-span-2 flex gap-2 text-base"><CheckCircle size={18} /> Listo</KeyButton>
+      <div className="grid grid-cols-6 gap-1.5 xl:gap-2 h-12 xl:h-16">
+        <KeyButton onClick={onSpace} className="col-span-3 text-base xl:text-xl">Espacio</KeyButton>
+        <KeyButton onClick={onBackspace} variant="red" className="col-span-1 flex gap-2"><Delete size={22} /></KeyButton>
+        <KeyButton onClick={onClose} variant="red" className="col-span-2 flex gap-2 text-base xl:text-xl"><CheckCircle size={22} /> Listo</KeyButton>
       </div>
     </div>
   );
@@ -225,6 +228,7 @@ export const KioskoPage = () => {
   const [repuestosCompatibles, setRepuestosCompatibles] = useState([]);
   const [loadingRepuestos, setLoadingRepuestos] = useState(false);
   const [kilometraje, setKilometraje] = useState("");
+  const [campoVehiculoActivo, setCampoVehiculoActivo] = useState("placa");
   const [tipoCombustible, setTipoCombustible] = useState(null);
   const combustibleBloqueado = vehiculoOrigen === 'local' && Boolean(vehiculo?.tipo_combustible);
 
@@ -362,9 +366,27 @@ export const KioskoPage = () => {
     setCliente(prev => ({ ...(prev || {}), [campo]: valor }));
   };
 
-  const onKeyPressPlaca = k => { if (placa.length < 7) setPlaca(p => p + k); };
-  const onBackspacePlaca = () => setPlaca(p => p.slice(0, -1));
-  const onConfirmPlaca = () => { if (placa.length >= 6) consultarVehiculo(); };
+  const onKeyPressVehiculo = k => {
+    if (campoVehiculoActivo === "kilometraje") {
+      if (/^\d$/.test(k)) setKilometraje(p => (p.length < 7 ? p + k : p));
+      return;
+    }
+    if (placa.length < 7) setPlaca(p => p + k);
+  };
+  const onBackspaceVehiculo = () => {
+    if (campoVehiculoActivo === "kilometraje") {
+      setKilometraje(p => p.slice(0, -1));
+      return;
+    }
+    setPlaca(p => p.slice(0, -1));
+  };
+  const onConfirmVehiculo = () => {
+    if (campoVehiculoActivo === "kilometraje") {
+      setCampoVehiculoActivo("placa");
+      return;
+    }
+    if (placa.length >= 6) consultarVehiculo();
+  };
 
   const consultarVehiculo = async () => {
     if (placa.length < 6) { Swal.fire({ icon: "warning", title: "Placa Invalida", text: "La placa debe tener al menos 6 caracteres.", background: "#1e293b", color: "#fff" }); return; }
@@ -391,16 +413,16 @@ export const KioskoPage = () => {
   const renderStepper = () => {
     const steps = [{ num: 1, label: "DNI" }, { num: 2, label: "Vehiculo" }, { num: 3, label: "Repuestos" }, { num: 4, label: "Resumen" }];
     return (
-      <div className="flex items-center gap-4 text-sm font-medium text-slate-400">
+      <div className="flex items-center gap-5 xl:gap-7 text-sm xl:text-base font-medium text-slate-400">
         {steps.map((s, i) => (
           <React.Fragment key={s.num}>
-            <div className={"flex flex-col items-center gap-1" + (step >= s.num ? " text-[#e50914]" : "")}>
-              <div className={"w-8 h-8 rounded-full flex items-center justify-center border-2" + (step >= s.num ? " border-[#e50914] bg-[#e50914]/10 text-[#e50914]" : " border-slate-600")}>
+            <div className={"flex flex-col items-center gap-1 xl:gap-2" + (step >= s.num ? " text-[#e50914]" : "")}>
+              <div className={"w-9 h-9 xl:w-11 xl:h-11 rounded-full flex items-center justify-center border-2 text-base xl:text-lg font-bold" + (step >= s.num ? " border-[#e50914] bg-[#e50914]/10 text-[#e50914]" : " border-slate-600")}>
                 {s.num}
               </div>
               <span>{s.label}</span>
             </div>
-            {i < steps.length - 1 && <div className={"h-[2px] w-12" + (step > s.num ? " bg-[#e50914]" : " bg-slate-700")}></div>}
+            {i < steps.length - 1 && <div className={"h-[2px] w-16 xl:w-20 mx-1" + (step > s.num ? " bg-[#e50914]" : " bg-slate-700")}></div>}
           </React.Fragment>
         ))}
       </div>
@@ -411,7 +433,7 @@ export const KioskoPage = () => {
     setStep(1); setDni(""); setPlaca(""); setCliente(null); setVehiculo(null); setVehiculoOrigen(null); setCarrito([]);
     setRepuestosCompatibles([]); setKilometraje(""); setTipoCombustible(null);
     setBusquedaRepuesto(""); setBusquedaDebounced(""); setCategoriaSeleccionada(null); setCategoriasDisponibles([]);
-    setTecladoBusquedaAbierto(false);
+    setTecladoBusquedaAbierto(false); setCampoVehiculoActivo("placa");
   };
 
   const generarTicket = async () => {
@@ -598,17 +620,17 @@ export const KioskoPage = () => {
           <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
 
             {step === 1 && (
-              <div className="w-full max-w-5xl flex flex-col xl:flex-row gap-12 items-center justify-center">
-                <div className="w-full xl:w-1/2 bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5"><User size={32} /></div>
-                  <h2 className="text-3xl font-bold mb-2 text-white">Ingresa tu DNI</h2>
-                  <p className="text-slate-400 mb-8 text-center">Consulta tus datos para continuar</p>
-                  <div className="w-full relative mb-8">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" readOnly value={dni} placeholder="Numero de DNI" className="w-full bg-[#0b0f19] border-2 border-slate-700 text-white text-3xl font-mono tracking-widest py-4 pl-14 pr-4 rounded-xl text-center focus:outline-none focus:border-[#e50914]" />
+              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-12 items-center justify-center">
+                <div className="w-full xl:w-1/2 xl:max-w-[620px] bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-2xl flex flex-col items-center">
+                  <div className="w-16 h-16 xl:w-20 xl:h-20 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5"><User size={38} /></div>
+                  <h2 className="text-3xl xl:text-4xl font-bold mb-2 text-white">Ingresa tu DNI</h2>
+                  <p className="text-slate-400 xl:text-lg mb-8 text-center">Consulta tus datos para continuar</p>
+                  <div className="w-full relative mb-8 xl:mb-10">
+                    <User className="absolute left-4 xl:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={26} />
+                    <input type="text" readOnly value={dni} placeholder="Numero de DNI" className="w-full bg-[#0b0f19] border-2 border-slate-700 text-white text-3xl xl:text-4xl font-mono tracking-widest py-4 xl:py-6 pl-14 xl:pl-16 pr-4 rounded-xl text-center focus:outline-none focus:border-[#e50914]" />
                   </div>
                   <TecladoNumerico onKeyPress={onKeyPressDni} onBackspace={onBackspaceDni} onConfirm={onConfirmDni} />
-                  <button onClick={consultarCliente} disabled={dni.length < 8 || loading} className="mt-6 w-full max-w-xs flex items-center justify-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white text-xl font-bold px-8 py-4 rounded-xl shadow-lg transition-all">
+                  <button onClick={consultarCliente} disabled={dni.length < 8 || loading} className="mt-6 xl:mt-8 w-full max-w-md xl:max-w-lg flex items-center justify-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white text-xl xl:text-2xl font-bold px-8 py-4 xl:py-5 rounded-xl shadow-lg transition-all">
                     {loading ? "Consultando..." : <React.Fragment><Search size={24} /> Consultar DNI</React.Fragment>}
                   </button>
                 </div>
@@ -669,29 +691,43 @@ export const KioskoPage = () => {
             )}
 
             {step === 2 && (
-              <div className="w-full max-w-5xl flex flex-col xl:flex-row gap-12 items-center justify-center">
-                <div className="w-full xl:w-1/2 bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5"><Car size={32} /></div>
-                  <h2 className="text-3xl font-bold mb-2 text-white">Ingresa la placa</h2>
-                  <p className="text-slate-400 mb-8 text-center">Te mostraremos los repuestos para tu auto</p>
-                  <div className="w-full relative mb-8">
-                    <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" readOnly value={placa} placeholder="ABC-123" className="w-full bg-[#0b0f19] border-2 border-slate-700 text-white text-3xl font-mono tracking-widest py-4 pl-14 pr-4 rounded-xl text-center focus:outline-none uppercase" />
+              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-12 xl:gap-14 items-center justify-center">
+                <div className="w-full xl:w-1/2 xl:max-w-[660px] bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-2xl flex flex-col items-center">
+                  <div className="w-16 h-16 xl:w-20 xl:h-20 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5"><Car size={38} /></div>
+                  <h2 className="text-3xl xl:text-4xl font-bold mb-2 text-white">Ingresa la placa</h2>
+                  <p className="text-slate-400 xl:text-lg mb-8 text-center">Te mostraremos los repuestos para tu auto</p>
+                  <div className="w-full relative mb-8 xl:mb-10">
+                    <Car className="absolute left-4 xl:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={26} />
+                    <input
+                      type="text"
+                      readOnly
+                      value={placa}
+                      onClick={() => setCampoVehiculoActivo("placa")}
+                      onFocus={() => setCampoVehiculoActivo("placa")}
+                      placeholder="ABC-123"
+                      className={"w-full bg-[#0b0f19] border-2 text-white text-3xl xl:text-4xl font-mono tracking-widest py-4 xl:py-6 pl-14 xl:pl-16 pr-4 rounded-xl text-center focus:outline-none uppercase cursor-pointer select-none " + (campoVehiculoActivo === "placa" ? "border-[#e50914]" : "border-slate-700")}
+                    />
                   </div>
-                  <TecladoAlfanumerico onKeyPress={onKeyPressPlaca} onBackspace={onBackspacePlaca} onConfirm={onConfirmPlaca} />
-                  <div className="flex gap-4 mt-6 w-full max-w-xl">
-                    <button onClick={handleBack} className="flex items-center justify-center gap-2 bg-[#1c2230] hover:bg-[#2a3447] text-white px-6 py-4 rounded-xl font-bold transition-all flex-1"><ArrowLeft size={24}/> Volver</button>
-                    <button onClick={consultarVehiculo} disabled={placa.length < 6 || loading} className="flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold shadow-lg transition-all flex-1">
+                  <TecladoAlfanumerico
+                    onKeyPress={onKeyPressVehiculo}
+                    onBackspace={onBackspaceVehiculo}
+                    onConfirm={onConfirmVehiculo}
+                    soloNumeros={campoVehiculoActivo === "kilometraje"}
+                    confirmLabel={campoVehiculoActivo === "kilometraje" ? "Listo" : "Buscar"}
+                  />
+                  <div className="flex gap-4 xl:gap-5 mt-6 xl:mt-8 w-full max-w-xl xl:max-w-2xl">
+                    <button onClick={handleBack} className="flex items-center justify-center gap-2 bg-[#1c2230] hover:bg-[#2a3447] text-white px-6 py-4 xl:py-5 rounded-xl font-bold text-base xl:text-xl transition-all flex-1"><ArrowLeft size={26}/> Volver</button>
+                    <button onClick={consultarVehiculo} disabled={placa.length < 6 || loading} className="flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-6 py-4 xl:py-5 rounded-xl font-bold text-base xl:text-xl shadow-lg transition-all flex-1">
                       {loading ? "Buscando..." : <React.Fragment><Search size={24}/> Buscar</React.Fragment>}
                     </button>
                   </div>
                 </div>
                 <div className="w-full xl:w-1/2 flex flex-col">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white"><Car className="text-[#e50914]" size={20}/> Datos del vehiculo</h3>
+                  <h3 className="text-xl xl:text-2xl font-bold mb-4 xl:mb-5 flex items-center gap-2 text-white"><Car className="text-[#e50914]" size={24}/> Datos del vehiculo</h3>
                   {vehiculo && vehiculo.marca ? (
-                    <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center text-center">
-                      <div className="w-24 h-24 bg-[#e50914] rounded-full flex items-center justify-center mb-6"><Car size={48} className="text-white" /></div>
-                      <div className="w-full grid grid-cols-2 gap-4 text-left border border-slate-800 p-6 rounded-2xl bg-[#0b0f19] text-sm overflow-y-auto max-h-[260px]">
+                    <div className="bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-xl flex flex-col items-center text-center">
+                      <div className="w-24 h-24 xl:w-28 xl:h-28 bg-[#e50914] rounded-full flex items-center justify-center mb-6"><Car size={56} className="text-white" /></div>
+                      <div className="w-full grid grid-cols-2 gap-4 xl:gap-5 text-left border border-slate-800 p-6 xl:p-7 rounded-2xl bg-[#0b0f19] text-sm xl:text-base overflow-y-auto max-h-[260px] xl:max-h-[340px]">
                         <div className="flex flex-col"><span className="text-slate-500">Marca:</span><span className="font-bold text-white uppercase">{vehiculo.marca || "-"}</span></div>
                         <div className="flex flex-col"><span className="text-slate-500">Modelo:</span><span className="font-bold text-white uppercase">{vehiculo.modelo || "-"}</span></div>
                         <div className="flex flex-col"><span className="text-slate-500">Anio:</span><span className="font-bold text-white">{vehiculo.anio_fabricacion || vehiculo.anio || "-"}</span></div>
@@ -705,27 +741,28 @@ export const KioskoPage = () => {
                       </div>
 
                       {/* INPUT DE KILOMETRAJE */}
-                      <div className="w-full mt-5">
-                        <label className="block text-slate-400 text-sm font-medium mb-2">
+                      <div className="w-full mt-5 xl:mt-6">
+                        <label className="block text-slate-400 text-sm xl:text-base font-medium mb-2">
                           <span className="text-[#e50914] font-bold">*</span> Kilometraje actual del vehiculo (obligatorio)
                         </label>
                         <div className="flex gap-2">
                           <input
-                            type="number"
-                            min="0"
+                            type="text"
+                            readOnly
                             value={kilometraje}
-                            onChange={e => setKilometraje(e.target.value.replace(/[^0-9]/g, ""))}
+                            onClick={() => setCampoVehiculoActivo("kilometraje")}
+                            onFocus={() => setCampoVehiculoActivo("kilometraje")}
                             placeholder="Ej: 35000"
-                            className="flex-1 bg-[#0b0f19] border-2 border-slate-700 text-white text-2xl font-mono py-3 px-5 rounded-xl focus:outline-none focus:border-[#e50914] placeholder-slate-600"
+                            className={"flex-1 bg-[#0b0f19] border-2 text-white text-2xl xl:text-3xl font-mono py-3 xl:py-5 px-5 rounded-xl focus:outline-none placeholder-slate-600 cursor-pointer select-none " + (campoVehiculoActivo === "kilometraje" ? "border-[#e50914]" : "border-slate-700")}
                           />
-                          <span className="flex items-center text-slate-400 font-medium px-3">km</span>
+                          <span className="flex items-center text-slate-400 font-medium px-3 xl:text-lg">km</span>
                         </div>
                         {!kilometraje && (
-                          <p className="text-[#e50914] text-xs mt-1">Debes ingresar el kilometraje para continuar.</p>
+                          <p className="text-[#e50914] text-xs xl:text-sm mt-1">Debes ingresar el kilometraje para continuar.</p>
                         )}
                       </div>
 
-                      <div className="w-full mt-5">
+                      <div className="w-full mt-5 xl:mt-6">
                         <SelectorCombustible
                           valor={tipoCombustible}
                           onChange={setTipoCombustible}
@@ -736,40 +773,41 @@ export const KioskoPage = () => {
                       <button
                         onClick={handleNext}
                         disabled={!kilometraje || !tipoCombustible}
-                        className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
+                        className="mt-6 xl:mt-8 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl xl:text-2xl font-bold px-10 xl:px-12 py-4 xl:py-5 rounded-xl shadow-lg transition-all"
                       >
                         Buscar Repuestos <ArrowRight size={24} />
                       </button>
                     </div>
                   ) : vehiculo ? (
-                    <div className="bg-[#121826] border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col items-center">
-                      <div className="w-16 h-16 bg-[#e50914] rounded-full flex items-center justify-center mb-4"><Car size={32} className="text-white" /></div>
-                      <p className="text-slate-400 text-sm mb-4 text-center">No encontramos esta placa registrada. Ingresa marca y modelo para poder mostrarte los repuestos compatibles:</p>
-                      <div className="w-full flex flex-col gap-3 text-left">
+                    <div className="bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-xl flex flex-col items-center">
+                      <div className="w-16 h-16 xl:w-20 xl:h-20 bg-[#e50914] rounded-full flex items-center justify-center mb-4"><Car size={40} className="text-white" /></div>
+                      <p className="text-slate-400 text-sm xl:text-base mb-4 text-center">No encontramos esta placa registrada. Ingresa marca y modelo para poder mostrarte los repuestos compatibles:</p>
+                      <div className="w-full flex flex-col gap-3 xl:gap-4 text-left">
                         <div>
-                          <label className="block text-slate-500 text-xs font-medium mb-1">Placa</label>
-                          <input type="text" readOnly value={vehiculo.placa || placa} className="w-full bg-[#0b0f19] border border-slate-700 text-white py-2 px-4 rounded-lg font-bold uppercase" />
+                          <label className="block text-slate-500 text-xs xl:text-sm font-medium mb-1">Placa</label>
+                          <input type="text" readOnly value={vehiculo.placa || placa} className="w-full bg-[#0b0f19] border border-slate-700 text-white py-2 xl:py-4 px-4 rounded-lg font-bold uppercase xl:text-xl" />
                         </div>
                         <div>
-                          <label className="block text-slate-500 text-xs font-medium mb-1">Marca <span className="text-[#e50914]">*</span></label>
-                          <input type="text" value={vehiculo.marca} onChange={e => setVehiculo(prev => ({ ...prev, marca: e.target.value }))} placeholder="Ej: Toyota" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                          <label className="block text-slate-500 text-xs xl:text-sm font-medium mb-1">Marca <span className="text-[#e50914]">*</span></label>
+                          <input type="text" value={vehiculo.marca} onChange={e => setVehiculo(prev => ({ ...prev, marca: e.target.value }))} placeholder="Ej: Toyota" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 xl:py-4 px-4 rounded-lg outline-none xl:text-xl" />
                         </div>
                         <div>
-                          <label className="block text-slate-500 text-xs font-medium mb-1">Modelo <span className="text-[#e50914]">*</span></label>
-                          <input type="text" value={vehiculo.modelo} onChange={e => setVehiculo(prev => ({ ...prev, modelo: e.target.value }))} placeholder="Ej: Yaris" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 px-4 rounded-lg outline-none" />
+                          <label className="block text-slate-500 text-xs xl:text-sm font-medium mb-1">Modelo <span className="text-[#e50914]">*</span></label>
+                          <input type="text" value={vehiculo.modelo} onChange={e => setVehiculo(prev => ({ ...prev, modelo: e.target.value }))} placeholder="Ej: Yaris" className="w-full bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white py-2 xl:py-4 px-4 rounded-lg outline-none xl:text-xl" />
                         </div>
                         <div>
-                          <label className="block text-slate-400 text-xs font-medium mb-1"><span className="text-[#e50914] font-bold">*</span> Kilometraje actual</label>
+                          <label className="block text-slate-400 text-xs xl:text-sm font-medium mb-1"><span className="text-[#e50914] font-bold">*</span> Kilometraje actual</label>
                           <div className="flex gap-2">
                             <input
-                              type="number"
-                              min="0"
+                              type="text"
+                              readOnly
                               value={kilometraje}
-                              onChange={e => setKilometraje(e.target.value.replace(/[^0-9]/g, ""))}
+                              onClick={() => setCampoVehiculoActivo("kilometraje")}
+                              onFocus={() => setCampoVehiculoActivo("kilometraje")}
                               placeholder="Ej: 35000"
-                              className="flex-1 bg-[#0b0f19] border border-slate-700 text-white font-mono py-2 px-4 rounded-lg focus:outline-none focus:border-[#e50914] placeholder-slate-600"
+                              className={"flex-1 bg-[#0b0f19] border text-white font-mono py-2 xl:py-4 px-4 rounded-lg focus:outline-none placeholder-slate-600 xl:text-xl cursor-pointer select-none " + (campoVehiculoActivo === "kilometraje" ? "border-[#e50914]" : "border-slate-700")}
                             />
-                            <span className="flex items-center text-slate-400 font-medium px-2 text-sm">km</span>
+                            <span className="flex items-center text-slate-400 font-medium px-2 text-sm xl:text-base">km</span>
                           </div>
                         </div>
                         <SelectorCombustible
@@ -781,15 +819,15 @@ export const KioskoPage = () => {
                       <button
                         onClick={handleNext}
                         disabled={!vehiculo.marca?.trim() || !vehiculo.modelo?.trim() || !kilometraje || !tipoCombustible}
-                        className="mt-6 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-all"
+                        className="mt-6 xl:mt-8 flex items-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xl xl:text-2xl font-bold px-10 xl:px-12 py-4 xl:py-5 rounded-xl shadow-lg transition-all"
                       >
                         Buscar Repuestos <ArrowRight size={24} />
                       </button>
                     </div>
                   ) : (
-                    <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-8 rounded-3xl flex flex-col items-center justify-center text-center h-[350px]">
-                      <Search size={48} className="text-slate-600 mb-4" />
-                      <p className="text-slate-500">Ingresa la placa del vehiculo<br/>para consultar sus datos.</p>
+                    <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-8 xl:p-12 rounded-3xl flex flex-col items-center justify-center text-center h-[350px] xl:h-[460px]">
+                      <Search size={64} className="text-slate-600 mb-4" />
+                      <p className="text-slate-500 xl:text-lg">Ingresa la placa del vehiculo<br/>para consultar sus datos.</p>
                     </div>
                   )}
                 </div>
@@ -797,14 +835,14 @@ export const KioskoPage = () => {
             )}
 
             {step === 3 && (
-              <div className="flex flex-col w-full max-w-5xl">
-                <div className="flex justify-between items-center mb-8">
+              <div className="flex flex-col w-full max-w-5xl xl:max-w-7xl">
+                <div className="flex justify-between items-center mb-8 xl:mb-10">
                   <div>
-                    <h2 className="text-3xl font-bold text-white">Catalogo de Repuestos</h2>
-                    <p className="text-slate-400 mt-2">Mostrando repuestos para: <span className="text-[#e50914] font-bold bg-[#e50914]/10 px-2 py-1 rounded">{vNombre}</span></p>
+                    <h2 className="text-3xl xl:text-4xl font-bold text-white">Catalogo de Repuestos</h2>
+                    <p className="text-slate-400 xl:text-lg mt-2">Mostrando repuestos para: <span className="text-[#e50914] font-bold bg-[#e50914]/10 px-2 py-1 rounded">{vNombre}</span></p>
                   </div>
-                  <button onClick={handleNext} className="flex items-center gap-2 bg-[#e50914] hover:bg-[#b80710] text-white font-bold px-6 py-3 rounded-xl">
-                    Ver Carrito ({carrito.length}) <ArrowRight size={20} />
+                  <button onClick={handleNext} className="flex items-center gap-2 bg-[#e50914] hover:bg-[#b80710] text-white font-bold px-6 xl:px-8 py-3 xl:py-5 rounded-xl text-base xl:text-xl">
+                    Ver Carrito ({carrito.length}) <ArrowRight size={24} />
                   </button>
                 </div>
 
@@ -812,21 +850,21 @@ export const KioskoPage = () => {
                     El campo no es un <input> editable directamente: en el kiosko fisico
                     (touchscreen sin teclado) se usa el mismo criterio que DNI/Placa, un
                     teclado propio en pantalla que se abre al tocar el campo. */}
-                <div className="mb-6 flex flex-col gap-3">
+                <div className="mb-6 xl:mb-8 flex flex-col gap-3 xl:gap-4">
                   <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                    <Search className="absolute left-4 xl:left-5 top-1/2 -translate-y-1/2 text-slate-500" size={24} />
                     <div
                       onClick={() => setTecladoBusquedaAbierto(true)}
-                      className={"w-full bg-[#121826] border-2 text-white text-lg py-3.5 pl-12 pr-12 rounded-xl cursor-pointer select-none transition-colors " + (tecladoBusquedaAbierto ? "border-[#e50914]" : "border-slate-800")}
+                      className={"w-full bg-[#121826] border-2 text-white text-lg xl:text-2xl py-3.5 xl:py-5 pl-12 xl:pl-16 pr-12 xl:pr-16 rounded-xl cursor-pointer select-none transition-colors " + (tecladoBusquedaAbierto ? "border-[#e50914]" : "border-slate-800")}
                     >
                       {busquedaRepuesto || <span className="text-slate-500">Toca aqui para buscar por nombre o codigo...</span>}
                     </div>
                     {busquedaRepuesto && (
                       <button
                         onClick={() => { onLimpiarBusqueda(); setBusquedaDebounced(""); }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#e50914]"
+                        className="absolute right-4 xl:right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#e50914]"
                       >
-                        <X size={20} />
+                        <X size={24} />
                       </button>
                     )}
                   </div>
@@ -839,10 +877,10 @@ export const KioskoPage = () => {
                     />
                   )}
                   {categoriasDisponibles.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 xl:gap-3">
                       <button
                         onClick={() => setCategoriaSeleccionada(null)}
-                        className={"px-4 py-2 rounded-full text-sm font-bold border transition-all " + (categoriaSeleccionada === null ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#121826] border-slate-700 text-slate-300 hover:border-slate-500")}
+                        className={"px-4 xl:px-6 py-2 xl:py-3 rounded-full text-sm xl:text-base font-bold border transition-all " + (categoriaSeleccionada === null ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#121826] border-slate-700 text-slate-300 hover:border-slate-500")}
                       >
                         Todos ({categoriasDisponibles.reduce((acc, c) => acc + c.total, 0)})
                       </button>
@@ -850,7 +888,7 @@ export const KioskoPage = () => {
                         <button
                           key={cat.id}
                           onClick={() => setCategoriaSeleccionada(cat.id)}
-                          className={"px-4 py-2 rounded-full text-sm font-bold border transition-all " + (categoriaSeleccionada === cat.id ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#121826] border-slate-700 text-slate-300 hover:border-slate-500")}
+                          className={"px-4 xl:px-6 py-2 xl:py-3 rounded-full text-sm xl:text-base font-bold border transition-all " + (categoriaSeleccionada === cat.id ? "bg-[#e50914] border-[#e50914] text-white" : "bg-[#121826] border-slate-700 text-slate-300 hover:border-slate-500")}
                         >
                           {cat.nombre} ({cat.total})
                         </button>
@@ -860,33 +898,33 @@ export const KioskoPage = () => {
                 </div>
 
                 {loadingRepuestos ? (
-                  <div className="flex flex-col items-center justify-center h-64 gap-4">
-                    <div className="w-12 h-12 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-slate-400">Buscando repuestos compatibles...</p>
+                  <div className="flex flex-col items-center justify-center h-64 xl:h-80 gap-4">
+                    <div className="w-12 h-12 xl:w-16 xl:h-16 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-slate-400 xl:text-xl">Buscando repuestos compatibles...</p>
                   </div>
                 ) : repuestosCompatibles.length === 0 ? (
-                  <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-12 rounded-3xl flex flex-col items-center justify-center text-center">
-                    <Wrench size={56} className="text-slate-600 mb-4" />
+                  <div className="bg-[#121826]/50 border border-slate-800 border-dashed p-12 xl:p-16 rounded-3xl flex flex-col items-center justify-center text-center">
+                    <Wrench size={72} className="text-slate-600 mb-4" />
                     {(busquedaDebounced || categoriaSeleccionada) ? (
                       <React.Fragment>
-                        <p className="text-slate-400 text-lg font-medium">No encontramos repuestos compatibles con tu busqueda.</p>
-                        <p className="text-slate-500 text-sm mt-2">Prueba con otro termino o revisa todas las categorias.</p>
+                        <p className="text-slate-400 text-lg xl:text-2xl font-medium">No encontramos repuestos compatibles con tu busqueda.</p>
+                        <p className="text-slate-500 text-sm xl:text-base mt-2">Prueba con otro termino o revisa todas las categorias.</p>
                         <button
                           onClick={() => { setBusquedaRepuesto(""); setBusquedaDebounced(""); setCategoriaSeleccionada(null); }}
-                          className="mt-4 text-[#e50914] font-bold hover:underline"
+                          className="mt-4 text-[#e50914] font-bold text-base xl:text-xl hover:underline"
                         >
                           Limpiar busqueda
                         </button>
                       </React.Fragment>
                     ) : (
                       <React.Fragment>
-                        <p className="text-slate-400 text-lg font-medium">No encontramos repuestos registrados para este vehiculo.</p>
-                        <p className="text-slate-500 text-sm mt-2">Consulta con nuestro personal.</p>
+                        <p className="text-slate-400 text-lg xl:text-2xl font-medium">No encontramos repuestos registrados para este vehiculo.</p>
+                        <p className="text-slate-500 text-sm xl:text-base mt-2">Consulta con nuestro personal.</p>
                       </React.Fragment>
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2" style={{ maxHeight: "50vh" }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-8 overflow-y-auto pr-2" style={{ maxHeight: "56vh" }}>
                     {repuestosCompatibles.map(producto => {
                       // stock_disponible_sucursal es el stock real de ESTA sucursal (lo calcula
                       // el backend a partir del kiosko_token); si por algún motivo no vino
@@ -895,29 +933,29 @@ export const KioskoPage = () => {
                       const stock = stockRaw != null ? parseFloat(stockRaw) : null;
                       const sinStock = stock != null && stock <= 0;
                       const stockBadge = stock == null ? null : sinStock
-                        ? <span className="bg-red-900/30 text-red-400 text-xs px-2 py-1 rounded border border-red-800/40 font-medium">Sin stock</span>
+                        ? <span className="bg-red-900/30 text-red-400 text-xs xl:text-sm px-2 xl:px-3 py-1 rounded border border-red-800/40 font-medium">Sin stock</span>
                         : stock <= 5
-                          ? <span className="bg-amber-900/30 text-amber-400 text-xs px-2 py-1 rounded border border-amber-800/40 font-medium">Quedan {stock}</span>
-                          : <span className="bg-emerald-900/30 text-emerald-400 text-xs px-2 py-1 rounded border border-emerald-800/40 font-medium">{stock} disponibles</span>;
+                          ? <span className="bg-amber-900/30 text-amber-400 text-xs xl:text-sm px-2 xl:px-3 py-1 rounded border border-amber-800/40 font-medium">Quedan {stock}</span>
+                          : <span className="bg-emerald-900/30 text-emerald-400 text-xs xl:text-sm px-2 xl:px-3 py-1 rounded border border-emerald-800/40 font-medium">{stock} disponibles</span>;
                       return (
-                      <div key={producto.id} className="bg-[#121826] border border-slate-800 hover:border-[#e50914]/50 p-6 rounded-2xl flex items-center gap-6 transition-all">
-                        <div className="w-20 h-20 bg-[#0b0f19] rounded-xl flex items-center justify-center"><Wrench size={32} className="text-[#e50914]" /></div>
+                      <div key={producto.id} className="bg-[#121826] border border-slate-800 hover:border-[#e50914]/50 p-6 xl:p-8 rounded-2xl flex items-center gap-6 xl:gap-8 transition-all">
+                        <div className="w-20 h-20 xl:w-28 xl:h-28 bg-[#0b0f19] rounded-xl flex items-center justify-center"><Wrench size={44} className="text-[#e50914]" /></div>
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1">{producto.nombre}</h3>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded font-medium">Cod: {producto.codigo}</span>
-                            <span className="bg-[#e50914]/10 text-[#e50914] text-xs px-2 py-1 rounded border border-[#e50914]/20 font-medium">
+                          <h3 className="text-xl xl:text-2xl font-bold text-white mb-1">{producto.nombre}</h3>
+                          <div className="flex flex-wrap gap-2 mb-2 xl:mb-3">
+                            <span className="bg-slate-800 text-slate-300 text-xs xl:text-sm px-2 xl:px-3 py-1 rounded font-medium">Cod: {producto.codigo}</span>
+                            <span className="bg-[#e50914]/10 text-[#e50914] text-xs xl:text-sm px-2 xl:px-3 py-1 rounded border border-[#e50914]/20 font-medium">
                               Venta por: {producto.unidad_medida_nombre || 'Unidad'}
                             </span>
                             {producto.viscosidad && (
-                              <span className="bg-blue-900/20 text-blue-400 text-xs px-2 py-1 rounded border border-blue-800/30 font-medium">
+                              <span className="bg-blue-900/20 text-blue-400 text-xs xl:text-sm px-2 xl:px-3 py-1 rounded border border-blue-800/30 font-medium">
                                 {producto.viscosidad}
                               </span>
                             )}
                             {stockBadge}
                           </div>
-                          <div className="flex justify-between items-center mt-3">
-                            <span className="text-2xl font-bold text-[#e50914]">S/ {parseFloat(producto.precio_lista || 0).toFixed(2)}</span>
+                          <div className="flex justify-between items-center mt-3 xl:mt-4">
+                            <span className="text-2xl xl:text-3xl font-bold text-[#e50914]">S/ {parseFloat(producto.precio_lista || 0).toFixed(2)}</span>
                             {carrito.find(c => c.id === producto.id) ? (
                               <div className="flex items-center gap-2">
                                 <input
@@ -925,12 +963,12 @@ export const KioskoPage = () => {
                                   step={producto.unidad_medida_permite_decimales ? "any" : "1"}
                                   min="0"
                                   max={stock != null ? stock : undefined}
-                                  className="w-20 bg-[#0b0f19] border border-[#e50914] text-white text-center py-1 rounded-lg font-bold outline-none"
+                                  className="w-20 xl:w-28 bg-[#0b0f19] border border-[#e50914] text-white text-center py-1 xl:py-3 rounded-lg font-bold text-base xl:text-xl outline-none"
                                   value={carrito.find(c => c.id === producto.id).cantidad}
                                   onChange={(e) => actualizarCantidad(producto.id, e.target.value, stock)}
                                 />
-                                <button onClick={() => removerDelCarrito(producto.id)} className="bg-[#121826] text-[#e50914] p-1.5 rounded hover:bg-[#e50914] hover:text-white transition-all border border-[#e50914]">
-                                  <Trash2 size={18} />
+                                <button onClick={() => removerDelCarrito(producto.id)} className="bg-[#121826] text-[#e50914] p-1.5 xl:p-3 rounded hover:bg-[#e50914] hover:text-white transition-all border border-[#e50914]">
+                                  <Trash2 size={22} />
                                 </button>
                               </div>
                             ) : (
@@ -943,7 +981,7 @@ export const KioskoPage = () => {
                                   setCarrito([...carrito, { ...producto, cantidad: cantidadInicial }]);
                                 }}
                                 disabled={sinStock}
-                                className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] disabled:opacity-40 disabled:hover:bg-[#0b0f19] disabled:hover:border-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold transition-all text-sm"
+                                className="bg-[#0b0f19] border border-slate-700 hover:bg-[#e50914] hover:border-[#e50914] disabled:opacity-40 disabled:hover:bg-[#0b0f19] disabled:hover:border-slate-700 disabled:cursor-not-allowed text-white px-4 xl:px-6 py-2 xl:py-4 rounded-lg font-bold transition-all text-sm xl:text-lg"
                               >
                                 {sinStock ? 'SIN STOCK' : 'AGREGAR'}
                               </button>
@@ -955,65 +993,65 @@ export const KioskoPage = () => {
                     })}
                   </div>
                 )}
-                <div className="mt-6">
-                  <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white"><ArrowLeft size={20}/> Volver al vehiculo</button>
+                <div className="mt-6 xl:mt-8">
+                  <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white text-base xl:text-xl"><ArrowLeft size={24}/> Volver al vehiculo</button>
                 </div>
               </div>
             )}
 
             {step === 4 && (
-              <div className="flex flex-col w-full max-w-3xl">
-                <h2 className="text-3xl font-bold text-white mb-6">Resumen de tu Pedido</h2>
-                <div className="bg-[#121826] border border-slate-800 rounded-3xl p-8 shadow-xl">
+              <div className="flex flex-col w-full max-w-3xl xl:max-w-5xl">
+                <h2 className="text-3xl xl:text-4xl font-bold text-white mb-6 xl:mb-8">Resumen de tu Pedido</h2>
+                <div className="bg-[#121826] border border-slate-800 rounded-3xl p-8 xl:p-10 shadow-xl">
                   {carrito.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400"><p className="text-xl">No has agregado ningun repuesto.</p></div>
+                    <div className="text-center py-12 xl:py-20 text-slate-400"><p className="text-xl xl:text-3xl">No has agregado ningun repuesto.</p></div>
                   ) : (
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 xl:gap-6">
                       {carrito.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center border-b border-slate-800 pb-4">
+                        <div key={idx} className="flex justify-between items-center border-b border-slate-800 pb-4 xl:pb-6">
                           {(() => {
                             const stockItemRaw = item.stock_disponible_sucursal ?? item.stock_total_disponible;
                             const stockItem = stockItemRaw != null ? parseFloat(stockItemRaw) : null;
                             return (
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-4"><Wrench size={24} className="text-[#e50914]" /><span className="text-lg font-medium text-white">{item.nombre}</span></div>
-                            <div className="flex items-center gap-2 pl-10">
-                                <span className="text-slate-400 text-sm">Cant:</span>
+                          <div className="flex flex-col gap-2 xl:gap-3">
+                            <div className="flex items-center gap-4"><Wrench size={30} className="text-[#e50914]" /><span className="text-lg xl:text-2xl font-medium text-white">{item.nombre}</span></div>
+                            <div className="flex items-center gap-2 xl:gap-3 pl-10">
+                                <span className="text-slate-400 text-sm xl:text-base">Cant:</span>
                                 <input
                                   type="number"
                                   step={item.unidad_medida_permite_decimales ? "any" : "1"}
                                   min="0"
                                   max={stockItem != null ? stockItem : undefined}
-                                  className="w-16 bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white text-center py-1 rounded-lg font-bold outline-none text-sm"
+                                  className="w-16 xl:w-24 bg-[#0b0f19] border border-slate-700 focus:border-[#e50914] text-white text-center py-1 xl:py-3 rounded-lg font-bold outline-none text-sm xl:text-xl"
                                   value={item.cantidad}
                                   onChange={(e) => actualizarCantidad(item.id, e.target.value, stockItem)}
                                 />
                                 {stockItem != null && (
-                                  <span className="text-slate-500 text-xs">de {stockItem} disp.</span>
+                                  <span className="text-slate-500 text-xs xl:text-sm">de {stockItem} disp.</span>
                                 )}
                                 <button onClick={() => removerDelCarrito(item.id)} className="text-slate-500 hover:text-[#e50914]">
-                                  <Trash2 size={18} />
+                                  <Trash2 size={24} />
                                 </button>
                             </div>
                           </div>
                             );
                           })()}
                           <div className="flex flex-col items-end">
-                            <span className="text-sm text-slate-500">S/ {parseFloat(item.precio_lista || 0).toFixed(2)} c/u</span>
-                            <span className="font-bold text-white text-xl">S/ {(parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)).toFixed(2)}</span>
+                            <span className="text-sm xl:text-base text-slate-500">S/ {parseFloat(item.precio_lista || 0).toFixed(2)} c/u</span>
+                            <span className="font-bold text-white text-xl xl:text-3xl">S/ {(parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)).toFixed(2)}</span>
                           </div>
                         </div>
                       ))}
-                      <div className="flex justify-between items-center pt-4 mt-4">
-                        <span className="text-xl text-slate-400">Total a Pagar</span>
-                        <span className="text-4xl font-bold text-[#e50914]">S/ {carrito.reduce((acc, item) => acc + (parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)), 0).toFixed(2)}</span>
+                      <div className="flex justify-between items-center pt-4 xl:pt-6 mt-4 xl:mt-6">
+                        <span className="text-xl xl:text-3xl text-slate-400">Total a Pagar</span>
+                        <span className="text-4xl xl:text-6xl font-bold text-[#e50914]">S/ {carrito.reduce((acc, item) => acc + (parseFloat(item.precio_lista || 0) * parseFloat(item.cantidad || 0)), 0).toFixed(2)}</span>
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="flex gap-4 mt-8">
-                  <button onClick={handleBack} className="flex-1 bg-[#121826] border border-slate-800 hover:bg-[#0b0f19] text-white px-8 py-4 rounded-xl font-bold text-lg">Volver al Catalogo</button>
-                  <button onClick={generarTicket} disabled={carrito.length === 0} className="flex-1 flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-500/20">
+                <div className="flex gap-4 xl:gap-6 mt-8 xl:mt-10">
+                  <button onClick={handleBack} className="flex-1 bg-[#121826] border border-slate-800 hover:bg-[#0b0f19] text-white px-8 py-4 xl:py-6 rounded-xl font-bold text-lg xl:text-2xl">Volver al Catalogo</button>
+                  <button onClick={generarTicket} disabled={carrito.length === 0} className="flex-1 flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-8 py-4 xl:py-6 rounded-xl font-bold text-lg xl:text-2xl shadow-lg shadow-red-500/20">
                     <CheckCircle /> Generar Ticket
                   </button>
                 </div>

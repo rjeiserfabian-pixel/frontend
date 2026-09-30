@@ -128,6 +128,12 @@ const ConsultaVehiculoPage = () => {
     : 0;
   const cotizacionPendiente = result?.orden?.cotizacion_pendiente;
   const cotizacionVencida = result?.orden?.cotizacion_vencida;
+  const hallazgos = result?.orden?.hallazgos || [];
+  const severityClasses = {
+    ALTA: 'bg-red-500/15 text-red-300 border-red-500/40',
+    MEDIA: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
+    BAJA: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+  };
 
   return (
     <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden">
@@ -284,6 +290,26 @@ const ConsultaVehiculoPage = () => {
                             {result.orden.estado}
                           </span>
                         </div>
+
+                        {hallazgos.length > 0 && (
+                          <div>
+                            <h5 className="font-bold text-white mb-4 flex items-center gap-2">
+                              <AlertCircle size={18} className="text-[#e50914]" /> Inspeccion y Hallazgos
+                            </h5>
+                            <div className="flex flex-col gap-3">
+                              {hallazgos.map((h) => (
+                                <div key={h.id} className="p-4 rounded-xl border bg-slate-800/30 border-slate-700">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <p className="font-medium text-white leading-relaxed">{h.descripcion}</p>
+                                    <span className={`shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wide ${severityClasses[h.severidad] || severityClasses.MEDIA}`}>
+                                      {h.severidad || 'MEDIA'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         <div>
                           <h5 className="font-bold text-white mb-4 flex items-center gap-2">
