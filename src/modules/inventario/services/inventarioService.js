@@ -13,7 +13,7 @@ export const inventarioService = {
 
   // --- Unidades de Medida ---
   getUnidadesMedida: async () => {
-    const response = await api.get('/inventario/unidades-medida/');
+    const response = await api.get('/inventario/unidades-medida/?page_size=500');
     return response.data;
   },
 
@@ -21,6 +21,7 @@ export const inventarioService = {
   getCategorias: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page);
+    if (params.page_size) query.append('page_size', params.page_size);
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const response = await api.get(`${URL_CATEGORIAS}${queryString}`);
     return response.data;
@@ -42,6 +43,7 @@ export const inventarioService = {
   getMarcas: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page);
+    if (params.page_size) query.append('page_size', params.page_size);
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const response = await api.get(`${URL_MARCAS}${queryString}`);
     return response.data;

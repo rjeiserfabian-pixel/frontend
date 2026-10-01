@@ -106,8 +106,8 @@ export default function RepuestosPage() {
       // Cargar categorias, marcas, impuestos y unidades de medida solo si no se han cargado
       if (categorias.length === 0 || marcas.length === 0 || tiposIgv.length === 0 || unidadesMedida.length === 0) {
         const [resCategorias, resMarcas, resTiposIgv, resUnidades] = await Promise.all([
-          inventarioService.getCategorias(),
-          inventarioService.getMarcas(),
+          inventarioService.getCategorias({ page_size: 500 }),
+          inventarioService.getMarcas({ page_size: 500 }),
           inventarioService.getTiposIgv(),
           inventarioService.getUnidadesMedida()
         ]);
@@ -176,6 +176,9 @@ export default function RepuestosPage() {
       if (payload.aplicaciones && payload.aplicaciones.length > 0) {
         payload.aplicaciones = payload.aplicaciones.map(app => ({
           ...app,
+          marca_vehiculo: app.marca_vehiculo?.trim() || null,
+          modelo_vehiculo: app.modelo_vehiculo?.trim() || null,
+          tipo_combustible: app.tipo_combustible || null,
           anio_desde: app.anio_desde === '' ? null : app.anio_desde,
           anio_hasta: app.anio_hasta === '' ? null : app.anio_hasta,
         }));
@@ -513,7 +516,7 @@ export default function RepuestosPage() {
           size="small"
           options={categorias}
           getOptionLabel={(option) => option.nombre}
-          value={categorias.find(c => c.id === filterCategoria) || null}
+          value={categorias.find(c => String(c.id) === String(filterCategoria)) || null}
           onChange={(event, newValue) => handleCategoriaChange(newValue)}
           sx={{ minWidth: 200 }}
           renderInput={(params) => <TextField {...params} label="Categoría" variant="outlined" />}
@@ -523,7 +526,7 @@ export default function RepuestosPage() {
           size="small"
           options={marcas}
           getOptionLabel={(option) => option.nombre}
-          value={marcas.find(m => m.id === filterMarca) || null}
+          value={marcas.find(m => String(m.id) === String(filterMarca)) || null}
           onChange={(event, newValue) => handleMarcaChange(newValue)}
           sx={{ minWidth: 200 }}
           renderInput={(params) => <TextField {...params} label="Marca" variant="outlined" />}
@@ -738,7 +741,7 @@ export default function RepuestosPage() {
                     <Autocomplete
                       options={categorias}
                       getOptionLabel={(option) => option.nombre}
-                      value={categorias.find(c => c.id === field.value) || null}
+                      value={categorias.find(c => String(c.id) === String(field.value)) || null}
                       onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
                       renderInput={(params) => (
                         <TextField 
@@ -761,7 +764,7 @@ export default function RepuestosPage() {
                     <Autocomplete
                       options={marcas}
                       getOptionLabel={(option) => option.nombre}
-                      value={marcas.find(m => m.id === field.value) || null}
+                      value={marcas.find(m => String(m.id) === String(field.value)) || null}
                       onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
                       renderInput={(params) => (
                         <TextField 
@@ -784,7 +787,7 @@ export default function RepuestosPage() {
                     <Autocomplete
                       options={unidadesMedida}
                       getOptionLabel={(option) => `${option.nombre} (${option.abreviatura})`}
-                      value={unidadesMedida.find(u => u.id === field.value) || null}
+                      value={unidadesMedida.find(u => String(u.id) === String(field.value)) || null}
                       onChange={(_, newValue) => field.onChange(newValue ? newValue.id : '')}
                       renderInput={(params) => (
                         <TextField 
@@ -882,8 +885,8 @@ export default function RepuestosPage() {
             {fields.map((item, index) => (
               <Box key={item.id} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start', p: 2, border: '1px dashed #ccc', borderRadius: 2, flexWrap: 'wrap' }}>
                 <Box sx={{ display: 'flex', gap: 2, width: '100%', flexWrap: 'wrap' }}>
-                  <TextField label="Marca Vehículo (Ej. FIAT)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.marca_vehiculo`, { required: true })} error={!!errors?.aplicaciones?.[index]?.marca_vehiculo} helperText="Obligatorio" />
-                  <TextField label="Modelo (Opcional)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.modelo_vehiculo`)} helperText="Vacío = toda la marca" />
+                  <TextField label="Marca Vehículo (Opcional)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.marca_vehiculo`)} helperText="Vacío = todas las marcas" />
+                  <TextField label="Modelo (Opcional)" size="small" sx={{ flex: '1 1 150px' }} {...register(`aplicaciones.${index}.modelo_vehiculo`)} helperText="Vacío = todos los modelos" />
                   <Controller
                     name={`aplicaciones.${index}.tipo_combustible`}
                     control={control}
