@@ -12,7 +12,7 @@ const api = axios.create({
 // EXCEPTO en rutas públicas (kiosko, estado-vehiculo) donde no hay sesión iniciada.
 // Si se envía un token expirado/inválido hacia un endpoint AllowAny, el JWTAuthentication
 // global del backend lanza un 401 antes de evaluar los permisos de la vista.
-const PUBLIC_PATHS = ['/kiosko', '/estado-vehiculo'];
+const PUBLIC_PATHS = ['/kiosko', '/estado-vehiculo', '/consulta-repuestos', '/reservar-cita'];
 api.interceptors.request.use(
   (config) => {
     const isPublicPath = PUBLIC_PATHS.some(path => window.location.pathname.startsWith(path));
@@ -34,7 +34,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     // Rutas públicas que no deben ser redirigidas al login
-    const publicPaths = ['/kiosko', '/estado-vehiculo'];
+    const publicPaths = ['/kiosko', '/estado-vehiculo', '/consulta-repuestos', '/reservar-cita'];
     const isPublicPath = publicPaths.some(path => window.location.pathname.startsWith(path));
 
     if (error.response?.status === 401 && !originalRequest._retry) {

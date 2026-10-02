@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControlLabel, IconButton, MenuItem,
-  Paper, Switch, Table, TableBody, TableCell, TableContainer, TableHead,
+  Paper, Popover, Switch, Table, TableBody, TableCell, TableContainer, TableHead,
   TablePagination, TableRow, TextField, ToggleButton, ToggleButtonGroup,
   Tooltip, Typography
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, Edit, List, LogIn, Plus, Save, Search, Settings, UserX, X } from 'lucide-react';
+import { CalendarDays, CalendarPlus, Bell, Check, ChevronLeft, ChevronRight, Clock, Copy, Edit, History, List, LogIn, MessageCircle, Plus, Save, Search, Settings, TrendingUp, UserCheck, UserX, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../core/api/axios';
@@ -41,6 +41,13 @@ const estadoColor = {
   RECEPCIONADA: 'success',
   CANCELADA: 'error',
   NO_ASISTIO: 'default',
+};
+
+const estadoEsperaColor = {
+  PENDIENTE: 'warning',
+  CONTACTADO: 'info',
+  CONVERTIDO: 'success',
+  DESCARTADO: 'default',
 };
 
 const emptyForm = {
@@ -82,6 +89,16 @@ const addMinutesIso = (value, minutes) => {
 };
 
 const getList = (data) => data?.results || data?.data?.results || data?.data || data || [];
+
+const getApiErrorMessage = (error, fallback) => {
+  const response = error?.response?.data || {};
+  const errores = response.errores || response;
+  return errores?.non_field_errors?.[0]
+    || errores?.detail
+    || errores?.error
+    || response.mensaje
+    || fallback;
+};
 
 const toDateInput = (date) => {
   const value = new Date(date);
@@ -163,6 +180,23 @@ export default function CitasPage() {
   const [agendaConfig, setAgendaConfig] = useState(null);
   const [bloqueosAgenda, setBloqueosAgenda] = useState([]);
   const [bloqueoForm, setBloqueoForm] = useState(emptyBloqueoForm);
+  const [historialOpen, setHistorialOpen] = useState(false);
+  const [historialLoading, setHistorialLoading] = useState(false);
+  const [historialCita, setHistorialCita] = useState(null);
+  const [historialItems, setHistorialItems] = useState([]);
+  const [listaEspera, setListaEspera] = useState([]);
+  const [listaEsperaLoading, setListaEsperaLoading] = useState(false);
+
+  // Notificación rápida
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifData, setNotifData] = useState(null);
+  const [notifCita, setNotifCita] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Popover de slot ocupado en agenda
+  const [popoverAnchor, setPopoverAnchor] = useState(null);
+  const [popoverSlot, setPopoverSlot] = useState(null);
 
   const agendaSucursal = filtroSucursal || activeSucursalId || sucursales[0]?.id || '';
   const agendaEndDate = addDaysInput(agendaStartDate, 6);
@@ -196,6 +230,12 @@ export default function CitasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, agendaSucursal, agendaStartDate, agendaDuracion]);
 
+  useEffect(() => {
+    if (viewMode !== 'espera') return;
+    fetchListaEspera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, agendaSucursal]);
+
   const fetchCitas = async () => {
     try {
       setLoading(true);
@@ -214,6 +254,23 @@ export default function CitasPage() {
       console.error('Error cargando citas:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchListaEspera = async () => {
+    try {
+      setListaEsperaLoading(true);
+      const data = await tallerService.getListaEsperaCitas({
+        page_size: 100,
+        ...(agendaSucursal ? { sucursal: agendaSucursal } : {}),
+      });
+      const lista = data?.results || data || [];
+      setListaEspera(Array.isArray(lista) ? lista : []);
+    } catch (err) {
+      console.error('Error cargando lista de espera:', err);
+      Swal.fire('Error', 'No se pudo cargar la lista de espera.', 'error');
+    } finally {
+      setListaEsperaLoading(false);
     }
   };
 
@@ -311,7 +368,8 @@ export default function CitasPage() {
       const updated = await tallerService.actualizarConfiguracionAgenda(agendaConfig.id, payload);
       setAgendaConfig({ ...updated, horarios: normalizarHorarios(updated.horarios) });
       await fetchDisponibilidad();
-      Swal.fire('Listo', 'Configuracion de agenda actualizada.', 'success');
+      await Swal.fire('Listo', 'Configuracion de agenda actualizada.', 'success');
+      setConfigOpen(false);
     } catch (err) {
       const detail = err.response?.data?.detail || err.response?.data?.error || 'No se pudo guardar la configuracion.';
       Swal.fire('Error', detail, 'error');
@@ -360,6 +418,48 @@ export default function CitasPage() {
     }
   };
 
+  const openHistorialCita = async (cita) => {
+    try {
+      setHistorialCita(cita);
+      setHistorialOpen(true);
+      setHistorialLoading(true);
+      const data = await tallerService.getHistorialCita(cita.id);
+      setHistorialItems(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error cargando historial de cita:', err);
+      Swal.fire('Error', 'No se pudo cargar el historial de la cita.', 'error');
+      setHistorialOpen(false);
+    } finally {
+      setHistorialLoading(false);
+    }
+  };
+
+  const abrirNotificacion = async (cita) => {
+    try {
+      setNotifCita(cita);
+      setNotifData(null);
+      setNotifOpen(true);
+      setNotifLoading(true);
+      setCopied(false);
+      const data = await tallerService.notificarCita(cita.id);
+      setNotifData(data);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'No se pudo generar el recordatorio.';
+      Swal.fire('Error', msg, 'error');
+      setNotifOpen(false);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const copiarMensaje = () => {
+    if (!notifData?.mensaje) return;
+    navigator.clipboard.writeText(notifData.mensaje).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   const fetchClientes = async (query = '') => {
     if (query.length === 1) return;
     const res = await api.get('clientes/', { params: { search: query } });
@@ -373,12 +473,15 @@ export default function CitasPage() {
   };
 
   const openNewDialog = (slotInicio = null) => {
+    const proximoSlot = disponibilidad?.dias
+      ?.flatMap((dia) => dia.slots || [])
+      .find((slot) => slot.disponible);
     setEditing(null);
     setErrors({});
     setForm({
       ...emptyForm,
       sucursal: agendaSucursal || activeSucursalId || sucursales[0]?.id || '',
-      fecha_inicio: slotInicio ? toInputDateTime(slotInicio) : toInputDateTime(new Date()),
+      fecha_inicio: slotInicio ? toInputDateTime(slotInicio) : (proximoSlot ? toInputDateTime(proximoSlot.inicio) : ''),
       duracion_minutos: agendaDuracion,
     });
     setDialogOpen(true);
@@ -452,7 +555,7 @@ export default function CitasPage() {
       if (viewMode === 'agenda' && agendaSucursal) await fetchDisponibilidad();
       Swal.fire('Listo', editing ? 'Cita actualizada.' : 'Cita registrada.', 'success');
     } catch (err) {
-      const detail = err.response?.data?.non_field_errors?.[0] || err.response?.data?.detail || err.response?.data?.error || 'No se pudo guardar la cita.';
+      const detail = getApiErrorMessage(err, 'No se pudo guardar la cita.');
       Swal.fire('Error', detail, 'error');
     } finally {
       setSaving(false);
@@ -499,6 +602,33 @@ export default function CitasPage() {
     }
   };
 
+  const actualizarEstadoEspera = async (item, estado) => {
+    const etiquetas = {
+      CONTACTADO: 'Marcar como contactado',
+      DESCARTADO: 'Descartar solicitud',
+    };
+    const result = await Swal.fire({
+      title: etiquetas[estado] || 'Actualizar solicitud',
+      input: 'textarea',
+      inputLabel: 'Observación interna (opcional)',
+      inputPlaceholder: 'Ej.: cliente contactado por teléfono',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await tallerService.actualizarListaEsperaCita(item.id, {
+        estado,
+        observaciones_internas: result.value || item.observaciones_internas || '',
+      });
+      await fetchListaEspera();
+      Swal.fire('Listo', 'Solicitud actualizada.', 'success');
+    } catch (err) {
+      Swal.fire('Error', err.response?.data?.detail || 'No se pudo actualizar la solicitud.', 'error');
+    }
+  };
+
   const recepcionar = async (cita) => {
     const result = await Swal.fire({
       title: 'Recepcionar y crear orden de trabajo',
@@ -526,6 +656,19 @@ export default function CitasPage() {
   const totalSlots = disponibilidad?.dias?.reduce((total, dia) => total + dia.slots.length, 0) || 0;
   const freeSlots = disponibilidad?.dias?.reduce((total, dia) => total + dia.slots.filter(slot => slot.disponible).length, 0) || 0;
 
+  // KPIs calculados desde la lista de citas cargada
+  const kpiStats = useMemo(() => {
+    const total = citas.length;
+    const confirmadas = citas.filter(c => c.estado === 'CONFIRMADA').length;
+    const pendientes = citas.filter(c => ['SOLICITADA', 'REPROGRAMADA'].includes(c.estado)).length;
+    const noAsistio = citas.filter(c => c.estado === 'NO_ASISTIO').length;
+    const recepcionadas = citas.filter(c => c.estado === 'RECEPCIONADA').length;
+    const canceladas = citas.filter(c => c.estado === 'CANCELADA').length;
+    const finalizadas = recepcionadas + noAsistio + canceladas;
+    const tasaAsistencia = finalizadas > 0 ? Math.round((recepcionadas / finalizadas) * 100) : null;
+    return { total, confirmadas, pendientes, noAsistio, recepcionadas, tasaAsistencia };
+  }, [citas]);
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, gap: 2, alignItems: 'center' }}>
@@ -548,6 +691,7 @@ export default function CitasPage() {
           >
             <ToggleButton value="agenda"><CalendarDays size={16} style={{ marginRight: 6 }} />Agenda</ToggleButton>
             <ToggleButton value="lista"><List size={16} style={{ marginRight: 6 }} />Lista</ToggleButton>
+            <ToggleButton value="espera"><Clock size={16} style={{ marginRight: 6 }} />Espera</ToggleButton>
           </ToggleButtonGroup>
           {viewMode === 'agenda' && puedeConfigurarAgenda && (
             <Button
@@ -565,6 +709,65 @@ export default function CitasPage() {
             </Button>
           )}
         </Box>
+      </Box>
+
+      {/* KPIs de resumen */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+        {[
+          {
+            label: 'Total citas',
+            value: loading ? '...' : totalCount,
+            sub: filtroDesde && filtroHasta ? `${filtroDesde} → ${filtroHasta}` : 'Rango seleccionado',
+            color: C.brand,
+            icon: <CalendarDays size={20} />,
+          },
+          {
+            label: 'Confirmadas',
+            value: loading ? '...' : kpiStats.confirmadas,
+            sub: 'Listas para atender',
+            color: '#3b82f6',
+            icon: <UserCheck size={20} />,
+          },
+          {
+            label: 'Pendientes',
+            value: loading ? '...' : kpiStats.pendientes,
+            sub: 'Solicitadas / Reprogramadas',
+            color: '#f59e0b',
+            icon: <CalendarPlus size={20} />,
+          },
+          {
+            label: 'Tasa asistencia',
+            value: loading ? '...' : (kpiStats.tasaAsistencia !== null ? `${kpiStats.tasaAsistencia}%` : 'N/A'),
+            sub: `${kpiStats.recepcionadas} recepcionadas / ${kpiStats.noAsistio} no asistieron`,
+            color: kpiStats.tasaAsistencia >= 70 ? '#22c55e' : '#f87171',
+            icon: <TrendingUp size={20} />,
+          },
+        ].map((kpi) => (
+          <Paper
+            key={kpi.label}
+            sx={{
+              p: 2,
+              border: `1px solid ${alpha(kpi.color, 0.25)}`,
+              borderRadius: '10px',
+              bgcolor: alpha(kpi.color, 0.07),
+              boxShadow: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.5,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: kpi.color }}>
+              {kpi.icon}
+              <Typography variant="caption" fontWeight="700" sx={{ color: kpi.color, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {kpi.label}
+              </Typography>
+            </Box>
+            <Typography variant="h5" fontWeight="900" sx={{ color: kpi.color, lineHeight: 1 }}>
+              {kpi.value}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">{kpi.sub}</Typography>
+          </Paper>
+        ))}
       </Box>
 
       <Paper sx={{ p: 2, mb: 3, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(135deg, ${alpha(C.brand, 0.06)}, transparent 42%)` }}>
@@ -680,43 +883,58 @@ export default function CitasPage() {
                       </Box>
                     ) : dia.slots.map((slot) => {
                       const occupied = !slot.disponible;
-                      const title = slot.citas.length
-                        ? slot.citas.map(c => `${c.hora || ''}${c.placa} ${c.cliente}`.trim()).join('\n')
-                        : (slot.motivo || 'Horario libre');
+                      // Slot libre: abre el form de nueva cita
+                      if (!occupied) {
+                        return (
+                          <Tooltip key={slot.inicio} title="Horario libre" arrow>
+                            <span>
+                              <Button
+                                fullWidth
+                                disabled={!puedeCrear}
+                                onClick={() => openNewDialog(slot.inicio)}
+                                sx={{
+                                  justifyContent: 'space-between',
+                                  minHeight: 42, px: 1.2, borderRadius: '8px',
+                                  textTransform: 'none', color: '#dffdf0',
+                                  border: `1px solid ${alpha('#34d399', 0.36)}`,
+                                  bgcolor: alpha('#065f46', 0.28),
+                                  '&:hover': { bgcolor: alpha('#047857', 0.34) },
+                                }}
+                              >
+                                <span>{slot.hora}</span>
+                                <Chip size="small" label="Libre" color="success" variant="filled" />
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        );
+                      }
+                      // Slot ocupado o bloqueado: clic abre popover con detalle
                       return (
-                        <Tooltip key={slot.inicio} title={<span style={{ whiteSpace: 'pre-line' }}>{title}</span>} arrow>
-                          <span>
-                            <Button
-                              fullWidth
-                              disabled={occupied || !puedeCrear}
-                              onClick={() => openNewDialog(slot.inicio)}
-                              sx={{
-                                justifyContent: 'space-between',
-                                minHeight: 42,
-                                px: 1.2,
-                                borderRadius: '8px',
-                                textTransform: 'none',
-                                color: occupied ? C.textMuted : '#dffdf0',
-                                border: `1px solid ${occupied ? alpha('#f87171', 0.22) : alpha('#34d399', 0.36)}`,
-                                bgcolor: occupied ? alpha('#7f1d1d', 0.18) : alpha('#065f46', 0.28),
-                                '&:hover': {
-                                  bgcolor: occupied ? alpha('#7f1d1d', 0.18) : alpha('#047857', 0.34),
-                                },
-                                '&.Mui-disabled': {
-                                  color: occupied ? alpha(C.textMuted, 0.9) : alpha('#dffdf0', 0.5),
-                                },
-                              }}
-                            >
-                              <span>{slot.hora}</span>
-                              <Chip
-                                size="small"
-                                label={slot.disponible ? 'Libre' : (slot.bloqueado ? 'Bloqueado' : `${slot.ocupadas}/${slot.capacidad}`)}
-                                color={slot.disponible ? 'success' : 'error'}
-                                variant={slot.disponible ? 'filled' : 'outlined'}
-                              />
-                            </Button>
-                          </span>
-                        </Tooltip>
+                        <span key={slot.inicio}>
+                          <Button
+                            fullWidth
+                            onClick={(e) => {
+                              setPopoverAnchor(e.currentTarget);
+                              setPopoverSlot(slot);
+                            }}
+                            sx={{
+                              justifyContent: 'space-between',
+                              minHeight: 42, px: 1.2, borderRadius: '8px',
+                              textTransform: 'none', color: C.textMuted,
+                              border: `1px solid ${alpha('#f87171', 0.22)}`,
+                              bgcolor: slot.bloqueado ? alpha('#78350f', 0.22) : alpha('#7f1d1d', 0.18),
+                              '&:hover': { bgcolor: slot.bloqueado ? alpha('#78350f', 0.32) : alpha('#7f1d1d', 0.28) },
+                            }}
+                          >
+                            <span>{slot.hora}</span>
+                            <Chip
+                              size="small"
+                              label={slot.bloqueado ? 'Bloqueado' : `${slot.ocupadas}/${slot.capacidad}`}
+                              color="error"
+                              variant="outlined"
+                            />
+                          </Button>
+                        </span>
                       );
                     })}
                   </Box>
@@ -726,6 +944,85 @@ export default function CitasPage() {
           )}
         </Paper>
       )}
+
+      {/* Popover de detalle de slot ocupado */}
+      <Popover
+        open={Boolean(popoverAnchor)}
+        anchorEl={popoverAnchor}
+        onClose={() => { setPopoverAnchor(null); setPopoverSlot(null); }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        PaperProps={{
+          sx: {
+            p: 0, minWidth: 280, maxWidth: 340,
+            border: `1px solid ${alpha('#f87171', 0.3)}`,
+            bgcolor: C.surface,
+            borderRadius: '10px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          }
+        }}
+      >
+        {popoverSlot && (
+          <Box>
+            {/* Header */}
+            <Box sx={{
+              px: 2, py: 1.5,
+              borderBottom: `1px solid ${alpha('#ffffff', 0.07)}`,
+              bgcolor: popoverSlot.bloqueado ? alpha('#78350f', 0.3) : alpha('#7f1d1d', 0.3),
+              borderRadius: '10px 10px 0 0',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <Typography fontWeight="800" variant="body2">
+                {popoverSlot.hora} — {popoverSlot.bloqueado ? '🔒 Bloqueado' : `${popoverSlot.ocupadas}/${popoverSlot.capacidad} ocupado`}
+              </Typography>
+              <IconButton size="small" onClick={() => { setPopoverAnchor(null); setPopoverSlot(null); }}>
+                <X size={14} />
+              </IconButton>
+            </Box>
+
+            <Box sx={{ p: 1.5, display: 'grid', gap: 1 }}>
+              {/* Bloqueo */}
+              {popoverSlot.bloqueado && popoverSlot.bloqueos?.map((b) => (
+                <Paper key={b.id} sx={{ p: 1, bgcolor: alpha('#78350f', 0.18), border: `1px solid ${alpha('#f59e0b', 0.2)}`, boxShadow: 'none', borderRadius: '6px' }}>
+                  <Typography variant="caption" color="#fbbf24" fontWeight="700">Motivo de bloqueo</Typography>
+                  <Typography variant="body2">{b.motivo}</Typography>
+                </Paper>
+              ))}
+
+              {/* Citas en ese slot */}
+              {popoverSlot.citas?.length > 0 && popoverSlot.citas.map((c) => (
+                <Paper key={c.id} sx={{ p: 1.25, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}`, boxShadow: 'none', borderRadius: '6px' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                    <Typography variant="body2" fontWeight="800">{c.cliente}</Typography>
+                    <Chip size="small" label={c.estado || 'CONFIRMADA'} color={estadoColor[c.estado] || 'primary'} sx={{ height: 20, fontSize: '0.65rem' }} />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    🚗 {c.placa} {c.tipo_servicio ? `• ${c.tipo_servicio}` : ''}
+                  </Typography>
+                </Paper>
+              ))}
+
+              {/* Acción: nueva cita si aún hay capacidad */}
+              {!popoverSlot.bloqueado && popoverSlot.ocupadas < popoverSlot.capacidad && puedeCrear && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  startIcon={<CalendarPlus size={14} />}
+                  onClick={() => {
+                    setPopoverAnchor(null);
+                    setPopoverSlot(null);
+                    openNewDialog(popoverSlot.inicio);
+                  }}
+                  sx={{ borderColor: alpha('#34d399', 0.5), color: '#34d399', '&:hover': { borderColor: '#34d399', bgcolor: alpha('#34d399', 0.08) } }}
+                >
+                  Agregar cita en este slot
+                </Button>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Popover>
 
       {viewMode === 'lista' && (
       <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card }}>
@@ -759,6 +1056,17 @@ export default function CitasPage() {
                   <TableCell><Chip label={(cita.estado_display || cita.estado).replace('_', ' ')} color={estadoColor[cita.estado] || 'default'} size="small" /></TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'center' }}>
+                      <Tooltip title="Ver historial"><IconButton color="info" onClick={() => openHistorialCita(cita)}><History size={18} /></IconButton></Tooltip>
+                      {!['RECEPCIONADA', 'CANCELADA', 'NO_ASISTIO'].includes(cita.estado) && (
+                        <Tooltip title="Enviar recordatorio WhatsApp">
+                          <IconButton
+                            sx={{ color: '#25D366' }}
+                            onClick={() => abrirNotificacion(cita)}
+                          >
+                            <Bell size={18} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       {puedeEditar && cita.estado !== 'RECEPCIONADA' && (
                         <Tooltip title="Editar / reprogramar"><IconButton color="primary" onClick={() => openEditDialog(cita)}><Edit size={18} /></IconButton></Tooltip>
                       )}
@@ -795,6 +1103,70 @@ export default function CitasPage() {
           labelRowsPerPage="Filas por pagina:"
         />
       </Paper>
+      )}
+
+      {viewMode === 'espera' && (
+        <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography fontWeight="800">Lista de espera</Typography>
+              <Typography variant="body2" color="text.secondary">Solicitudes sin un horario disponible. Gestiona el contacto con el cliente desde aquí.</Typography>
+            </Box>
+            <Chip label={`${listaEspera.length} solicitudes`} size="small" color="warning" variant="outlined" />
+          </Box>
+          <TableContainer sx={{ maxHeight: 'calc(100vh - 320px)' }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Preferencia</TableCell>
+                  <TableCell>Cliente</TableCell>
+                  <TableCell>Vehículo</TableCell>
+                  <TableCell>Servicio</TableCell>
+                  <TableCell>Sucursal</TableCell>
+                  <TableCell>Origen</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell align="center">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {listaEsperaLoading ? (
+                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4 }}><CircularProgress size={28} /></TableCell></TableRow>
+                ) : listaEspera.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4 }}>No hay solicitudes en lista de espera para esta sucursal.</TableCell></TableRow>
+                ) : listaEspera.map((item) => (
+                  <TableRow key={item.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="700">{new Date(`${item.fecha_preferida}T00:00:00`).toLocaleDateString('es-PE')}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.hora_preferida?.slice(0, 5) || 'Sin hora'} · {item.duracion_minutos} min</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="700">{`${item.nombres || ''} ${item.apellidos || ''}`.trim()}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.telefono} · {item.documento}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={item.placa || '-'} size="small" variant="outlined" />
+                      {(item.marca || item.modelo) && <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>{[item.marca, item.modelo].filter(Boolean).join(' ')}</Typography>}
+                    </TableCell>
+                    <TableCell>{item.tipo_servicio_detalle?.nombre || 'Por definir'}</TableCell>
+                    <TableCell>{item.sucursal_detalle?.nombre || '-'}</TableCell>
+                    <TableCell><Chip label={item.creado_desde_portal ? 'Portal' : 'Interna'} size="small" variant="outlined" /></TableCell>
+                    <TableCell><Chip label={item.estado_display || item.estado} color={estadoEsperaColor[item.estado] || 'default'} size="small" /></TableCell>
+                    <TableCell align="center">
+                      {puedeEditar && ['PENDIENTE', 'CONTACTADO'].includes(item.estado) ? (
+                        <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'center' }}>
+                          {item.estado === 'PENDIENTE' && (
+                            <Tooltip title="Marcar como contactado"><IconButton color="info" onClick={() => actualizarEstadoEspera(item, 'CONTACTADO')}><MessageCircle size={18} /></IconButton></Tooltip>
+                          )}
+                          <Tooltip title="Descartar solicitud"><IconButton color="error" onClick={() => actualizarEstadoEspera(item, 'DESCARTADO')}><X size={18} /></IconButton></Tooltip>
+                        </Box>
+                      ) : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       )}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
@@ -906,6 +1278,67 @@ export default function CitasPage() {
       </Dialog>
 
 
+
+      <Dialog open={historialOpen} onClose={() => setHistorialOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Historial de cita {historialCita?.numero ? `CT-${historialCita.numero}` : ''}</DialogTitle>
+        <DialogContent dividers>
+          {historialLoading ? (
+            <Box sx={{ display: 'grid', placeItems: 'center', minHeight: 180 }}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : historialItems.length === 0 ? (
+            <Box sx={{ p: 2, textAlign: 'center', color: C.textMuted }}>
+              Aun no hay movimientos registrados para esta cita.
+            </Box>
+          ) : (
+            <Box sx={{ display: 'grid', gap: 1.25 }}>
+              {historialItems.map((item) => (
+                <Paper
+                  key={item.id}
+                  sx={{
+                    p: 1.5,
+                    border: `1px solid ${C.border}`,
+                    bgcolor: alpha('#ffffff', 0.025),
+                    boxShadow: 'none',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1.5, alignItems: 'flex-start', mb: 0.75 }}>
+                    <Box>
+                      <Typography fontWeight="800">{item.accion_display || item.accion}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {item.usuario_nombre || 'Sistema'} | {new Date(item.fecha).toLocaleString()}
+                      </Typography>
+                    </Box>
+                    {item.estado_nuevo && (
+                      <Chip
+                        size="small"
+                        label={(item.estado_nuevo_display || item.estado_nuevo).replace('_', ' ')}
+                        color={estadoColor[item.estado_nuevo] || 'default'}
+                      />
+                    )}
+                  </Box>
+                  {(item.estado_anterior || item.estado_nuevo) && (
+                    <Typography variant="body2" color="text.secondary">
+                      Estado: {item.estado_anterior_display || item.estado_anterior || '-'} ? {item.estado_nuevo_display || item.estado_nuevo || '-'}
+                    </Typography>
+                  )}
+                  {(item.fecha_inicio_anterior || item.fecha_inicio_nueva) && (
+                    <Typography variant="body2" color="text.secondary">
+                      Fecha: {item.fecha_inicio_anterior ? new Date(item.fecha_inicio_anterior).toLocaleString() : '-'} ? {item.fecha_inicio_nueva ? new Date(item.fecha_inicio_nueva).toLocaleString() : '-'}
+                    </Typography>
+                  )}
+                  {item.observacion && (
+                    <Typography variant="body2" sx={{ mt: 0.75 }}>{item.observacion}</Typography>
+                  )}
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setHistorialOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={configOpen} onClose={() => setConfigOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Configurar agenda por sucursal</DialogTitle>
         <DialogContent dividers>
@@ -1115,8 +1548,87 @@ export default function CitasPage() {
           }}
         />
       )}
+
+      {/* Modal de recordatorio WhatsApp */}
+      <Dialog open={notifOpen} onClose={() => setNotifOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MessageCircle size={22} color="#25D366" />
+          Recordatorio de cita
+          {notifCita && (
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+              CT-{notifCita.numero}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent dividers>
+          {notifLoading ? (
+            <Box sx={{ display: 'grid', placeItems: 'center', minHeight: 160 }}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : notifData ? (
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              {/* Teléfono */}
+              <Paper sx={{ p: 1.5, border: `1px solid ${C.border}`, bgcolor: alpha('#ffffff', 0.03), boxShadow: 'none' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Teléfono del cliente</Typography>
+                {notifData.tiene_telefono ? (
+                  <Typography fontWeight="700" sx={{ color: '#25D366' }}>{notifData.telefono_wa}</Typography>
+                ) : (
+                  <Typography color="error" variant="body2">Sin teléfono registrado. Registra el número del cliente primero.</Typography>
+                )}
+              </Paper>
+
+              {/* Mensaje preview */}
+              <Paper sx={{ p: 1.5, border: `1px solid ${C.border}`, bgcolor: alpha('#25D366', 0.06), boxShadow: 'none' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Vista previa del mensaje</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                    fontSize: '0.82rem',
+                    color: C.text,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {notifData.mensaje}
+                </Typography>
+              </Paper>
+
+              {/* Aviso */}
+              <Typography variant="caption" color="text.secondary">
+                Haz clic en "Abrir WhatsApp" para que se abra la conversación con el mensaje ya escrito. Tú decides si enviarlo.
+              </Typography>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setNotifOpen(false)} color="inherit">Cerrar</Button>
+          <Button
+            variant="outlined"
+            startIcon={<Copy size={16} />}
+            onClick={copiarMensaje}
+            disabled={!notifData?.mensaje}
+          >
+            {copied ? '¡Copiado!' : 'Copiar mensaje'}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<MessageCircle size={18} />}
+            disabled={!notifData?.whatsapp_link}
+            onClick={() => window.open(notifData.whatsapp_link, '_blank', 'noopener,noreferrer')}
+            sx={{
+              bgcolor: '#25D366',
+              '&:hover': { bgcolor: '#1da851' },
+              '&.Mui-disabled': { bgcolor: alpha('#25D366', 0.3) },
+            }}
+          >
+            Abrir WhatsApp
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
+
 
 

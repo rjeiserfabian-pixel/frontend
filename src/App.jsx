@@ -53,6 +53,7 @@ const PlantillasCorrectivasPage = lazy(() => import('./modules/taller/pages/Plan
 const TiposServicioPage = lazy(() => import('./modules/taller/pages/TiposServicioPage'));
 const ConsultaVehiculoPage = lazy(() => import('./modules/public/pages/ConsultaVehiculoPage'));
 const ConsultaRepuestosPage = lazy(() => import('./modules/public/pages/ConsultaRepuestosPage'));
+const ReservaCitaPublicaPage = lazy(() => import('./modules/public/pages/ReservaCitaPublicaPage'));
 const ComprasPage = lazy(() => import('./modules/compras/pages/ComprasPage'));
 const NuevaCompraPage = lazy(() => import('./modules/compras/pages/NuevaCompraPage'));
 const CuentasPorPagarPage = lazy(() => import('./modules/compras/pages/CuentasPorPagarPage'));
@@ -103,6 +104,7 @@ function App() {
               <Route path="/kiosko/activar/:codigo" element={<KioskoPage />} />
               <Route path="/estado-vehiculo" element={<ConsultaVehiculoPage />} />
               <Route path="/consulta-repuestos" element={<ConsultaRepuestosPage />} />
+              <Route path="/reservar-cita" element={<ReservaCitaPublicaPage />} />
 
               <Route element={<DashboardLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

@@ -6,7 +6,7 @@ import {
   CircularProgress, Chip, MenuItem, FormControlLabel, Switch
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Monitor, Link as LinkIcon, ClipboardCopy, CarFront, MapPin, Wrench } from 'lucide-react';
+import { Plus, Edit, Trash2, Monitor, Link as LinkIcon, ClipboardCopy, CarFront, CalendarDays, MapPin, Wrench } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { kioskoService } from '../services/kioskoService';
@@ -55,6 +55,7 @@ const formatFecha = (iso) => {
 const urlActivacion = (codigo) => `${window.location.origin}/kiosko/activar/${codigo}`;
 const urlEstadoVehiculo = (sucursalId) => `${window.location.origin}/estado-vehiculo?sucursal=${sucursalId}`;
 const urlConsultaRepuestos = () => `${window.location.origin}/consulta-repuestos`;
+const urlReservaCita = () => `${window.location.origin}/reservar-cita`;
 
 const copiarEnlaceActivacion = async (codigo) => {
   const url = urlActivacion(codigo);
@@ -98,6 +99,23 @@ const copiarEnlaceConsultaRepuestos = async () => {
   } catch {
     Swal.fire({
       title: 'Link de consulta de repuestos',
+      html: `<code style="word-break:break-all;">${url}</code>`,
+      confirmButtonText: 'Cerrar',
+    });
+  }
+};
+
+const copiarEnlaceReservaCita = async () => {
+  const url = urlReservaCita();
+  try {
+    await navigator.clipboard.writeText(url);
+    Swal.fire({
+      toast: true, position: 'top-end', timer: 1800, showConfirmButton: false,
+      icon: 'success', title: 'Link de reservas copiado',
+    });
+  } catch {
+    Swal.fire({
+      title: 'Link de reserva de cita',
       html: `<code style="word-break:break-all;">${url}</code>`,
       confirmButtonText: 'Cerrar',
     });
@@ -230,7 +248,7 @@ export default function KioskosPage() {
               <CarFront size={22} /> Links Publicos para Clientes
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Enlaces para compartir consultas de estado del vehiculo y repuestos compatibles.
+              Enlaces para compartir reservas de cita, estado del vehiculo y repuestos compatibles.
             </Typography>
           </Box>
           <Chip label="Consulta publica" color="info" variant="outlined" size="small" />
@@ -289,6 +307,63 @@ export default function KioskosPage() {
               startIcon={<ClipboardCopy size={16} />}
               onClick={copiarEnlaceConsultaRepuestos}
               sx={{ whiteSpace: 'nowrap', bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+            >
+              Copiar
+            </Button>
+          </Box>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '280px 1fr 120px' },
+              gap: 2,
+              alignItems: 'center',
+              p: 1.5,
+              mt: 1.5,
+              borderRadius: '8px',
+              bgcolor: alpha('#38bdf8', 0.08),
+              border: `1px solid ${alpha('#38bdf8', 0.22)}`,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '8px',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#7dd3fc',
+                  bgcolor: alpha('#38bdf8', 0.14),
+                  border: `1px solid ${alpha('#38bdf8', 0.3)}`,
+                }}
+              >
+                <CalendarDays size={18} />
+              </Box>
+              <Box>
+                <Typography fontWeight={800}>Reserva de Citas</Typography>
+                <Typography variant="caption" color="text.secondary">Link publico para clientes</Typography>
+              </Box>
+            </Box>
+            <TextField
+              value={urlReservaCita()}
+              fullWidth
+              size="small"
+              InputProps={{
+                readOnly: true,
+                sx: {
+                  fontFamily: 'monospace',
+                  fontSize: '0.82rem',
+                  color: C.text,
+                  bgcolor: alpha('#020617', 0.28),
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<ClipboardCopy size={16} />}
+              onClick={copiarEnlaceReservaCita}
+              sx={{ whiteSpace: 'nowrap', bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             >
               Copiar
             </Button>

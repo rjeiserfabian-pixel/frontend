@@ -67,6 +67,26 @@ export const tallerService = {
     return response.data;
   },
 
+  getHistorialCita: async (id) => {
+    const response = await api.get(`taller/citas/${id}/historial/`);
+    return response.data;
+  },
+
+  notificarCita: async (id) => {
+    const response = await api.post(`taller/citas/${id}/notificar/`);
+    return response.data;
+  },
+
+  getListaEsperaCitas: async (params) => {
+    const response = await api.get('taller/lista-espera-citas/', { params });
+    return response.data;
+  },
+
+  actualizarListaEsperaCita: async (id, data) => {
+    const response = await api.patch(`taller/lista-espera-citas/${id}/`, data);
+    return response.data;
+  },
+
   // Ordenes de Trabajo
   getOrdenes: async (params) => {
     const response = await api.get('taller/ordenes/', { params });
