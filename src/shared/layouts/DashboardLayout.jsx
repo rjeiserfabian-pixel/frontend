@@ -51,6 +51,7 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'list-checks': Icons.ListChecks,
     'credit-card': Icons.CreditCard,
     'truck': Icons.Truck,
+    'calendar': Icons.CalendarDays,
     'shopping-cart': Icons.ShoppingCart,
     'shopping-bag': Icons.ShoppingBag,
     'plus-circle': Icons.PlusCircle,

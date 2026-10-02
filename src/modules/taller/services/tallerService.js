@@ -1,6 +1,72 @@
 import api from '../../../core/api/axios';
 
 export const tallerService = {
+  // Citas
+  getCitas: async (params) => {
+    const response = await api.get('taller/citas/', { params });
+    return response.data;
+  },
+
+  getDisponibilidadCitas: async (params) => {
+    const response = await api.get('taller/citas/disponibilidad/', { params });
+    return response.data;
+  },
+
+  getConfiguracionAgenda: async (sucursalId) => {
+    const response = await api.get(`taller/configuracion-agenda/por-sucursal/${sucursalId}/`);
+    return response.data;
+  },
+
+  actualizarConfiguracionAgenda: async (id, data) => {
+    const response = await api.patch(`taller/configuracion-agenda/${id}/`, data);
+    return response.data;
+  },
+
+  getBloqueosAgenda: async (params) => {
+    const response = await api.get('taller/bloqueos-agenda/', { params });
+    return response.data;
+  },
+
+  crearBloqueoAgenda: async (data) => {
+    const response = await api.post('taller/bloqueos-agenda/', data);
+    return response.data;
+  },
+
+  actualizarBloqueoAgenda: async (id, data) => {
+    const response = await api.patch(`taller/bloqueos-agenda/${id}/`, data);
+    return response.data;
+  },
+
+  crearCita: async (data) => {
+    const response = await api.post('taller/citas/', data);
+    return response.data;
+  },
+
+  actualizarCita: async (id, data) => {
+    const response = await api.patch(`taller/citas/${id}/`, data);
+    return response.data;
+  },
+
+  confirmarCita: async (id) => {
+    const response = await api.post(`taller/citas/${id}/confirmar/`);
+    return response.data;
+  },
+
+  cancelarCita: async (id, motivo) => {
+    const response = await api.post(`taller/citas/${id}/cancelar/`, { motivo });
+    return response.data;
+  },
+
+  marcarNoAsistio: async (id) => {
+    const response = await api.post(`taller/citas/${id}/no-asistio/`);
+    return response.data;
+  },
+
+  recepcionarCita: async (id, payload = {}) => {
+    const response = await api.post(`taller/citas/${id}/recepcionar/`, payload);
+    return response.data;
+  },
+
   // Ordenes de Trabajo
   getOrdenes: async (params) => {
     const response = await api.get('taller/ordenes/', { params });

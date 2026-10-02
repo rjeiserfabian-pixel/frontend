@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { ventasService } from '../services/ventasApi';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { clienteService } from '../../clientes/services/clienteService';
+import ClientesForm from '../../clientes/components/ClientesForm';
 import { premiumTokens } from '../../../core/theme/theme';
 import api from '../../../core/api/axios';
 
@@ -67,6 +68,7 @@ const ProformasPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [openForm, setOpenForm] = useState(false);
   const [form, setForm] = useState(formInicial);
+  const [openClientModal, setOpenClientModal] = useState(false);
   const [cargandoTC, setCargandoTC] = useState(false);
   // Ref para no repetir la petición al SUNAT si ya obtuvimos el TC en esta sesión
   const tcObtenidoRef = useRef(false);
@@ -409,15 +411,36 @@ const ProformasPage = () => {
 
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 7 }}>
-              <Autocomplete
-                options={clientes}
-                value={form.cliente}
-                onInputChange={(e, val) => cargarClientes(val)}
-                onChange={(e, value) => setForm(prev => ({ ...prev, cliente: value }))}
-                getOptionLabel={(option) => option ? `${option.dni || ''} ${option.nombres || ''} ${option.apellidos || ''}`.trim() : ''}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={(params) => <TextField {...params} label="Cliente" size="small" />}
-              />
+              {/* Cliente con botón de registro rápido */}
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Autocomplete
+                    options={clientes}
+                    value={form.cliente}
+                    onInputChange={(e, val) => cargarClientes(val)}
+                    onChange={(e, value) => setForm(prev => ({ ...prev, cliente: value }))}
+                    getOptionLabel={(option) => option ? `${option.dni || ''} ${option.nombres || ''} ${option.apellidos || ''}`.trim() : ''}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    renderInput={(params) => <TextField {...params} label="Cliente" size="small" />}
+                  />
+                </Box>
+                <Tooltip title="Registrar nuevo cliente">
+                  <Button
+                    variant="contained"
+                    onClick={() => setOpenClientModal(true)}
+                    sx={{
+                      minWidth: 40, px: 0, height: 40,
+                      borderRadius: '8px',
+                      bgcolor: alpha('#e11d48', 0.85),
+                      '&:hover': { bgcolor: '#e11d48' },
+                      boxShadow: 'none',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Plus size={20} />
+                  </Button>
+                </Tooltip>
+              </Box>
             </Grid>
             <Grid size={{ xs: 12, md: 5 }}>
               <FormControl size="small" fullWidth>
@@ -642,6 +665,20 @@ const ProformasPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Modal de registro rápido de cliente */}
+      {openClientModal && (
+        <ClientesForm
+          open={openClientModal}
+          onClose={() => setOpenClientModal(false)}
+          onSuccess={(createdClient) => {
+            if (!createdClient?.id) return;
+            setClientes(prev => prev.some(c => c.id === createdClient.id) ? prev : [createdClient, ...prev]);
+            setForm(prev => ({ ...prev, cliente: createdClient }));
+            setOpenClientModal(false);
+          }}
+        />
+      )}
     </Box>
   );
 };

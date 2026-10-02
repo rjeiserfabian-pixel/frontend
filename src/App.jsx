@@ -44,6 +44,7 @@ const RegistroManualVentasPage = lazy(() => import('./modules/ventas/pages/Regis
 const CuentasCobrarResumenPage = lazy(() => import('./modules/ventas/pages/CuentasCobrarResumenPage'));
 const CuentasCobrarClientePage = lazy(() => import('./modules/ventas/pages/CuentasCobrarClientePage'));
 const CuentasCobrarDetallePage = lazy(() => import('./modules/ventas/pages/CuentasCobrarDetallePage'));
+const CitasPage = lazy(() => import('./modules/taller/pages/CitasPage'));
 const OrdenesTrabajoPage = lazy(() => import('./modules/taller/pages/OrdenesTrabajoPage'));
 const NuevaOrdenPage = lazy(() => import('./modules/taller/pages/NuevaOrdenPage'));
 const DetalleOrdenPage = lazy(() => import('./modules/taller/pages/DetalleOrdenPage'));
@@ -148,6 +149,7 @@ function App() {
                 <Route path="/cuentas/por-cobrar" element={<CuentasCobrarResumenPage />} />
                 <Route path="/cuentas/por-cobrar/cliente/:clienteId" element={<CuentasCobrarClientePage />} />
                 <Route path="/cuentas/por-cobrar/credito/:id" element={<CuentasCobrarDetallePage />} />
+                <Route path="/taller/citas" element={<CitasPage />} />
                 <Route path="/compras" element={<ComprasPage />} />
                 <Route path="/compras/nueva" element={<NuevaCompraPage />} />
                 <Route path="/compras/tipos-comprobante" element={<TiposComprobantePage />} />
