@@ -49,29 +49,30 @@ const TecladoNumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
 };
 
 const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm, soloNumeros = false, confirmLabel = "Buscar" }) => {
+  // 8 columnas: con una columna más el teclado ocupa una fila menos y los
+  // botones Volver/Buscar no quedan tan abajo en pantallas pequeñas.
   const rows = [
-    ["A","B","C","D","E","F","G"],
-    ["H","I","J","K","L","M","N"],
-    ["O","P","Q","R","S","T","U"],
-    ["V","W","X","Y","Z","1","2"],
-    ["3","4","5","6","7","8","9"]
+    ["A","B","C","D","E","F","G","H"],
+    ["I","J","K","L","M","N","O","P"],
+    ["Q","R","S","T","U","V","W","X"],
+    ["Y","Z","1","2","3","4","5","6"]
   ];
   return (
-    <div className="flex flex-col gap-[var(--kiosko-gap,0.6rem)] w-full max-w-xl xl:max-w-2xl mx-auto">
+    <div className="flex flex-col gap-[var(--kiosko-gap,0.6rem)] w-full max-w-[41rem] xl:max-w-[48rem] mx-auto">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-7 gap-[var(--kiosko-gap,0.6rem)]">
+        <div key={i} className="grid grid-cols-8 gap-[var(--kiosko-gap,0.6rem)]">
           {row.map(k => {
             const deshabilitado = soloNumeros && !/^\d$/.test(k);
             return <KeyButton key={k} onClick={() => onKeyPress(k)} disabled={deshabilitado}>{k}</KeyButton>;
           })}
         </div>
       ))}
-      <div className="grid grid-cols-7 gap-[var(--kiosko-gap,0.6rem)]">
-        <KeyButton onClick={() => onKeyPress("0")}>0</KeyButton>
+      <div className="grid grid-cols-8 gap-[var(--kiosko-gap,0.6rem)]">
+        {["7","8","9","0"].map(k => <KeyButton key={k} onClick={() => onKeyPress(k)}>{k}</KeyButton>)}
         <KeyButton onClick={() => onKeyPress("-")} disabled={soloNumeros}>-</KeyButton>
         <KeyButton onClick={() => onKeyPress("/")} disabled={soloNumeros}>/</KeyButton>
-        <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-1"><Delete size={20} /> <span className="text-sm">Borrar</span></KeyButton>
-        <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-1"><CheckCircle size={20} /> <span className="text-sm">{confirmLabel}</span></KeyButton>
+        <KeyButton onClick={onBackspace} variant="red"><span title="Borrar" aria-label="Borrar"><Delete size={22} /></span></KeyButton>
+        <KeyButton onClick={onConfirm} variant="red"><span title={confirmLabel} aria-label={confirmLabel}><CheckCircle size={22} /></span></KeyButton>
       </div>
     </div>
   );
@@ -90,19 +91,14 @@ const SelectorCombustible = ({ valor, onChange, bloqueado = false }) => {
   if (bloqueado) {
     return (
       <div className="w-full">
-        <label className="block text-slate-400 text-sm xl:text-base font-medium mb-2">
+        <label className="block text-slate-400 text-sm xl:text-base font-medium mb-1.5">
           Tipo de combustible registrado
         </label>
-        <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 xl:px-5 py-3 xl:py-4 text-left">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-white font-bold xl:text-lg">{combustibleRegistrado}</span>
-            <span className="text-[11px] xl:text-xs uppercase tracking-wide text-emerald-300 border border-emerald-400/30 rounded-full px-2 py-1">
-              Bloqueado
-            </span>
-          </div>
-          <p className="text-emerald-200/80 text-xs xl:text-sm mt-2">
-            Este dato ya esta registrado en el sistema y no se puede cambiar desde el kiosko.
-          </p>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-2.5 text-left">
+          <span className="text-white font-bold xl:text-lg">{combustibleRegistrado}</span>
+          <span className="text-[10px] xl:text-xs uppercase tracking-wide text-emerald-300 border border-emerald-400/30 rounded-full px-2 py-0.5">
+            Registrado
+          </span>
         </div>
       </div>
     );
@@ -615,7 +611,8 @@ export const KioskoPage = () => {
       <div ref={adaptiveRef} className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden">
 
         {/* PANEL IZQUIERDO */}
-        <div className="hidden lg:flex w-2/5 flex-col relative bg-black border-r border-slate-800">
+        {/* En el paso 2 (placa) el panel se angosta para que el teclado de 8 columnas mantenga el tamaño de las teclas */}
+        <div className={"hidden lg:flex flex-col relative bg-black border-r border-slate-800 transition-[width] duration-300 " + (step === 2 ? "w-[28%]" : "w-2/5")}>
           <div className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40" style={{ backgroundImage: "url('/bg-taller.jpg')" }} />
           <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#0b0f19]/80 via-transparent to-[#0b0f19]" />
           <div className="relative z-10 flex flex-col h-full p-12">
@@ -649,7 +646,7 @@ export const KioskoPage = () => {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-y-auto">
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center-safe px-6 pt-6 pb-4 overflow-y-auto">
 
             {step === 1 && (
               <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-6 xl:gap-12 items-start xl:items-center justify-center">
@@ -721,8 +718,8 @@ export const KioskoPage = () => {
             )}
 
             {step === 2 && (
-              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-6 xl:gap-14 items-start xl:items-center justify-center">
-                <div className="w-full xl:w-1/2 xl:max-w-[660px] bg-[#121826] border border-slate-800 px-6 py-5 xl:p-8 rounded-3xl shadow-2xl flex flex-col items-center">
+              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-6 xl:gap-14 items-start justify-center">
+                <div className="w-full xl:w-1/2 xl:max-w-[760px] bg-[#121826] border border-slate-800 px-6 py-5 xl:p-8 rounded-3xl shadow-2xl flex flex-col items-center">
                   <h2 className="text-2xl xl:text-4xl font-bold mb-1 text-white">Ingresa la placa</h2>
                   <p className="text-slate-400 text-sm xl:text-lg mb-4 text-center">Te mostraremos los repuestos para tu auto</p>
                   <div className="w-full relative mb-4">
@@ -743,7 +740,7 @@ export const KioskoPage = () => {
                     soloNumeros={campoVehiculoActivo === "kilometraje"}
                     confirmLabel={campoVehiculoActivo === "kilometraje" ? "Listo" : "Buscar"}
                   />
-                  <div className="flex gap-3 xl:gap-5 mt-3 xl:mt-5 w-full max-w-xl xl:max-w-2xl">
+                  <div className="flex gap-3 xl:gap-5 mt-3 xl:mt-5 w-full max-w-[41rem] xl:max-w-[48rem]">
                     <button onClick={handleBack} className="flex items-center justify-center gap-2 bg-[#1c2230] hover:bg-[#2a3447] text-white px-6 py-3 xl:py-4 rounded-xl font-bold text-base xl:text-xl transition-all flex-1"><ArrowLeft size={22}/> Volver</button>
                     <button onClick={consultarVehiculo} disabled={placa.length < 6 || loading} className="flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-6 py-3 xl:py-4 rounded-xl font-bold text-base xl:text-xl shadow-lg transition-all flex-1">
                       {loading ? "Buscando..." : <React.Fragment><Search size={22}/> Buscar</React.Fragment>}
@@ -753,8 +750,7 @@ export const KioskoPage = () => {
                 <div className="w-full xl:w-1/2 flex flex-col">
                   <h3 className="text-xl xl:text-2xl font-bold mb-4 xl:mb-5 flex items-center gap-2 text-white"><Car className="text-[#e50914]" size={24}/> Datos del vehiculo</h3>
                   {vehiculo && vehiculo.marca ? (
-                    <div className="bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-xl flex flex-col items-center text-center">
-                      <div className="w-24 h-24 xl:w-28 xl:h-28 bg-[#e50914] rounded-full flex items-center justify-center mb-6"><Car size={56} className="text-white" /></div>
+                    <div className="bg-[#121826] border border-slate-800 p-6 xl:p-8 rounded-3xl shadow-xl flex flex-col items-center text-center">
                       <div className="w-full grid grid-cols-2 gap-4 xl:gap-5 text-left border border-slate-800 p-6 xl:p-7 rounded-2xl bg-[#0b0f19] text-sm xl:text-base overflow-y-auto max-h-[260px] xl:max-h-[340px]">
                         <div className="flex flex-col"><span className="text-slate-500">Marca:</span><span className="font-bold text-white uppercase">{vehiculo.marca || "-"}</span></div>
                         <div className="flex flex-col"><span className="text-slate-500">Modelo:</span><span className="font-bold text-white uppercase">{vehiculo.modelo || "-"}</span></div>
