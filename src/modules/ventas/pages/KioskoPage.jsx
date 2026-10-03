@@ -17,14 +17,14 @@ const KIOSKO_CONFIG_KEY = 'kiosko_config';
 const KeyButton = ({ children, onClick, className, variant, disabled = false }) => {
   const v = variant || "default";
   const cls = className || "";
-  const base = "flex items-center justify-center font-bold text-xl rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed disabled:active:scale-100";
+  const base = "flex items-center justify-center font-bold rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed disabled:active:scale-100";
   const vars = {
     default: "bg-[#1c2230] text-white hover:bg-[#2a3447] border border-slate-700/50",
     red: "bg-[#e50914] text-white hover:bg-[#b80710] border border-red-600",
     redOutline: "bg-transparent text-[#e50914] border border-[#e50914] hover:bg-[#e50914]/10",
   };
   return (
-    <button onClick={onClick} disabled={disabled} className={base + " " + (vars[v] || vars.default) + " " + cls}>
+    <button onClick={onClick} disabled={disabled} style={{ height: 'var(--kiosko-key-h, 4rem)', fontSize: 'var(--kiosko-key-fs, 1.25rem)' }} className={base + " " + (vars[v] || vars.default) + " " + cls}>
       {children}
     </button>
   );
@@ -33,16 +33,16 @@ const KeyButton = ({ children, onClick, className, variant, disabled = false }) 
 const TecladoNumerico = ({ onKeyPress, onBackspace, onConfirm }) => {
   const keys = [["1","2","3"],["4","5","6"],["7","8","9"]];
   return (
-    <div className="flex flex-col gap-4 xl:gap-5 w-full max-w-md xl:max-w-lg mx-auto">
+    <div className="flex flex-col gap-[var(--kiosko-gap,1rem)] w-full max-w-md xl:max-w-lg mx-auto">
       {keys.map((row, i) => (
-        <div key={i} className="grid grid-cols-3 gap-4 xl:gap-5 h-20 xl:h-24">
-          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)} className="text-3xl xl:text-4xl">{k}</KeyButton>)}
+        <div key={i} className="grid grid-cols-3 gap-[var(--kiosko-gap,1rem)]">
+          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)}>{k}</KeyButton>)}
         </div>
       ))}
-      <div className="grid grid-cols-3 gap-4 xl:gap-5 h-20 xl:h-24">
-        <KeyButton onClick={onBackspace} variant="red"><Delete size={34} /></KeyButton>
-        <KeyButton onClick={() => onKeyPress("0")} className="text-3xl xl:text-4xl">0</KeyButton>
-        <KeyButton onClick={onConfirm} variant="red"><CheckCircle size={34} /></KeyButton>
+      <div className="grid grid-cols-3 gap-[var(--kiosko-gap,1rem)]">
+        <KeyButton onClick={onBackspace} variant="red"><Delete size={28} /></KeyButton>
+        <KeyButton onClick={() => onKeyPress("0")}>0</KeyButton>
+        <KeyButton onClick={onConfirm} variant="red"><CheckCircle size={28} /></KeyButton>
       </div>
     </div>
   );
@@ -57,21 +57,21 @@ const TecladoAlfanumerico = ({ onKeyPress, onBackspace, onConfirm, soloNumeros =
     ["3","4","5","6","7","8","9"]
   ];
   return (
-    <div className="flex flex-col gap-2.5 xl:gap-3 w-full max-w-xl xl:max-w-2xl mx-auto">
+    <div className="flex flex-col gap-[var(--kiosko-gap,0.6rem)] w-full max-w-xl xl:max-w-2xl mx-auto">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-7 gap-2.5 xl:gap-3 h-14 xl:h-[76px]">
+        <div key={i} className="grid grid-cols-7 gap-[var(--kiosko-gap,0.6rem)]">
           {row.map(k => {
             const deshabilitado = soloNumeros && !/^\d$/.test(k);
-            return <KeyButton key={k} onClick={() => onKeyPress(k)} disabled={deshabilitado} className="text-xl xl:text-2xl">{k}</KeyButton>;
+            return <KeyButton key={k} onClick={() => onKeyPress(k)} disabled={deshabilitado}>{k}</KeyButton>;
           })}
         </div>
       ))}
-      <div className="grid grid-cols-7 gap-2.5 xl:gap-3 h-14 xl:h-[76px]">
-        <KeyButton onClick={() => onKeyPress("0")} className="text-xl xl:text-2xl">0</KeyButton>
-        <KeyButton onClick={() => onKeyPress("-")} disabled={soloNumeros} className="text-xl xl:text-2xl">-</KeyButton>
-        <KeyButton onClick={() => onKeyPress("/")} disabled={soloNumeros} className="text-xl xl:text-2xl">/</KeyButton>
-        <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-2 text-lg xl:text-xl"><Delete size={24} /> Borrar</KeyButton>
-        <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-2 text-lg xl:text-xl"><CheckCircle size={24} /> {confirmLabel}</KeyButton>
+      <div className="grid grid-cols-7 gap-[var(--kiosko-gap,0.6rem)]">
+        <KeyButton onClick={() => onKeyPress("0")}>0</KeyButton>
+        <KeyButton onClick={() => onKeyPress("-")} disabled={soloNumeros}>-</KeyButton>
+        <KeyButton onClick={() => onKeyPress("/")} disabled={soloNumeros}>/</KeyButton>
+        <KeyButton onClick={onBackspace} variant="red" className="col-span-2 flex gap-1"><Delete size={20} /> <span className="text-sm">Borrar</span></KeyButton>
+        <KeyButton onClick={onConfirm} variant="red" className="col-span-2 flex gap-1"><CheckCircle size={20} /> <span className="text-sm">{confirmLabel}</span></KeyButton>
       </div>
     </div>
   );
@@ -145,19 +145,50 @@ const TecladoBusqueda = ({ onKeyPress, onSpace, onBackspace, onClose }) => {
     ["Z","X","C","V","B","N","M","-","/","."],
   ];
   return (
-    <div className="flex flex-col gap-2 xl:gap-3 w-full bg-[#121826] border border-slate-800 rounded-2xl p-4 xl:p-5">
+    <div className="flex flex-col gap-[var(--kiosko-gap,0.5rem)] w-full bg-[#121826] border border-slate-800 rounded-2xl p-3 xl:p-4">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-10 gap-1.5 xl:gap-2 h-12 xl:h-16">
-          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)} className="text-base xl:text-xl">{k}</KeyButton>)}
+        <div key={i} className="grid grid-cols-10 gap-[var(--kiosko-gap,0.5rem)]">
+          {row.map(k => <KeyButton key={k} onClick={() => onKeyPress(k)}>{k}</KeyButton>)}
         </div>
       ))}
-      <div className="grid grid-cols-6 gap-1.5 xl:gap-2 h-12 xl:h-16">
-        <KeyButton onClick={onSpace} className="col-span-3 text-base xl:text-xl">Espacio</KeyButton>
-        <KeyButton onClick={onBackspace} variant="red" className="col-span-1 flex gap-2"><Delete size={22} /></KeyButton>
-        <KeyButton onClick={onClose} variant="red" className="col-span-2 flex gap-2 text-base xl:text-xl"><CheckCircle size={22} /> Listo</KeyButton>
+      <div className="grid grid-cols-6 gap-[var(--kiosko-gap,0.5rem)]">
+        <KeyButton onClick={onSpace} className="col-span-3">Espacio</KeyButton>
+        <KeyButton onClick={onBackspace} variant="red" className="col-span-1"><Delete size={20} /></KeyButton>
+        <KeyButton onClick={onClose} variant="red" className="col-span-2 flex gap-1"><CheckCircle size={20} /> Listo</KeyButton>
       </div>
     </div>
   );
+};
+
+// Hook that computes CSS custom properties for adaptive keyboard sizing
+const useKioskoAdaptive = () => {
+  const ref = React.useRef(null);
+  React.useLayoutEffect(() => {
+    const compute = () => {
+      if (!ref.current) return;
+      const root = ref.current;
+      // Available height for keyboard area (rough estimation: 45% of viewport)
+      const vh = window.innerHeight;
+      // Key height: from 36px (very small screen) up to 76px (large screen)
+      // Target: fit 4 numeric rows (or 6 alfanum rows) + gaps + input + button into ~55vh
+      const numericRows = 4; // 3 digit rows + bottom row
+      const gaps = numericRows - 1;
+      // We want: rows * keyH + gaps * gapH <= 0.45 * vh
+      // gapH ≈ keyH * 0.2
+      const targetH = vh * 0.44;
+      let keyH = Math.floor(targetH / (numericRows + gaps * 0.22));
+      keyH = Math.min(Math.max(keyH, 36), 76);
+      const gapH = Math.max(Math.floor(keyH * 0.18), 6);
+      const keyFs = Math.max(Math.floor(keyH * 0.38), 14);
+      root.style.setProperty('--kiosko-key-h', `${keyH}px`);
+      root.style.setProperty('--kiosko-gap', `${gapH}px`);
+      root.style.setProperty('--kiosko-key-fs', `${keyFs}px`);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+  return ref;
 };
 
 export const KioskoPage = () => {
@@ -216,6 +247,7 @@ export const KioskoPage = () => {
     documentTitle: 'Ticket Kiosko',
   });
 
+  const adaptiveRef = useKioskoAdaptive();
   const [empresaNombre, setEmpresaNombre] = useState("MOTOR 360");
   const [step, setStep] = useState(1);
   const [dni, setDni] = useState("");
@@ -580,7 +612,7 @@ export const KioskoPage = () => {
 
   return (
     <React.Fragment>
-      <div className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden">
+      <div ref={adaptiveRef} className="flex min-h-screen bg-[#0b0f19] text-slate-100 font-sans overflow-hidden">
 
         {/* PANEL IZQUIERDO */}
         <div className="hidden lg:flex w-2/5 flex-col relative bg-black border-r border-slate-800">
@@ -601,8 +633,8 @@ export const KioskoPage = () => {
         </div>
 
         {/* PANEL DERECHO */}
-        <div className="flex-1 flex flex-col relative z-10 bg-[#0b0f19]">
-          <div className="flex items-center justify-between p-8 border-b border-slate-800/50 bg-[#0b0f19]/90 backdrop-blur-md">
+        <div className="flex-1 flex flex-col relative z-10 bg-[#0b0f19] h-screen overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-slate-800/50 bg-[#0b0f19]/90 backdrop-blur-md shrink-0">
             {renderStepper()}
             <div className="flex items-center gap-4">
               {kioskoConfig?.sucursal_nombre && (
@@ -611,27 +643,25 @@ export const KioskoPage = () => {
                 </span>
               )}
               <div className="flex items-center gap-3 text-slate-400 cursor-pointer hover:text-white transition-colors">
-                <div className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center">?</div>
+                <div className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center text-sm">?</div>
                 <span className="font-medium text-sm">Necesitas ayuda?</span>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
+          <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-y-auto">
 
             {step === 1 && (
-              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-12 items-center justify-center">
-                <div className="w-full xl:w-1/2 xl:max-w-[620px] bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-2xl flex flex-col items-center">
-                  <div className="w-16 h-16 xl:w-20 xl:h-20 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5"><User size={38} /></div>
-                  <h2 className="text-3xl xl:text-4xl font-bold mb-2 text-white">Ingresa tu DNI</h2>
-                  <p className="text-slate-400 xl:text-lg mb-8 text-center">Consulta tus datos para continuar</p>
-                  <div className="w-full relative mb-8 xl:mb-10">
-                    <User className="absolute left-4 xl:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={26} />
-                    <input type="text" readOnly value={dni} placeholder="Numero de DNI" className="w-full bg-[#0b0f19] border-2 border-slate-700 text-white text-3xl xl:text-4xl font-mono tracking-widest py-4 xl:py-6 pl-14 xl:pl-16 pr-4 rounded-xl text-center focus:outline-none focus:border-[#e50914]" />
+              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-6 xl:gap-12 items-start xl:items-center justify-center">
+                <div className="w-full xl:w-1/2 xl:max-w-[620px] bg-[#121826] border border-slate-800 px-6 py-5 xl:p-8 rounded-3xl shadow-2xl flex flex-col items-center">
+                  <h2 className="text-2xl xl:text-4xl font-bold mb-1 text-white">Ingresa tu DNI</h2>
+                  <p className="text-slate-400 text-sm xl:text-lg mb-4 text-center">Consulta tus datos para continuar</p>
+                  <div className="w-full relative mb-4">
+                    <input type="text" readOnly value={dni} placeholder="Numero de DNI" className="w-full bg-[#0b0f19] border-2 border-slate-700 text-white text-2xl xl:text-4xl font-mono tracking-widest py-3 xl:py-5 px-4 rounded-xl text-center focus:outline-none focus:border-[#e50914]" />
                   </div>
                   <TecladoNumerico onKeyPress={onKeyPressDni} onBackspace={onBackspaceDni} onConfirm={onConfirmDni} />
-                  <button onClick={consultarCliente} disabled={dni.length < 8 || loading} className="mt-6 xl:mt-8 w-full max-w-md xl:max-w-lg flex items-center justify-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white text-xl xl:text-2xl font-bold px-8 py-4 xl:py-5 rounded-xl shadow-lg transition-all">
-                    {loading ? "Consultando..." : <React.Fragment><Search size={24} /> Consultar DNI</React.Fragment>}
+                  <button onClick={consultarCliente} disabled={dni.length < 8 || loading} className="mt-3 xl:mt-5 w-full max-w-md xl:max-w-lg flex items-center justify-center gap-3 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white text-lg xl:text-2xl font-bold px-8 py-3 xl:py-4 rounded-xl shadow-lg transition-all">
+                    {loading ? "Consultando..." : <React.Fragment><Search size={22} /> Consultar DNI</React.Fragment>}
                   </button>
                 </div>
                 <div className="w-full xl:w-1/2 flex flex-col">
@@ -691,13 +721,11 @@ export const KioskoPage = () => {
             )}
 
             {step === 2 && (
-              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-12 xl:gap-14 items-center justify-center">
-                <div className="w-full xl:w-1/2 xl:max-w-[660px] bg-[#121826] border border-slate-800 p-8 xl:p-10 rounded-3xl shadow-2xl flex flex-col items-center">
-                  <div className="w-16 h-16 xl:w-20 xl:h-20 rounded-full border-2 border-[#e50914] flex items-center justify-center mb-6 text-[#e50914] bg-[#e50914]/5"><Car size={38} /></div>
-                  <h2 className="text-3xl xl:text-4xl font-bold mb-2 text-white">Ingresa la placa</h2>
-                  <p className="text-slate-400 xl:text-lg mb-8 text-center">Te mostraremos los repuestos para tu auto</p>
-                  <div className="w-full relative mb-8 xl:mb-10">
-                    <Car className="absolute left-4 xl:left-5 top-1/2 -translate-y-1/2 text-slate-400" size={26} />
+              <div className="w-full max-w-6xl flex flex-col xl:flex-row gap-6 xl:gap-14 items-start xl:items-center justify-center">
+                <div className="w-full xl:w-1/2 xl:max-w-[660px] bg-[#121826] border border-slate-800 px-6 py-5 xl:p-8 rounded-3xl shadow-2xl flex flex-col items-center">
+                  <h2 className="text-2xl xl:text-4xl font-bold mb-1 text-white">Ingresa la placa</h2>
+                  <p className="text-slate-400 text-sm xl:text-lg mb-4 text-center">Te mostraremos los repuestos para tu auto</p>
+                  <div className="w-full relative mb-4">
                     <input
                       type="text"
                       readOnly
@@ -705,7 +733,7 @@ export const KioskoPage = () => {
                       onClick={() => setCampoVehiculoActivo("placa")}
                       onFocus={() => setCampoVehiculoActivo("placa")}
                       placeholder="ABC-123"
-                      className={"w-full bg-[#0b0f19] border-2 text-white text-3xl xl:text-4xl font-mono tracking-widest py-4 xl:py-6 pl-14 xl:pl-16 pr-4 rounded-xl text-center focus:outline-none uppercase cursor-pointer select-none " + (campoVehiculoActivo === "placa" ? "border-[#e50914]" : "border-slate-700")}
+                      className={"w-full bg-[#0b0f19] border-2 text-white text-2xl xl:text-4xl font-mono tracking-widest py-3 xl:py-5 px-4 rounded-xl text-center focus:outline-none uppercase cursor-pointer select-none " + (campoVehiculoActivo === "placa" ? "border-[#e50914]" : "border-slate-700")}
                     />
                   </div>
                   <TecladoAlfanumerico
@@ -715,10 +743,10 @@ export const KioskoPage = () => {
                     soloNumeros={campoVehiculoActivo === "kilometraje"}
                     confirmLabel={campoVehiculoActivo === "kilometraje" ? "Listo" : "Buscar"}
                   />
-                  <div className="flex gap-4 xl:gap-5 mt-6 xl:mt-8 w-full max-w-xl xl:max-w-2xl">
-                    <button onClick={handleBack} className="flex items-center justify-center gap-2 bg-[#1c2230] hover:bg-[#2a3447] text-white px-6 py-4 xl:py-5 rounded-xl font-bold text-base xl:text-xl transition-all flex-1"><ArrowLeft size={26}/> Volver</button>
-                    <button onClick={consultarVehiculo} disabled={placa.length < 6 || loading} className="flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-6 py-4 xl:py-5 rounded-xl font-bold text-base xl:text-xl shadow-lg transition-all flex-1">
-                      {loading ? "Buscando..." : <React.Fragment><Search size={24}/> Buscar</React.Fragment>}
+                  <div className="flex gap-3 xl:gap-5 mt-3 xl:mt-5 w-full max-w-xl xl:max-w-2xl">
+                    <button onClick={handleBack} className="flex items-center justify-center gap-2 bg-[#1c2230] hover:bg-[#2a3447] text-white px-6 py-3 xl:py-4 rounded-xl font-bold text-base xl:text-xl transition-all flex-1"><ArrowLeft size={22}/> Volver</button>
+                    <button onClick={consultarVehiculo} disabled={placa.length < 6 || loading} className="flex items-center justify-center gap-2 bg-[#e50914] hover:bg-[#b80710] disabled:opacity-50 text-white px-6 py-3 xl:py-4 rounded-xl font-bold text-base xl:text-xl shadow-lg transition-all flex-1">
+                      {loading ? "Buscando..." : <React.Fragment><Search size={22}/> Buscar</React.Fragment>}
                     </button>
                   </div>
                 </div>
