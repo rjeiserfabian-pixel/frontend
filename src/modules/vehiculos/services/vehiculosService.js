@@ -3,6 +3,10 @@ import api from '../../../core/api/axios';
 const URL_VEHICULOS = 'vehiculos/';
 
 export const vehiculoService = {
+  getMantenimientos: async (id, page = 1) => (await api.get(`${URL_VEHICULOS}${id}/mantenimientos/`, { params: { page } })).data,
+  crearMantenimiento: async (id, data) => (await api.post(`${URL_VEHICULOS}${id}/mantenimientos/`, data)).data,
+  editarMantenimiento: async (id, registroId, data) => (await api.patch(`${URL_VEHICULOS}${id}/mantenimientos/${registroId}/`, data)).data,
+  anularMantenimiento: async (id, registroId) => api.delete(`${URL_VEHICULOS}${id}/mantenimientos/${registroId}/`),
   getVehiculos: async (page = 1, search = '') => {
     const params = new URLSearchParams({ page });
     if (search) params.append('search', search);
@@ -35,6 +39,22 @@ export const vehiculoService = {
   },
   descargarHistorialPdf: async (vehiculoId) => {
     const response = await api.get(`${URL_VEHICULOS}${vehiculoId}/historial/pdf/`, { responseType: 'blob' });
+    return response.data;
+  },
+  getQr: async (vehiculoId) => {
+    const response = await api.get(`${URL_VEHICULOS}${vehiculoId}/qr/`);
+    return response.data;
+  },
+  generarQr: async (vehiculoId) => {
+    const response = await api.post(`${URL_VEHICULOS}${vehiculoId}/qr/generar/`);
+    return response.data;
+  },
+  regenerarQr: async (vehiculoId) => {
+    const response = await api.post(`${URL_VEHICULOS}${vehiculoId}/qr/regenerar/`);
+    return response.data;
+  },
+  desactivarQr: async (vehiculoId) => {
+    const response = await api.post(`${URL_VEHICULOS}${vehiculoId}/qr/desactivar/`);
     return response.data;
   },
 };

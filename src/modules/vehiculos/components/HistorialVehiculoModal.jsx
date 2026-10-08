@@ -159,14 +159,14 @@ export default function HistorialVehiculoModal({ open, onClose, vehiculoId }) {
                               </TableRow>
                             ))}
                             <TableRow>
-                              <TableCell colSpan={3} align="right"><strong>Total de la orden</strong></TableCell>
+                              <TableCell colSpan={3} align="right"><strong>Total autorizado</strong></TableCell>
                               <TableCell align="right"><strong>S/ {Number(o.total_general).toFixed(2)}</strong></TableCell>
                             </TableRow>
                           </TableBody>
                         </Table>
                       </TableContainer>
                     ) : (
-                      <Typography variant="body2" color="textSecondary">Sin servicios ni repuestos registrados.</Typography>
+                      <Typography variant="body2" color="textSecondary">Sin servicios ni repuestos aprobados.</Typography>
                     )}
                   </AccordionDetails>
                 </Accordion>

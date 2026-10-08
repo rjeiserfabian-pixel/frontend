@@ -54,6 +54,7 @@ const TiposServicioPage = lazy(() => import('./modules/taller/pages/TiposServici
 const ConsultaVehiculoPage = lazy(() => import('./modules/public/pages/ConsultaVehiculoPage'));
 const ConsultaRepuestosPage = lazy(() => import('./modules/public/pages/ConsultaRepuestosPage'));
 const ReservaCitaPublicaPage = lazy(() => import('./modules/public/pages/ReservaCitaPublicaPage'));
+const HistorialVehiculoQrPage = lazy(() => import('./modules/public/pages/HistorialVehiculoQrPage'));
 const ComprasPage = lazy(() => import('./modules/compras/pages/ComprasPage'));
 const NuevaCompraPage = lazy(() => import('./modules/compras/pages/NuevaCompraPage'));
 const CuentasPorPagarPage = lazy(() => import('./modules/compras/pages/CuentasPorPagarPage'));
@@ -105,6 +106,7 @@ function App() {
               <Route path="/estado-vehiculo" element={<ConsultaVehiculoPage />} />
               <Route path="/consulta-repuestos" element={<ConsultaRepuestosPage />} />
               <Route path="/reservar-cita" element={<ReservaCitaPublicaPage />} />
+              <Route path="/historial-vehiculo/:token" element={<HistorialVehiculoQrPage />} />
 
               <Route element={<DashboardLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

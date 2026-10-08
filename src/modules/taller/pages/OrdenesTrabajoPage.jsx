@@ -51,7 +51,7 @@ export default function OrdenesTrabajoPage() {
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(defaultHasta);
 
   useEffect(() => {
-    api.get('seguridad/usuarios/?rol=MECANICO')
+    api.get(`seguridad/usuarios/?rol=${encodeURIComponent('TÉCNICO_AUTOMOTRIZ')}`)
       .then((res) => {
         const dataList = res.data?.data ? (res.data.data.results || res.data.data) : (res.data.results || res.data);
         setMecanicos(Array.isArray(dataList) ? dataList : []);

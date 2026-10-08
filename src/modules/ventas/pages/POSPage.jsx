@@ -11,7 +11,7 @@ import { alpha } from '@mui/material/styles';
 import {
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
   CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer, Eye,
-  Package, Receipt, Wallet, Coins
+  Package, Receipt, Wallet, Coins, Ban
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ventasService } from './../../ventas/services/ventasApi';
@@ -34,6 +34,9 @@ const S = premiumTokens.shadow;
 // -------------------------------------------------------------
 const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   const { activeSucursalId } = useSucursal();
+  const { tienePermiso } = usePermisos();
+  const puedeCancelar = tienePermiso('VENTAS.POS.ANULAR');
+  const puedeAnularVenta = tienePermiso('VENTAS.POS.ANULAR_VENTA');
   // Fechas por defecto: primer día del mes actual → hoy
   const _now = new Date();
   const _yy = _now.getFullYear();
@@ -105,7 +108,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
     PRE_VENTA:  'PRE_VENTA',
     PAGADA:     'PAGADA',
     AL_CREDITO: 'AL_CREDITO',
-    CANCELADA:  'CANCELADA',
+    ANULADA:    'ANULADA',
   };
 
   const fetchVentas = async () => {
@@ -142,12 +145,67 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage, filtroEstado, debouncedCliente, debouncedReferencia, filtroFechaDesde, filtroFechaHasta, activeSucursalId]);
 
+  const handleCancelarPedido = async (venta) => {
+    const referencia = getReferenciaVenta(venta);
+    const { value: motivo, isConfirmed } = await Swal.fire({
+      title: '¿Cancelar este pedido?',
+      html: `Pedido <b>${referencia}</b> de ${getClienteCompleto(venta)}.<br/>No se cobrará ni se descontará stock.`,
+      icon: 'warning',
+      input: 'text',
+      inputLabel: 'Motivo de la cancelación',
+      inputPlaceholder: 'Ej: el cliente ya no desea la compra',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar pedido',
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#d33',
+      inputValidator: (v) => (!v || !v.trim() ? 'El motivo es obligatorio' : undefined),
+    });
+    if (!isConfirmed) return;
+    try {
+      await ventasService.cancelarVenta(venta.id, motivo.trim());
+      Swal.fire('Pedido cancelado', 'El pedido fue cancelado correctamente.', 'success');
+      fetchVentas();
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.error || error.response?.data?.detail || 'No se pudo cancelar el pedido.', 'error');
+    }
+  };
+
+  const handleAnularVenta = async (venta) => {
+    const origen = getReferenciaVenta(venta);
+    if (origen.startsWith('OT-') || origen.startsWith('GR')) {
+      Swal.fire('No disponible', 'Las ventas de Taller o de Guías de Remisión se corrigen desde su propio módulo.', 'info');
+      return;
+    }
+    const esCredito = venta.estado === 'AL_CREDITO';
+    const { value: motivo, isConfirmed } = await Swal.fire({
+      title: `¿Anular la venta ${venta.serie_correlativo || ''}?`,
+      html: `Se revertirá:<br/>• El stock vuelve al almacén<br/>• ${esCredito ? 'Se elimina la cuenta por cobrar' : 'Se registra un egreso en tu caja abierta por lo cobrado'}<br/><br/><small>Si el comprobante ya fue enviado a SUNAT, primero debe darse de baja o corregirse con Nota de Crédito.</small>`,
+      icon: 'warning',
+      input: 'text',
+      inputLabel: 'Motivo de la anulación',
+      inputPlaceholder: 'Ej: venta registrada por error',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, anular venta',
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#d33',
+      inputValidator: (v) => (!v || !v.trim() ? 'El motivo es obligatorio' : undefined),
+    });
+    if (!isConfirmed) return;
+    try {
+      await ventasService.anularVenta(venta.id, motivo.trim());
+      Swal.fire('Venta anulada', 'La venta fue anulada y su impacto revertido.', 'success');
+      fetchVentas();
+    } catch (error) {
+      Swal.fire('No se pudo anular', error.response?.data?.error || error.response?.data?.detail || 'Ocurrió un error al anular la venta.', 'error');
+    }
+  };
+
   const getStatusChip = (estado) => {
     switch(estado) {
       case 'PRE_VENTA': return <Chip label="Pendiente" color="warning" size="small" />;
       case 'PAGADA': return <Chip label="Completado" color="success" size="small" />;
       case 'AL_CREDITO': return <Chip label="Crédito" color="info" size="small" />;
-      case 'CANCELADA': return <Chip label="Cancelado" color="error" size="small" />;
+      case 'ANULADA': return <Chip label="Cancelado" color="error" size="small" />;
       default: return <Chip label={estado} color="default" size="small" />;
     }
   };
@@ -203,7 +261,7 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
             <MenuItem value="PRE_VENTA">Pendiente</MenuItem>
             <MenuItem value="PAGADA">Completado</MenuItem>
             <MenuItem value="AL_CREDITO">Crédito</MenuItem>
-            <MenuItem value="CANCELADA">Cancelado</MenuItem>
+            <MenuItem value="ANULADA">Cancelado</MenuItem>
           </TextField>
           <TextField
             size="small"
@@ -309,6 +367,24 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
                           ) : (
                             <IconButton color="primary" disabled={venta.estado !== 'PRE_VENTA'} onClick={() => venta.estado === 'PRE_VENTA' && onSelectOrder(venta)}>
                               <ArrowRight size={20} />
+                            </IconButton>
+                          )}
+                          {(venta.estado === 'PAGADA' || venta.estado === 'AL_CREDITO') && puedeAnularVenta && (
+                            <IconButton
+                              title="Anular venta"
+                              color="error"
+                              onClick={() => handleAnularVenta(venta)}
+                            >
+                              <Ban size={20} />
+                            </IconButton>
+                          )}
+                          {venta.estado === 'PRE_VENTA' && puedeCancelar && (
+                            <IconButton
+                              title="Cancelar pedido"
+                              color="error"
+                              onClick={() => handleCancelarPedido(venta)}
+                            >
+                              <Ban size={20} />
                             </IconButton>
                           )}
                         </TableCell>

@@ -13,6 +13,8 @@ import { kioskoService } from '../services/kioskoService';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
+import AccesoPublicoConfig from '../components/AccesoPublicoConfig';
+import { publicLink } from '../../../core/api/publicLinks';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -53,9 +55,9 @@ const formatFecha = (iso) => {
 // URL completa y lista para pegar en el navegador del equipo físico — antes
 // solo se mostraba el código a secas y había que armarla a mano.
 const urlActivacion = (codigo) => `${window.location.origin}/kiosko/activar/${codigo}`;
-const urlEstadoVehiculo = (sucursalId) => `${window.location.origin}/estado-vehiculo?sucursal=${sucursalId}`;
-const urlConsultaRepuestos = () => `${window.location.origin}/consulta-repuestos`;
-const urlReservaCita = () => `${window.location.origin}/reservar-cita`;
+const urlEstadoVehiculo = (sucursalId, base) => publicLink(base, `/estado-vehiculo?sucursal=${sucursalId}`);
+const urlConsultaRepuestos = (base) => publicLink(base, '/consulta-repuestos');
+const urlReservaCita = (base) => publicLink(base, '/reservar-cita');
 
 const copiarEnlaceActivacion = async (codigo) => {
   const url = urlActivacion(codigo);
@@ -71,8 +73,8 @@ const copiarEnlaceActivacion = async (codigo) => {
   }
 };
 
-const copiarEnlaceEstadoVehiculo = async (sucursal) => {
-  const url = urlEstadoVehiculo(sucursal.id);
+const copiarEnlaceEstadoVehiculo = async (sucursal, base) => {
+  const url = urlEstadoVehiculo(sucursal.id, base);
   try {
     await navigator.clipboard.writeText(url);
     Swal.fire({
@@ -88,8 +90,8 @@ const copiarEnlaceEstadoVehiculo = async (sucursal) => {
   }
 };
 
-const copiarEnlaceConsultaRepuestos = async () => {
-  const url = urlConsultaRepuestos();
+const copiarEnlaceConsultaRepuestos = async (base) => {
+  const url = urlConsultaRepuestos(base);
   try {
     await navigator.clipboard.writeText(url);
     Swal.fire({
@@ -105,8 +107,8 @@ const copiarEnlaceConsultaRepuestos = async () => {
   }
 };
 
-const copiarEnlaceReservaCita = async () => {
-  const url = urlReservaCita();
+const copiarEnlaceReservaCita = async (base) => {
+  const url = urlReservaCita(base);
   try {
     await navigator.clipboard.writeText(url);
     Swal.fire({
@@ -131,6 +133,7 @@ export default function KioskosPage() {
   const { kioskos, sucursales, loading, fetchKioskos } = useKioskos();
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [publicBase, setPublicBase] = useState('');
 
   const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm();
 
@@ -254,6 +257,8 @@ export default function KioskosPage() {
           <Chip label="Consulta publica" color="info" variant="outlined" size="small" />
         </Box>
 
+        <AccesoPublicoConfig puedeEditar={puedeEditar} onChange={setPublicBase} />
+
         <Box sx={{ px: 2, py: 2, borderBottom: `1px solid ${C.border}` }}>
           <Box
             sx={{
@@ -288,7 +293,7 @@ export default function KioskosPage() {
               </Box>
             </Box>
             <TextField
-              value={urlConsultaRepuestos()}
+              value={urlConsultaRepuestos(publicBase)}
               fullWidth
               size="small"
               InputProps={{
@@ -305,7 +310,7 @@ export default function KioskosPage() {
               variant="contained"
               size="small"
               startIcon={<ClipboardCopy size={16} />}
-              onClick={copiarEnlaceConsultaRepuestos}
+              onClick={() => copiarEnlaceConsultaRepuestos(publicBase)}
               sx={{ whiteSpace: 'nowrap', bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
             >
               Copiar
@@ -345,7 +350,7 @@ export default function KioskosPage() {
               </Box>
             </Box>
             <TextField
-              value={urlReservaCita()}
+              value={urlReservaCita(publicBase)}
               fullWidth
               size="small"
               InputProps={{
@@ -362,7 +367,7 @@ export default function KioskosPage() {
               variant="contained"
               size="small"
               startIcon={<ClipboardCopy size={16} />}
-              onClick={copiarEnlaceReservaCita}
+              onClick={() => copiarEnlaceReservaCita(publicBase)}
               sx={{ whiteSpace: 'nowrap', bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
             >
               Copiar
@@ -394,7 +399,7 @@ export default function KioskosPage() {
                 </TableRow>
               ) : (
                 sucursales.map((sucursal) => {
-                  const link = urlEstadoVehiculo(sucursal.id);
+                  const link = urlEstadoVehiculo(sucursal.id, publicBase);
                   return (
                     <TableRow key={sucursal.id} hover>
                       <TableCell>
@@ -440,7 +445,7 @@ export default function KioskosPage() {
                           variant="contained"
                           size="small"
                           startIcon={<ClipboardCopy size={16} />}
-                          onClick={() => copiarEnlaceEstadoVehiculo(sucursal)}
+                          onClick={() => copiarEnlaceEstadoVehiculo(sucursal, publicBase)}
                           sx={{ whiteSpace: 'nowrap' }}
                         >
                           Copiar

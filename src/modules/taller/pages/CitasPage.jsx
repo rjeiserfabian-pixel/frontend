@@ -209,7 +209,7 @@ export default function CitasPage() {
     Promise.all([
       api.get('inventario/sucursales/', { params: { page_size: 100 } }),
       tallerService.getTiposServicio({ estado: true, page_size: 100 }),
-      api.get('seguridad/usuarios/?rol=MECANICO'),
+      api.get(`seguridad/usuarios/?rol=${encodeURIComponent('TÉCNICO_AUTOMOTRIZ')}`),
     ]).then(([sucRes, tiposRes, mecRes]) => {
       setSucursales(getList(sucRes.data));
       setTiposServicio(getList(tiposRes));

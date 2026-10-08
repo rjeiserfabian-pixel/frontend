@@ -48,6 +48,16 @@ export const ventasService = {
     return response.data;
   },
 
+  cancelarVenta: async (ventaId, motivo) => {
+    const response = await apiClient.post(`/transacciones/${ventaId}/cancelar/`, { motivo });
+    return response.data;
+  },
+
+  anularVenta: async (ventaId, motivo) => {
+    const response = await apiClient.post(`/transacciones/${ventaId}/anular/`, { motivo });
+    return response.data;
+  },
+
   procesarVentaDirecta: async (payload) => {
     const response = await apiClient.post('/transacciones/directa/', payload);
     return response.data;

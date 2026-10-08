@@ -800,7 +800,7 @@ export default function DashboardLayout() {
             backgroundImage: `
               linear-gradient(180deg, ${C.bg} 0%, ${alpha(C.bg, 0.62)} 18%, ${alpha(C.bg, 0.08)} 58%, ${alpha(C.bg, 0.86)} 100%),
               linear-gradient(90deg, ${alpha(C.bg, 0.86)} 0%, transparent 42%, ${alpha(C.bg, 0.12)} 100%),
-              url('/sidebar-car-premium.png')
+              url('/sidebar-car-premium.jpg')
             `,
             backgroundSize: '118% auto',
             backgroundPosition: 'center bottom',

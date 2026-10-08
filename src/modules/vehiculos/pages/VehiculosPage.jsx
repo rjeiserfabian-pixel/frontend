@@ -5,11 +5,13 @@ import {
   CircularProgress, TablePagination, TextField 
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Search, History } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, QrCode, Wrench } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import VehiculosForm from '../components/VehiculosForm';
 import HistorialVehiculoModal from '../components/HistorialVehiculoModal';
+import QrVehiculoModal from '../components/QrVehiculoModal';
+import MantenimientosVehiculoModal from '../components/MantenimientosVehiculoModal';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
 
@@ -27,6 +29,8 @@ export default function VehiculosPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editingVehiculo, setEditingVehiculo] = useState(null);
   const [historialVehiculoId, setHistorialVehiculoId] = useState(null);
+  const [qrVehiculoId, setQrVehiculoId] = useState(null);
+  const [mantenimientoVehiculoId, setMantenimientoVehiculoId] = useState(null);
 
   // Pagination and search
   const [page, setPage] = useState(0); // MUI TablePagination uses 0-indexed pages
@@ -145,7 +149,7 @@ export default function VehiculosPage() {
               <TableBody>
                 {vehiculos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={8} align="center">
                       <Typography variant="body1" color="textSecondary" sx={{ py: 3 }}>
                         No hay vehículos registrados.
                       </Typography>
@@ -162,6 +166,12 @@ export default function VehiculosPage() {
                       <TableCell>{row.color || '-'}</TableCell>
                       <TableCell align="right">{row.kilometraje_actual ? `${row.kilometraje_actual} km` : '-'}</TableCell>
                       <TableCell align="center">
+                        <IconButton onClick={() => setMantenimientoVehiculoId(row.id)} title="Mantenimientos" aria-label="Mantenimientos" sx={{ color: C.textMuted, mr: 1 }}>
+                          <Wrench size={18} />
+                        </IconButton>
+                        <IconButton onClick={() => setQrVehiculoId(row.id)} title="Codigo QR" sx={{ color: C.textMuted, mr: 1, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}>
+                          <QrCode size={18} />
+                        </IconButton>
                         <IconButton onClick={() => setHistorialVehiculoId(row.id)} title="Ver historial" sx={{ color: C.textMuted, mr: 1, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}>
                           <History size={18} />
                         </IconButton>
@@ -211,6 +221,24 @@ export default function VehiculosPage() {
         onClose={() => setHistorialVehiculoId(null)}
         vehiculoId={historialVehiculoId}
       />
+
+      {qrVehiculoId && (
+        <QrVehiculoModal
+          key={qrVehiculoId}
+          open
+          onClose={() => setQrVehiculoId(null)}
+          vehiculoId={qrVehiculoId}
+          puedeGestionar={puedeEditar}
+        />
+      )}
+      {mantenimientoVehiculoId && (
+        <MantenimientosVehiculoModal
+          key={mantenimientoVehiculoId}
+          vehiculoId={mantenimientoVehiculoId}
+          puedeGestionar={puedeEditar}
+          onClose={() => setMantenimientoVehiculoId(null)}
+        />
+      )}
     </Box>
   );
 }

@@ -4,7 +4,7 @@ import {
   TableCell, TableContainer, TableHead, TableRow, IconButton, 
   TextField, Box, CircularProgress, TablePagination 
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
 import { alpha } from '@mui/material/styles';
 import { Plus, Edit, Trash2, Car } from 'lucide-react';
 import { useClientes } from '../hooks/useClientes';

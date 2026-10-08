@@ -90,7 +90,7 @@ export default function DetalleOrdenPage() {
 
   const fetchMecanicos = async () => {
     try {
-      const res = await api.get('seguridad/usuarios/?rol=MECANICO');
+      const res = await api.get(`seguridad/usuarios/?rol=${encodeURIComponent('TÉCNICO_AUTOMOTRIZ')}`);
       let dataList = [];
       if (res.data && res.data.data) {
         dataList = res.data.data.results || res.data.data;

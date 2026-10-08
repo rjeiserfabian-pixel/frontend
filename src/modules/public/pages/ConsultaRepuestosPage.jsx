@@ -75,7 +75,7 @@ export default function ConsultaRepuestosPage() {
     setConsultado(false);
 
     try {
-      const res = await api.get(`/vehiculos/kiosko/buscar-vehiculo/?placa=${encodeURIComponent(placaLimpia)}`);
+      const res = await api.get('/vehiculos/public/consultar-placa/', { params: { placa: placaLimpia } });
       const normalizado = normalizarVehiculo(res.data?.data || {});
       setVehiculo(normalizado);
       setConsultado(true);
