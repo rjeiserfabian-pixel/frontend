@@ -9,7 +9,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import { 
   Menu as MenuIcon, ChevronLeft, LogOut, CarFront, ChevronDown, ChevronRight, Settings, MapPin,
-  HandCoins, Wallet, Wrench
+  HandCoins, Wallet, Toolbox
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import api from '../../core/api/axios';
@@ -40,6 +40,7 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'settings': Icons.Settings,
     'car': Icons.Car,
     'wrench': Icons.Wrench,
+    'toolbox': Icons.Toolbox,
     'package': Icons.Package,
     'tags': Icons.Tags,
     'list': Icons.List,
@@ -424,7 +425,7 @@ export default function DashboardLayout() {
               color="warning"
               fetchVencidas={fetchAlertasHerramientas}
               refreshKey={activeSucursalId}
-              icon={Wrench}
+              icon={Toolbox}
               resumen={(t) => (t === 0 ? 'Sin alertas' : `${t} ${t === 1 ? 'alerta' : 'alertas'}`)}
               mensajeVacio="No hay mantenimientos, préstamos ni garantías por atender."
             />
