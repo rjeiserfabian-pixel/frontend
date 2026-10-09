@@ -27,6 +27,7 @@ const UbicacionesPage = lazy(() => import('./modules/inventario/pages/Ubicacione
 const KardexPage = lazy(() => import('./modules/inventario/pages/KardexPage'));
 const ReposicionStockPage = lazy(() => import('./modules/inventario/pages/ReposicionStockPage'));
 const AvisosPage = lazy(() => import('./modules/avisos/pages/AvisosPage'));
+const AuditoriaPage = lazy(() => import('./modules/seguridad/pages/AuditoriaPage'));
 const TrasladosPage = lazy(() => import('./modules/inventario/pages/TrasladosPage'));
 const GuiasRemisionPage = lazy(() => import('./modules/inventario/pages/GuiasRemisionPage'));
 const RevisionPreciosPage = lazy(() => import('./modules/inventario/pages/RevisionPreciosPage'));
@@ -128,6 +129,7 @@ function App() {
                 <Route path="/seguridad/ubigeo" element={<UbigeoPage />} />
                 <Route path="/seguridad/cuentas-bancarias" element={<CuentasBancariasPage />} />
                 <Route path="/seguridad/perfil" element={<PerfilPage />} />
+                <Route path="/seguridad/auditoria" element={<AuditoriaPage />} />
                 <Route path="/inventario/categorias" element={<CategoriasPage />} />
                 <Route path="/inventario/marcas" element={<MarcasPage />} />
                 <Route path="/inventario/unidades" element={<UnidadesPage />} />

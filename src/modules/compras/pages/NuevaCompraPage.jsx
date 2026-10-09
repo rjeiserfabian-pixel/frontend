@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { ArrowLeft, Plus, Trash2, Save, Wallet } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 import { comprasService } from '../services/comprasApi';
@@ -25,9 +25,13 @@ const C = premiumTokens.colors;
 
 const NuevaCompraPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { activeSucursalId } = useSucursal();
   const { tienePermiso } = usePermisos();
   const puedeCrearRepuesto = tienePermiso('INVENTARIO.REPUESTOS.CREAR');
+
+  // Compra sugerida desde "Reposición de Stock": llega con los repuestos y cantidades ya elegidos.
+  const reposicion = location.state?.reposicion || null;
 
   const getLocalDate = () => {
     const d = new Date();
@@ -48,7 +52,18 @@ const NuevaCompraPage = () => {
     almacen_id: '' 
   });
 
-  const [detalles, setDetalles] = useState([]);
+  const [detalles, setDetalles] = useState(() => (
+    (reposicion?.items || []).map((item) => {
+      const cantidad = Number(item.cantidad) || 1;
+      const precio = Number(item.precio_unitario) || 0;
+      return {
+        repuesto: { id: item.repuesto_id, codigo: item.codigo, nombre: item.nombre, precio_compra: precio },
+        cantidad,
+        precio_unitario: precio,
+        subtotal: cantidad * precio,
+      };
+    })
+  ));
 
   // Pago inicial (adelanto al proveedor), solo aplica cuando tipo_pago = Credito
   const [pagoInicial, setPagoInicial] = useState({
@@ -80,6 +95,14 @@ const NuevaCompraPage = () => {
       fetchAlmacenes(activeSucursalId);
     }
   }, [activeSucursalId]);
+
+  // Si todos los repuestos sugeridos se compraron al mismo proveedor, se deja elegido.
+  useEffect(() => {
+    const nombre = reposicion?.proveedor_nombre;
+    if (!nombre || formData.proveedor || proveedores.length === 0) return;
+    const encontrado = proveedores.find((p) => p.nombre_o_razon_social === nombre);
+    if (encontrado) setFormData((prev) => ({ ...prev, proveedor: encontrado }));
+  }, [reposicion, proveedores, formData.proveedor]);
 
   const fetchMetodosPago = async () => {
     try {
@@ -325,6 +348,13 @@ const NuevaCompraPage = () => {
           <h1 className="text-2xl font-semibold tracking-tight" style={{ color: C.text }}>Registrar Nueva Compra</h1>
         </div>
       </div>
+
+      {reposicion && (
+        <div className="rounded-lg px-4 py-3 text-sm" style={{ backgroundColor: alpha(C.blue, 0.1), border: `1px solid ${alpha(C.blue, 0.3)}`, color: '#bae6fd' }}>
+          Compra sugerida desde Reposición de Stock: se cargaron {reposicion.items.length} repuesto(s) con su cantidad sugerida
+          y su último costo. Revise cantidades y precios, y complete el proveedor, la serie y el número del comprobante.
+        </div>
+      )}
 
       <div className="flex flex-col gap-8">
         <div className="rounded-lg p-6 md:p-8 mb-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>

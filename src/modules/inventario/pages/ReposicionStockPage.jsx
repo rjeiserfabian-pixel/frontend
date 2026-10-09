@@ -1,12 +1,15 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Autocomplete, Box, Chip, CircularProgress, FormControlLabel, Paper, Switch, Table, TableBody,
+  Autocomplete, Box, Button, Checkbox, Chip, CircularProgress, FormControlLabel, Paper, Switch, Table, TableBody,
   TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { ShoppingCart } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { premiumTokens } from '../../../core/theme/theme';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { inventarioService } from '../services/inventarioService';
 
 const C = premiumTokens.colors;
@@ -78,11 +81,52 @@ const Kpi = ({ titulo, valor, color }) => (
   </Paper>
 );
 
+const claveFila = (f) => `${f.repuesto_id}-${f.almacen_id}`;
+
 export default function ReposicionStockPage() {
   const r = useReposicion();
+  const navigate = useNavigate();
+  const { tienePermiso } = usePermisos();
+  const puedeComprar = tienePermiso('COMPRAS.CREAR');
   const resumen = r.datos.resumen;
   const filas = r.datos.results || [];
   const hayFiltros = useMemo(() => Boolean(r.categoria || r.texto || r.soloAgotados), [r.categoria, r.texto, r.soloAgotados]);
+
+  // Selección para la compra sugerida; se conserva al cambiar de página o de filtros.
+  const [seleccion, setSeleccion] = useState({});
+  const seleccionadas = Object.values(seleccion);
+  const todasMarcadas = filas.length > 0 && filas.every((f) => seleccion[claveFila(f)]);
+
+  const alternar = (fila) => setSeleccion((prev) => {
+    const siguiente = { ...prev };
+    if (siguiente[claveFila(fila)]) delete siguiente[claveFila(fila)];
+    else siguiente[claveFila(fila)] = fila;
+    return siguiente;
+  });
+
+  const alternarPagina = () => setSeleccion((prev) => {
+    const siguiente = { ...prev };
+    filas.forEach((f) => { if (todasMarcadas) delete siguiente[claveFila(f)]; else siguiente[claveFila(f)] = f; });
+    return siguiente;
+  });
+
+  const crearCompra = () => {
+    // Un repuesto en varios almacenes se junta en una sola línea con la cantidad total sugerida.
+    const porRepuesto = new Map();
+    seleccionadas.forEach((f) => {
+      const previo = porRepuesto.get(f.repuesto_id);
+      porRepuesto.set(f.repuesto_id, {
+        repuesto_id: f.repuesto_id, codigo: f.codigo, nombre: f.nombre,
+        cantidad: (previo?.cantidad || 0) + Number(f.sugerido),
+        precio_unitario: Number(f.precio_compra) || 0,
+        proveedor: f.ultimo_proveedor || null,
+      });
+    });
+    const items = [...porRepuesto.values()];
+    const proveedores = new Set(items.map((i) => i.proveedor));
+    const proveedorUnico = proveedores.size === 1 ? [...proveedores][0] : null;
+    navigate('/compras/nueva', { state: { reposicion: { items, proveedor_nombre: proveedorUnico } } });
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -116,11 +160,28 @@ export default function ReposicionStockPage() {
         />
       </Paper>
 
+      {puedeComprar && seleccionadas.length > 0 && (
+        <Paper sx={{ p: 1.5, mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', borderRadius: '8px', border: `1px solid ${alpha(C.blue, 0.4)}`, bgcolor: alpha(C.blue, 0.08) }}>
+          <Typography variant="body2" fontWeight={700}>{seleccionadas.length} repuesto(s) seleccionado(s)</Typography>
+          <Button variant="contained" size="small" startIcon={<ShoppingCart size={16} />} onClick={crearCompra}
+            sx={{ bgcolor: C.brand, '&:hover': { bgcolor: C.brandDark } }}>
+            Crear compra con la cantidad sugerida
+          </Button>
+          <Button size="small" onClick={() => setSeleccion({})}>Quitar selección</Button>
+        </Paper>
+      )}
+
       <Paper sx={{ borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card }}>
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
+                {puedeComprar && (
+                  <TableCell padding="checkbox">
+                    <Checkbox size="small" checked={todasMarcadas} indeterminate={!todasMarcadas && filas.some((f) => seleccion[claveFila(f)])}
+                      onChange={alternarPagina} disabled={filas.length === 0} inputProps={{ 'aria-label': 'Seleccionar la página' }} />
+                  </TableCell>
+                )}
                 <TableCell sx={headSx}>Código</TableCell>
                 <TableCell sx={headSx}>Repuesto</TableCell>
                 <TableCell sx={headSx}>Almacén</TableCell>
@@ -134,17 +195,23 @@ export default function ReposicionStockPage() {
             </TableHead>
             <TableBody>
               {r.loading && (
-                <TableRow><TableCell colSpan={9} align="center" sx={{ py: 4 }}><CircularProgress size={28} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={puedeComprar ? 10 : 9} align="center" sx={{ py: 4 }}><CircularProgress size={28} /></TableCell></TableRow>
               )}
               {!r.loading && filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4, color: C.textMuted }}>
+                  <TableCell colSpan={puedeComprar ? 10 : 9} align="center" sx={{ py: 4, color: C.textMuted }}>
                     {hayFiltros ? 'Ningún repuesto coincide con los filtros.' : 'Todo el stock está por encima del mínimo.'}
                   </TableCell>
                 </TableRow>
               )}
               {!r.loading && filas.map((f) => (
-                <TableRow key={`${f.repuesto_id}-${f.almacen_id}`} hover>
+                <TableRow key={claveFila(f)} hover selected={Boolean(seleccion[claveFila(f)])}>
+                  {puedeComprar && (
+                    <TableCell padding="checkbox">
+                      <Checkbox size="small" checked={Boolean(seleccion[claveFila(f)])} onChange={() => alternar(f)}
+                        inputProps={{ 'aria-label': `Seleccionar ${f.codigo}` }} />
+                    </TableCell>
+                  )}
                   <TableCell sx={{ fontWeight: 700 }}>{f.codigo}</TableCell>
                   <TableCell>
                     {f.nombre}
