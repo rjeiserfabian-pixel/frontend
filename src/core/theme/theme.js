@@ -133,6 +133,11 @@ const theme = createTheme({
           '&:hover': {
             transform: 'translateY(-1px)',
           },
+          // Pantallas táctiles (celular, tableta): zona de toque mínima cómoda para el dedo.
+          '@media (pointer: coarse)': {
+            minWidth: 40,
+            minHeight: 40,
+          },
         },
       },
     },
@@ -348,6 +353,13 @@ const theme = createTheme({
           border: `1px solid ${premiumTokens.colors.border}`,
           borderRadius: 8,
           boxShadow: premiumTokens.shadow.floating,
+          // Celular: la ventana usa casi todo el ancho en vez de dejar 32 px de margen por lado.
+          '@media (max-width:600px)': {
+            margin: 8,
+            width: 'calc(100% - 16px)',
+            maxWidth: 'calc(100% - 16px) !important',
+            maxHeight: 'calc(100% - 16px)',
+          },
         },
       },
     },

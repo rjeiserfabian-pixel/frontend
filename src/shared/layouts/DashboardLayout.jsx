@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppBar, Toolbar, IconButton, Typography, Drawer, 
   List, ListItem, ListItemButton, ListItemIcon, ListItemText, 
-  Avatar, Menu, MenuItem, Box, Divider, useTheme, Collapse, CircularProgress,
+  Avatar, Menu, MenuItem, Box, Divider, useTheme, useMediaQuery, Collapse, CircularProgress,
   Tooltip
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
@@ -74,8 +74,10 @@ const DynamicIcon = ({ name, size = 22 }) => {
 };
 
 export default function DashboardLayout() {
-  // Sidebar inicia ESTIRADO por defecto como se solicitó
-  const [open, setOpen] = useState(true);
+  // En escritorio el sidebar inicia ESTIRADO por defecto como se solicitó.
+  const [abiertoEscritorio, setAbiertoEscritorio] = useState(true);
+  // En celular/tableta pequeña el menú es un panel deslizable que arranca cerrado.
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   
   const [menuItems, setMenuItems] = useState([]);
@@ -91,6 +93,17 @@ export default function DashboardLayout() {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Menos de 900 px de ancho (celular, tableta vertical): menú deslizable y contenido a todo el ancho.
+  const esMovil = useMediaQuery(theme.breakpoints.down('md'));
+  // `open` = el contenido del menú se muestra expandido. En el panel deslizable siempre lo está.
+  const open = esMovil ? true : abiertoEscritorio;
+  const setOpen = (valor) => (esMovil ? setMenuMovilAbierto(valor) : setAbiertoEscritorio(valor));
+  // Al elegir una opción en celular, el panel se cierra solo.
+  const irA = (ruta) => {
+    navigate(ruta);
+    if (esMovil) setMenuMovilAbierto(false);
+  };
 
   // Campanitas de alertas de vencimiento (Cuentas por Cobrar / Pagar)
   const fetchCuotasCobrarVencidas = useCallback(async () => {
@@ -269,7 +282,8 @@ export default function DashboardLayout() {
   const { globalActiveChildId, globalActiveParentId } = getActiveState();
 
   // Ancho efectivo del drawer según su estado
-  const drawerWidth = open ? DRAWER_WIDTH : DRAWER_MINI_WIDTH;
+  // En celular el menú flota sobre el contenido, así que no reserva ancho.
+  const drawerWidth = esMovil ? 0 : (open ? DRAWER_WIDTH : DRAWER_MINI_WIDTH);
   const activeSucursal = sucursales?.find(sucursal => sucursal.id.toString() === activeSucursalId?.toString());
 
   return (
@@ -307,7 +321,7 @@ export default function DashboardLayout() {
           }),
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important', gap: 1 }}>
+        <Toolbar sx={{ minHeight: '64px !important', gap: 1, px: { xs: 1, sm: 3 } }}>
           {/* Botón para expandir el sidebar - siempre visible en barra superior */}
           <IconButton
             color="inherit"
@@ -319,7 +333,7 @@ export default function DashboardLayout() {
               color: C.textMuted,
               bgcolor: alpha('#ffffff', 0.04),
               border: `1px solid ${C.border}`,
-              ...(open && { display: 'none' }),
+              ...(open && !esMovil && { display: 'none' }),
               '&:hover': { color: C.text, bgcolor: alpha(C.brand, 0.12) },
             }}
           >
@@ -343,17 +357,17 @@ export default function DashboardLayout() {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                mr: 2,
+                mr: { xs: 0.5, md: 2 },
                 bgcolor: alpha('#ffffff', 0.045),
                 border: `1px solid ${C.border}`,
-                px: 1.5,
+                px: { xs: 1, md: 1.5 },
                 py: 0.5,
                 borderRadius: '999px',
                 boxShadow: `inset 0 1px 0 ${alpha('#ffffff', 0.06)}`,
               }}
             >
               <MapPin size={18} color={C.brandLight} style={{ marginRight: '8px' }} />
-              <FormControl variant="standard" sx={{ minWidth: 120 }}>
+              <FormControl variant="standard" sx={{ minWidth: { xs: 70, sm: 120 }, maxWidth: { xs: 110, sm: 'none' } }}>
                 <Select
                   value={activeSucursalId || ''}
                   onChange={(e) => changeSucursal(e.target.value)}
@@ -489,16 +503,20 @@ export default function DashboardLayout() {
 
       {/* Sidebar / Drawer */}
       <Drawer
-        variant="permanent"
-        open={open}
+        variant={esMovil ? 'temporary' : 'permanent'}
+        open={esMovil ? menuMovilAbierto : open}
+        onClose={() => setMenuMovilAbierto(false)}
+        ModalProps={{ keepMounted: true }}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
           whiteSpace: 'nowrap',
           boxSizing: 'border-box',
           '& .MuiDrawer-paper': {
-            // El ancho ahora nunca es 0: comprimido usa 80px para seguir mostrando iconos
-            width: drawerWidth,
+            // En escritorio el ancho nunca es 0: comprimido usa 80px para seguir mostrando iconos.
+            // En celular el panel ocupa el ancho del menú (sin pasarse de la pantalla).
+            width: esMovil ? DRAWER_WIDTH : drawerWidth,
+            maxWidth: '86vw',
             height: '100vh',
             transition: theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
@@ -733,7 +751,7 @@ export default function DashboardLayout() {
                           return (
                             <ListItemButton
                               key={child.id_modulo}
-                              onClick={() => navigate(child.ruta)}
+                              onClick={() => irA(child.ruta)}
                               sx={{
                                 minHeight: 42,
                                 pl: 6.5,
@@ -775,7 +793,7 @@ export default function DashboardLayout() {
               >
                 <ListItem disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
-                    onClick={() => navigate(item.ruta)}
+                    onClick={() => irA(item.ruta)}
                     sx={{
                       minHeight: 48,
                       justifyContent: open ? 'initial' : 'center',
@@ -936,8 +954,9 @@ export default function DashboardLayout() {
         component="main"
         sx={{
           flexGrow: 1,
-          px: 4,
-          py: 3,
+          minWidth: 0, // evita que una tabla ancha empuje la página fuera de la pantalla
+          px: { xs: 1.5, sm: 2.5, md: 4 },
+          py: { xs: 2, md: 3 },
           bgcolor: C.bg,
           color: C.text,
           backgroundImage: `
