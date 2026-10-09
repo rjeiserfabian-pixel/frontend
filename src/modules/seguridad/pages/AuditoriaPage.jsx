@@ -40,9 +40,24 @@ function useDebounced(valor, ms) {
   return debounced;
 }
 
+// Fecha local en formato YYYY-MM-DD (sin desfase por zona horaria)
+const aFechaLocal = (fecha) => {
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${fecha.getFullYear()}-${mes}-${dia}`;
+};
+
 // Lógica de datos separada de la vista
 function useAuditoria() {
-  const [filtros, setFiltros] = useState({ usuario: '', modulo: '', accion: '', fecha_desde: '', fecha_hasta: '', search: '' });
+  // Igual que en Órdenes de Trabajo: por defecto, desde el primer día del mes hasta hoy.
+  const [filtros, setFiltros] = useState(() => {
+    const hoy = new Date();
+    return {
+      usuario: '', modulo: '', accion: '', search: '',
+      fecha_desde: aFechaLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1)),
+      fecha_hasta: aFechaLocal(hoy),
+    };
+  });
   const [opciones, setOpciones] = useState({ modulos: [], acciones: [] });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
