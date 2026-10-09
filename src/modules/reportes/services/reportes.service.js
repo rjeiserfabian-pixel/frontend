@@ -84,6 +84,17 @@ export const exportarAvanzado = (params, formato) =>
     responseType: 'blob',
   });
 
+// ── Reportes de Gestión ──────────────────────────────────────────────────────
+
+export const getReporteGestion = (params) =>
+  api.get('reportes/gestion/', { params: buildParams(params) });
+
+export const exportarGestion = (params, formato) =>
+  api.get('reportes/gestion/', {
+    params: buildParams({ ...params, formato }),
+    responseType: 'blob',
+  });
+
 // ── Reporte de Vehículos ─────────────────────────────────────────────────────
 
 export const getReporteVehiculos = (params) =>

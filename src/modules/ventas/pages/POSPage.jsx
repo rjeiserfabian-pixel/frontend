@@ -11,7 +11,7 @@ import { alpha } from '@mui/material/styles';
 import {
   ArrowRight, Search, Check, X, ArrowLeft, Plus, Minus, Trash2,
   CreditCard, Banknote, Calendar, User, FileText, ShoppingCart, Printer, Eye,
-  Package, Receipt, Wallet, Coins, Ban
+  Package, Receipt, Wallet, Coins, Ban, QrCode
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ventasService } from './../../ventas/services/ventasApi';
@@ -20,6 +20,7 @@ import { clienteService } from './../../clientes/services/clienteService';
 import api from '../../../core/api/axios';
 import { useReactToPrint } from 'react-to-print';
 import TicketImpresion from '../components/TicketImpresion';
+import CobroQrDialog from '../components/CobroQrDialog';
 
 
 import { ErrorBoundary } from 'react-error-boundary';
@@ -624,327 +625,6 @@ const PosOrderList = ({ onSelectOrder, onNewDirectSale, onPrint }) => {
 };
 
 // -------------------------------------------------------------
-// VISTA 2: CHECKOUT KIOSKO (SOLO LECTURA DE ITEMS)
-// -------------------------------------------------------------
-const PosCheckout = ({ order, onBack, onComplete }) => {
-  const { tienePermiso } = usePermisos();
-  const puedeCobrar = tienePermiso('VENTAS.POS.CREAR');
-  const [condicionPago, setCondicionPago] = useState('CONTADO');
-  const [procesando, setProcesando] = useState(false);
-  const total = parseFloat(order.total) || 0;
-
-  const [metodosPago, setMetodosPago] = useState([]);
-  const [pagos, setPagos] = useState([]);
-  
-  const [tiposComprobante, setTiposComprobante] = useState([]);
-  const [tipoComprobanteId, setTipoComprobanteId] = useState('');
-
-  const [seriesComprobante, setSeriesComprobante] = useState([]);
-  const [serieId, setSerieId] = useState('');
-
-  useEffect(() => {
-    const fetchDatosInit = async () => {
-      try {
-        const [resMetodos, resTipos, resSeries] = await Promise.all([
-          ventasService.getMetodosPago(),
-          ventasService.getTiposComprobante(),
-          ventasService.getSeriesComprobante()
-        ]);
-        const dataMetodos = resMetodos.results || resMetodos;
-        setMetodosPago(dataMetodos);
-        if (dataMetodos && dataMetodos.length > 0) {
-          setPagos([{ id: Date.now(), metodo_id: dataMetodos[0].id, monto: total, referencia: '' }]);
-        }
-        
-        const dataTipos = resTipos.results || resTipos;
-        setTiposComprobante(dataTipos);
-        
-        const dataSeries = resSeries.results || resSeries;
-        setSeriesComprobante(dataSeries);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchDatosInit();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const seriesFiltradas = seriesComprobante.filter(s => s.tipo_comprobante === tipoComprobanteId);
-  const serieSeleccionada = seriesFiltradas.find(s => s.id === serieId);
-  useEffect(() => {
-    if (seriesFiltradas.length > 0) {
-      if (!seriesFiltradas.find(s => s.id === serieId)) {
-        setSerieId(seriesFiltradas[0].id);
-      }
-    } else {
-      setSerieId('');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoComprobanteId, seriesComprobante]);
-
-  const handleConfirm = async () => {
-    if (!tipoComprobanteId || !serieId) {
-      Swal.fire('Atención', 'Debe seleccionar el Tipo de Comprobante y la Serie.', 'warning');
-      return;
-    }
-    try {
-      setProcesando(true);
-      await new Promise(r => setTimeout(r, 800)); // Simulación
-      Swal.fire('Venta Procesada', 'El pago ha sido registrado correctamente.', 'success').then(() => onComplete());
-    } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al procesar la venta', 'error');
-    } finally {
-      setProcesando(false);
-    }
-  };
-
-  return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button startIcon={<ArrowLeft size={18} />} onClick={onBack} color="inherit" sx={{ mr: 2 }}>Volver a Pedidos</Button>
-        <Typography variant="h5" fontWeight="bold">Procesar Venta #{order.id}</Typography>
-      </Box>
-
-      <Grid container spacing={3}>
-        {/* LADO IZQUIERDO: CLIENTE Y COMPROBANTE */}
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper sx={{ p: 3, mb: 3, boxShadow: 1, width: '100%' }}>
-            <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>1</span>
-              DATOS DEL CLIENTE
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Nombre completo" fullWidth value={order.cliente_nombre || ''} size="small" InputProps={{ readOnly: true }} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="DNI / RUC" fullWidth size="small" />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Vehículo (Placa)" fullWidth value={order.vehiculo_placa || ''} size="small" InputProps={{ readOnly: true }} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Teléfono" fullWidth value={order.cliente_telefono || ''} size="small" InputProps={{ readOnly: true }} />
-              </Grid>
-            </Grid>
-          </Paper>
-
-          <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
-            <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>2</span>
-              COMPROBANTE
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <FormControl size="small" sx={{ flex: 1, minWidth: 150 }}>
-                <InputLabel>Tipo de Comprobante</InputLabel>
-                <Select 
-                  value={tipoComprobanteId} 
-                  label="Tipo de Comprobante"
-                  onChange={e => setTipoComprobanteId(e.target.value)}
-                >
-                  {tiposComprobante.map(tc => (
-                    <MenuItem key={tc.id} value={tc.id}>{tc.nombre}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ flex: 1, minWidth: 90 }}>
-                <InputLabel>Serie</InputLabel>
-                <Select 
-                  value={serieId} 
-                  label="Serie"
-                  onChange={e => setSerieId(e.target.value)}
-                >
-                  {seriesFiltradas.map(s => (
-                    <MenuItem key={s.id} value={s.id}>{s.serie}</MenuItem>
-                  ))}
-                  {seriesFiltradas.length === 0 && <MenuItem value="" disabled>No hay series</MenuItem>}
-                </Select>
-              </FormControl>
-              <TextField 
-                size="small" 
-                label="Correlativo" 
-                value={serieSeleccionada ? String((serieSeleccionada.correlativo_actual || 0) + 1).padStart(8, '0') : ''}
-                disabled
-                sx={{ 
-                  width: 120,
-                  "& .MuiInputBase-root.Mui-disabled": { bgcolor: alpha(C.blue, 0.08), opacity: 1 },
-                  "& .MuiInputBase-input.Mui-disabled": {
-                    WebkitTextFillColor: "#bae6fd",
-                    color: "#bae6fd",
-                    opacity: 1,
-                    fontWeight: 800
-                  }
-                }}
-              />
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* LADO DERECHO: PAGO */}
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Paper sx={{ p: 3, boxShadow: 1, width: '100%' }}>
-            <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '50%', width: 24, height: 24, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.8rem' }}>3</span>
-              CONDICIÓN DE PAGO
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-              <Tabs value={condicionPago} onChange={(e, v) => setCondicionPago(v)}>
-                <Tab label="Al Contado" value="CONTADO" />
-                <Tab label="Al Crédito" value="CREDITO" />
-              </Tabs>
-            </Box>
-            {condicionPago === 'CREDITO' ? (
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6 }}><TextField type="date" label="Fecha Límite" InputLabelProps={{ shrink: true }} fullWidth size="small" /></Grid>
-                <Grid size={{ xs: 12, sm: 6 }}><TextField label="Monto a Crédito" value={total.toFixed(2)} InputProps={{ readOnly: true }} fullWidth size="small" /></Grid>
-              </Grid>
-            ) : (
-              <Box>
-                {pagos.map((pago, index) => {
-                  const requiereReferencia = metodosPago.find(m => m.id === pago.metodo_id)?.requiere_referencia;
-                  return (
-                    <Box key={pago.id} sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: requiereReferencia ? 1 : 0 }}>
-                        <FormControl sx={{ flexGrow: 1 }} size="small">
-                          <Select 
-                            value={pago.metodo_id || ''} 
-                            onChange={(e) => {
-                              const newPagos = [...pagos];
-                              newPagos[index].metodo_id = e.target.value;
-                              setPagos(newPagos);
-                            }}
-                          >
-                            {metodosPago.map((metodo) => (
-                              <MenuItem key={metodo.id} value={metodo.id}>{metodo.nombre}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <TextField 
-                          size="small" 
-                          value={pago.monto} 
-                          onChange={(e) => {
-                            const newPagos = [...pagos];
-                            newPagos[index].monto = e.target.value;
-                            setPagos(newPagos);
-                          }}
-                          sx={{ width: 120 }} 
-                          inputProps={{ style: { textAlign: 'right' }, type: 'number', step: '0.01' }} 
-                        />
-                        <IconButton 
-                          color="error"
-                          onClick={() => {
-                            if (pagos.length > 1) {
-                              setPagos(pagos.filter(p => p.id !== pago.id));
-                            }
-                          }}
-                          disabled={pagos.length === 1}
-                        >
-                          <X size={20} />
-                        </IconButton>
-                      </Box>
-                      {requiereReferencia && (
-                        <Box sx={{ mb: 1 }}>
-                          <TextField 
-                            size="small" 
-                            fullWidth 
-                            label="Número de Referencia" 
-                            value={pago.referencia} 
-                            onChange={(e) => {
-                              const newPagos = [...pagos];
-                              newPagos[index].referencia = e.target.value;
-                              setPagos(newPagos);
-                            }} 
-                          />
-                        </Box>
-                      )}
-                    </Box>
-                  );
-                })}
-                <Button 
-                  variant="outlined" 
-                  size="small" 
-                  fullWidth 
-                  sx={{ borderStyle: 'dashed' }}
-                  onClick={() => {
-                    setPagos([...pagos, { id: Date.now(), metodo_id: metodosPago[0]?.id || '', monto: 0, referencia: '' }]);
-                  }}
-                >
-                  + Agregar método
-                </Button>
-                {(() => {
-                  const sumP = pagos.reduce((acc, p) => acc + (parseFloat(p.monto) || 0), 0);
-                  if (sumP > total) {
-                    return (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: alpha(C.emerald, 0.12), borderRadius: '8px', display: 'flex', justifyContent: 'space-between', border: `1px solid ${alpha(C.emerald, 0.34)}` }}>
-                        <Typography variant="subtitle2" color="success.main" fontWeight="bold">VUELTO AL CLIENTE:</Typography>
-                        <Typography variant="subtitle1" color="success.main" fontWeight="bold">S/ {(sumP - total).toFixed(2)}</Typography>
-                      </Box>
-                    );
-                  }
-                  return null;
-                })()}
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-
-      </Grid>
-
-      {/* ABAJO: ITEMS DEL KIOSKO (SOLO LECTURA) */}
-      <Box sx={{ width: '100%', mt: 3 }}>
-        <Paper sx={{ p: 3, boxShadow: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" fontWeight="bold">ÍTEMS SELECCIONADOS EN KIOSKO</Typography>
-              <Chip label="No editable aquí" size="small" />
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-
-            <Box sx={{ mb: 3, maxHeight: 500, overflowY: 'auto' }}>
-              {order.detalles && order.detalles.length > 0 ? (
-                order.detalles.map((item, idx) => (
-                  <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, borderBottom: '1px solid #f0f0f0', pb: 1 }}>
-                    <Box>
-                      <Typography variant="body2" fontWeight="bold">{item.descripcion_servicio || item.repuesto_nombre || `Producto ${item.repuesto || 'Adicional'}`}</Typography>
-                      <Typography variant="caption" color="textSecondary">Cantidad: {item.cantidad}</Typography>
-                    </Box>
-                    <Typography variant="body2" fontWeight="bold">S/ {(parseFloat(item.precio_unitario) * item.cantidad).toFixed(2)}</Typography>
-                  </Box>
-                ))
-              ) : (
-                <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 4 }}>No hay detalles.</Typography>
-              )}
-            </Box>
-
-            <Box sx={{ mt: 2 }}>
-              <Box sx={{ width: '100%' }}>
-                <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="textSecondary">Subtotal</Typography>
-                  <Typography variant="body2">S/ {total.toFixed(2)}</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h6" fontWeight="bold">TOTAL A COBRAR</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="primary">S/ {total.toFixed(2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button variant="outlined" color="inherit" fullWidth size="large" onClick={onBack}>Cancelar</Button>
-                  <Button variant="contained" color="primary" fullWidth size="large" onClick={handleConfirm} disabled={procesando || !puedeCobrar} title={!puedeCobrar ? 'No tienes permiso para registrar ventas en el POS' : undefined}>
-                    {procesando ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Venta'}
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </Paper>
-      </Box>
-    </Box>
-  );
-};
-
-// -------------------------------------------------------------
 // -------------------------------------------------------------
 // VISTA 3: VENTA DIRECTA (TOTALMENTE EDITABLE)
 // -------------------------------------------------------------
@@ -991,7 +671,8 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
   
   const [metodosPago, setMetodosPago] = useState([]);
   const [pagos, setPagos] = useState([]);
-  
+  const [qrCobro, setQrCobro] = useState(null); // { metodo, monto } del QR (Yape/Plin) mostrado al cliente
+
   const [tiposComprobante, setTiposComprobante] = useState([]);
   const [tipoComprobanteId, setTipoComprobanteId] = useState('');
 
@@ -1636,7 +1317,8 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
             ) : (
               <Box>
                 {pagos.map((pago, index) => {
-                  const requiereReferencia = metodosPago.find(m => m.id === pago.metodo_id)?.requiere_referencia;
+                  const metodoPago = metodosPago.find(m => m.id === pago.metodo_id);
+                  const requiereReferencia = metodoPago?.requiere_referencia;
                   return (
                     <Box key={pago.id} sx={{ mb: 2 }}>
                       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: requiereReferencia ? 1 : 0 }}>
@@ -1668,6 +1350,16 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                           }}
                           inputProps={{ style: { textAlign: 'right' }, type: 'number', step: '0.01' }}
                         />
+                        {metodoPago?.tiene_qr && (
+                          <IconButton
+                            title={`Mostrar QR de ${metodoPago.nombre} al cliente`}
+                            aria-label="Mostrar QR de pago"
+                            sx={{ color: C.emerald }}
+                            onClick={() => setQrCobro({ metodo: metodoPago, monto: pago.monto })}
+                          >
+                            <QrCode size={22} />
+                          </IconButton>
+                        )}
                         <IconButton
                           color="error"
                           onClick={() => {
@@ -1709,6 +1401,14 @@ const PosDirectSale = ({ initialOrder, onBack, onComplete }) => {
                 >
                   + Agregar método
                 </Button>
+                {qrCobro && (
+                  <CobroQrDialog
+                    metodo={qrCobro.metodo}
+                    monto={qrCobro.monto}
+                    simbolo={simboloMoneda}
+                    onClose={() => setQrCobro(null)}
+                  />
+                )}
                 {(() => {
                   // pago.monto está en la moneda elegida (S/, $ o €); se compara
                   // contra el total en esa misma moneda (totalEnMoneda), no

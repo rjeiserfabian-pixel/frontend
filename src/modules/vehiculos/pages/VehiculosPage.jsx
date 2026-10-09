@@ -5,13 +5,14 @@ import {
   CircularProgress, TablePagination, TextField 
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Search, History, QrCode, Wrench } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, QrCode, Wrench, FileText } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import VehiculosForm from '../components/VehiculosForm';
 import HistorialVehiculoModal from '../components/HistorialVehiculoModal';
 import QrVehiculoModal from '../components/QrVehiculoModal';
 import MantenimientosVehiculoModal from '../components/MantenimientosVehiculoModal';
+import DocumentosDialog from '../../documentos/components/DocumentosDialog';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
 
@@ -31,6 +32,7 @@ export default function VehiculosPage() {
   const [historialVehiculoId, setHistorialVehiculoId] = useState(null);
   const [qrVehiculoId, setQrVehiculoId] = useState(null);
   const [mantenimientoVehiculoId, setMantenimientoVehiculoId] = useState(null);
+  const [documentosVehiculo, setDocumentosVehiculo] = useState(null);
 
   // Pagination and search
   const [page, setPage] = useState(0); // MUI TablePagination uses 0-indexed pages
@@ -169,6 +171,9 @@ export default function VehiculosPage() {
                         <IconButton onClick={() => setMantenimientoVehiculoId(row.id)} title="Mantenimientos" aria-label="Mantenimientos" sx={{ color: C.textMuted, mr: 1 }}>
                           <Wrench size={18} />
                         </IconButton>
+                        <IconButton onClick={() => setDocumentosVehiculo(row)} title="Documentos (SOAT, revisión técnica...)" aria-label="Documentos" sx={{ color: C.textMuted, mr: 1 }}>
+                          <FileText size={18} />
+                        </IconButton>
                         <IconButton onClick={() => setQrVehiculoId(row.id)} title="Codigo QR" sx={{ color: C.textMuted, mr: 1, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}>
                           <QrCode size={18} />
                         </IconButton>
@@ -229,6 +234,16 @@ export default function VehiculosPage() {
           onClose={() => setQrVehiculoId(null)}
           vehiculoId={qrVehiculoId}
           puedeGestionar={puedeEditar}
+        />
+      )}
+      {documentosVehiculo && (
+        <DocumentosDialog
+          open
+          entidad="VEHICULO"
+          entidadId={documentosVehiculo.id}
+          titulo={documentosVehiculo.placa}
+          puedeGestionar={puedeEditar}
+          onClose={() => setDocumentosVehiculo(null)}
         />
       )}
       {mantenimientoVehiculoId && (

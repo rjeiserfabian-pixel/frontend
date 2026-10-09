@@ -25,6 +25,8 @@ const StockUbicacionesPage = lazy(() => import('./modules/inventario/pages/Stock
 const AlmacenesPage = lazy(() => import('./modules/inventario/pages/AlmacenesPage'));
 const UbicacionesPage = lazy(() => import('./modules/inventario/pages/UbicacionesPage'));
 const KardexPage = lazy(() => import('./modules/inventario/pages/KardexPage'));
+const ReposicionStockPage = lazy(() => import('./modules/inventario/pages/ReposicionStockPage'));
+const AvisosPage = lazy(() => import('./modules/avisos/pages/AvisosPage'));
 const TrasladosPage = lazy(() => import('./modules/inventario/pages/TrasladosPage'));
 const GuiasRemisionPage = lazy(() => import('./modules/inventario/pages/GuiasRemisionPage'));
 const RevisionPreciosPage = lazy(() => import('./modules/inventario/pages/RevisionPreciosPage'));
@@ -74,6 +76,7 @@ const ReporteComprasPage = lazy(() => import('./modules/reportes/pages/ReporteCo
 const ReporteAvanzadoPage = lazy(() => import('./modules/reportes/pages/ReporteAvanzadoPage'));
 const ReporteVehiculosPage = lazy(() => import('./modules/reportes/pages/ReporteVehiculosPage'));
 const ReporteKioskosPage = lazy(() => import('./modules/reportes/pages/ReporteKioskosPage'));
+const ReporteGestionPage = lazy(() => import('./modules/reportes/pages/ReporteGestionPage'));
 const DashboardCajasPage = lazy(() => import('./modules/cajas/pages/DashboardCajasPage'));
 const AperturaCajaPage = lazy(() => import('./modules/cajas/pages/AperturaCajaPage'));
 const MovimientosPage = lazy(() => import('./modules/cajas/pages/MovimientosPage'));
@@ -116,6 +119,7 @@ function App() {
 
               <Route element={<DashboardLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/avisos" element={<AvisosPage />} />
                 <Route path="/usuarios" element={<UsuariosPage />} />
                 <Route path="/roles" element={<RolesPage />} />
                 <Route path="/roles/:id/permisos" element={<RolPermisosPage />} />
@@ -134,6 +138,7 @@ function App() {
                 <Route path="/inventario/almacenes" element={<AlmacenesPage />} />
                 <Route path="/inventario/ubicaciones" element={<UbicacionesPage />} />
                 <Route path="/inventario/kardex" element={<KardexPage />} />
+                <Route path="/inventario/reposicion" element={<ReposicionStockPage />} />
                 <Route path="/inventario/traslados" element={<TrasladosPage />} />
                 <Route path="/inventario/guias-remision" element={<GuiasRemisionPage />} />
                 <Route path="/inventario/revision-precios" element={<RevisionPreciosPage />} />
@@ -179,6 +184,7 @@ function App() {
                 <Route path="/reportes/avanzado" element={<ReporteAvanzadoPage />} />
                 <Route path="/reportes/vehiculos" element={<ReporteVehiculosPage />} />
                 <Route path="/reportes/kioskos" element={<ReporteKioskosPage />} />
+                <Route path="/reportes/gestion" element={<ReporteGestionPage />} />
                 <Route path="/cajas" element={<DashboardCajasPage />} />
                 <Route path="/cajas/apertura" element={<AperturaCajaPage />} />
                 <Route path="/cajas/sesion/:id" element={<MovimientosPage />} />

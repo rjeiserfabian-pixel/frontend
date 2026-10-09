@@ -6,10 +6,11 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Car } from 'lucide-react';
+import { Plus, Edit, Trash2, Car, FileText } from 'lucide-react';
 import { useClientes } from '../hooks/useClientes';
 import ClientesForm from '../components/ClientesForm';
 import VehiculosClienteModal from '../components/VehiculosClienteModal';
+import DocumentosDialog from '../../documentos/components/DocumentosDialog';
 import Swal from 'sweetalert2';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
@@ -30,6 +31,7 @@ const ClientesPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [clienteEdit, setClienteEdit] = useState(null);
   const [vehiculosClienteId, setVehiculosClienteId] = useState(null);
+  const [documentosCliente, setDocumentosCliente] = useState(null);
 
   // Regla 1.3: Debounce en búsquedas
   useEffect(() => {
@@ -168,6 +170,15 @@ const ClientesPage = () => {
                           >
                             <Car size={18} />
                           </IconButton>
+                          <IconButton
+                            onClick={() => setDocumentosCliente(row)}
+                            title="Documentos (licencia, contratos...)"
+                            aria-label="Documentos"
+                            size="small"
+                            sx={{ mr: 0.75, color: C.textMuted, bgcolor: alpha('#ffffff', 0.04), border: `1px solid ${C.border}` }}
+                          >
+                            <FileText size={18} />
+                          </IconButton>
                           {puedeEditar && (
                             <IconButton
                               color="secondary"
@@ -224,6 +235,17 @@ const ClientesPage = () => {
         onClose={() => setVehiculosClienteId(null)}
         clienteId={vehiculosClienteId}
       />
+
+      {documentosCliente && (
+        <DocumentosDialog
+          open
+          entidad="CLIENTE"
+          entidadId={documentosCliente.id}
+          titulo={`${documentosCliente.nombres} ${documentosCliente.apellidos || ''}`.trim()}
+          puedeGestionar={puedeEditar}
+          onClose={() => setDocumentosCliente(null)}
+        />
+      )}
     </Box>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Edit } from 'lucide-react';
+import { Settings, Plus, Trash2, Edit, QrCode } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import QrMetodoPagoDialog from '../components/QrMetodoPagoDialog';
 
 const ConfiguracionVentasPage = () => {
   const [activeTab, setActiveTab] = useState('metodos'); // metodos, tipos, series, cajas
@@ -23,7 +24,8 @@ const ConfiguracionVentasPage = () => {
   
   // States para Métodos de Pago
   const [metodos, setMetodos] = useState([]);
-  
+  const [qrMetodo, setQrMetodo] = useState(null); // método cuyo QR de cobro se está configurando
+
   // States para Series y Cajas
   const [series, setSeries] = useState([]);
   const [sucursales, setSucursales] = useState([]);
@@ -278,6 +280,7 @@ const ConfiguracionVentasPage = () => {
                   <th className="p-4 font-medium">Nº</th>
                   <th className="p-4 font-medium">{activeTab === 'series' ? 'Serie' : 'Nombre'}</th>
                   {activeTab === 'metodos' && <th className="p-4 font-medium">Requiere Ref.</th>}
+                  {activeTab === 'metodos' && <th className="p-4 font-medium">QR de cobro</th>}
                   {activeTab === 'tipos' && <th className="p-4 font-medium">Código SUNAT</th>}
                   {activeTab === 'cajas' && <th className="p-4 font-medium">Sucursal</th>}
                   {activeTab === 'cajas' && <th className="p-4 font-medium">Almacén por Defecto</th>}
@@ -292,7 +295,11 @@ const ConfiguracionVentasPage = () => {
                     <td className="p-4">{index + 1}</td>
                     <td className="p-4 font-semibold text-white">{m.nombre}</td>
                     <td className="p-4">{m.requiere_referencia ? 'Sí' : 'No'}</td>
+                    <td className="p-4">{m.tiene_qr ? <span className="text-emerald-300">Configurado</span> : <span className="text-slate-500">—</span>}</td>
                     <td className="p-4 text-right">
+                      {puedeEditarTab && (
+                        <button onClick={() => setQrMetodo(m)} title="QR de cobro (Yape, Plin...)" aria-label="QR de cobro" className="text-emerald-300 hover:text-emerald-100 bg-emerald-400/10 border border-emerald-400/20 rounded-md p-2 mr-1"><QrCode size={18} /></button>
+                      )}
                       {puedeEditarTab && (
                         <button onClick={() => handleEditar(m, 'metodos')} className="text-sky-400 hover:text-sky-200 bg-sky-400/10 border border-sky-400/20 rounded-md p-2 mr-1"><Edit size={18} /></button>
                       )}
@@ -367,6 +374,14 @@ const ConfiguracionVentasPage = () => {
 
         </div>
       </div>
+
+      {qrMetodo && (
+        <QrMetodoPagoDialog
+          metodo={qrMetodo}
+          onClose={() => setQrMetodo(null)}
+          onSaved={() => { setQrMetodo(null); cargarDatos(); }}
+        />
+      )}
 
       {/* MUI Dialog Modal */}
       <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>

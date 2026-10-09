@@ -162,6 +162,12 @@ export const inventarioService = {
     return response.data;
   },
 
+  // --- Reposición de stock (repuestos bajo el mínimo) ---
+  getReposicion: async (params = {}, signal) => {
+    const response = await api.get('/inventario/reposicion/', { params, signal });
+    return response.data;
+  },
+
   getSucursales: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page);
