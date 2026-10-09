@@ -8,7 +8,8 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { 
-  Menu as MenuIcon, ChevronLeft, LogOut, CarFront, ChevronDown, ChevronRight, Settings, MapPin
+  Menu as MenuIcon, ChevronLeft, LogOut, CarFront, ChevronDown, ChevronRight, Settings, MapPin,
+  HandCoins, Wallet, Wrench
 } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import api from '../../core/api/axios';
@@ -104,6 +105,24 @@ export default function DashboardLayout() {
         monto: r.saldo_pendiente,
         diasVencido: r.dias_vencido,
         to: `/cuentas/por-cobrar/credito/${r.cuenta_cobrar_id}`,
+      })),
+    };
+  }, [activeSucursalId]);
+
+  // Alertas del módulo Herramientas (mantenimientos, préstamos y garantías)
+  const fetchAlertasHerramientas = useCallback(async () => {
+    const params = activeSucursalId ? { sucursal_id: activeSucursalId } : {};
+    const res = await api.get('/herramientas/alertas/', { params });
+    return {
+      total: res.data.total,
+      results: res.data.results.map(r => ({
+        id: r.id,
+        titulo: r.titulo,
+        subtitulo: r.subtitulo,
+        diasVencido: r.dias_vencido,
+        etiqueta: r.etiqueta,
+        urgencia: r.urgencia,
+        to: r.to,
       })),
     };
   }, [activeSucursalId]);
@@ -371,6 +390,7 @@ export default function DashboardLayout() {
               fetchVencidas={fetchCuotasCobrarVencidas}
               refreshKey={activeSucursalId}
               refreshEvent={EVENTO_COBRAR_VENCIDAS_CAMBIO}
+              icon={HandCoins}
             />
           )}
           {tienePermiso('CUENTAS.POR_PAGAR.VER') && (
@@ -379,6 +399,19 @@ export default function DashboardLayout() {
               color="warning"
               fetchVencidas={fetchCuentasPagarVencidas}
               refreshEvent={EVENTO_PAGAR_VENCIDAS_CAMBIO}
+              icon={Wallet}
+            />
+          )}
+
+          {tienePermiso('HERRAMIENTAS.MANTENIMIENTOS.VER') && (
+            <OverdueAccountsBell
+              label="Alertas de herramientas"
+              color="warning"
+              fetchVencidas={fetchAlertasHerramientas}
+              refreshKey={activeSucursalId}
+              icon={Wrench}
+              resumen={(t) => (t === 0 ? 'Sin alertas' : `${t} ${t === 1 ? 'alerta' : 'alertas'}`)}
+              mensajeVacio="No hay mantenimientos, préstamos ni garantías por atender."
             />
           )}
 

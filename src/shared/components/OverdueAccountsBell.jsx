@@ -27,7 +27,14 @@ const REFRESH_MS = 5 * 60 * 1000;
  * de que se registre un pago/cobro en otra pantalla, sin necesidad de bajar
  * el intervalo de polling.
  */
-const OverdueAccountsBell = ({ label, color = 'error', fetchVencidas, refreshKey, refreshEvent }) => {
+const resumenPorDefecto = (total) =>
+  (total === 0 ? 'Sin vencimientos' : `${total} ${total === 1 ? 'cuenta vencida' : 'cuentas vencidas'}`);
+
+const OverdueAccountsBell = ({
+  label, color = 'error', fetchVencidas, refreshKey, refreshEvent, icon: Icon,
+  // Opcionales: permiten reutilizar la campana para alertas que no son dinero.
+  resumen = resumenPorDefecto, mensajeVacio = 'No hay cuentas vencidas.',
+}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({ total: 0, results: [] });
@@ -75,7 +82,7 @@ const OverdueAccountsBell = ({ label, color = 'error', fetchVencidas, refreshKey
       <Tooltip title={label}>
         <IconButton color="inherit" onClick={handleOpen} sx={{ mr: 0.5 }}>
           <Badge badgeContent={data.total} color={color} max={99}>
-            <Bell size={22} />
+            {Icon ? <Icon size={22} /> : <Bell size={22} />}
           </Badge>
         </IconButton>
       </Tooltip>
@@ -90,7 +97,7 @@ const OverdueAccountsBell = ({ label, color = 'error', fetchVencidas, refreshKey
         <Box sx={{ px: 2, py: 1.5 }}>
           <Typography variant="subtitle1" fontWeight="700">{label}</Typography>
           <Typography variant="caption" color="text.secondary">
-            {data.total === 0 ? 'Sin vencimientos' : `${data.total} ${data.total === 1 ? 'cuenta vencida' : 'cuentas vencidas'}`}
+            {resumen(data.total)}
           </Typography>
         </Box>
         <Divider />
@@ -100,7 +107,7 @@ const OverdueAccountsBell = ({ label, color = 'error', fetchVencidas, refreshKey
           </Box>
         ) : data.results.length === 0 ? (
           <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">No hay cuentas vencidas.</Typography>
+            <Typography variant="body2" color="text.secondary">{mensajeVacio}</Typography>
           </Box>
         ) : (
           <List sx={{ py: 0, maxHeight: 380, overflowY: 'auto' }}>
@@ -117,11 +124,18 @@ const OverdueAccountsBell = ({ label, color = 'error', fetchVencidas, refreshKey
                   <Typography variant="body2" fontWeight="600" noWrap sx={{ maxWidth: 220 }}>
                     {item.titulo}
                   </Typography>
-                  <Chip label={`${item.diasVencido} d`} size="small" color="error" variant="outlined" />
+                  <Chip
+                    label={item.etiqueta ?? `${item.diasVencido} d`}
+                    size="small"
+                    color={item.urgencia === 'POR_VENCER' ? 'warning' : 'error'}
+                    variant="outlined"
+                  />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mt: 0.3 }}>
                   <Typography variant="caption" color="text.secondary">{item.subtitulo}</Typography>
-                  <Typography variant="caption" fontWeight="600" color="error.main">{fmtMoney(item.monto)}</Typography>
+                  {item.monto != null && (
+                    <Typography variant="caption" fontWeight="600" color="error.main">{fmtMoney(item.monto)}</Typography>
+                  )}
                 </Box>
               </ListItemButton>
             ))}

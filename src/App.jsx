@@ -51,6 +51,12 @@ const DetalleOrdenPage = lazy(() => import('./modules/taller/pages/DetalleOrdenP
 const PlantillasPage = lazy(() => import('./modules/taller/pages/PlantillasPage'));
 const PlantillasCorrectivasPage = lazy(() => import('./modules/taller/pages/PlantillasCorrectivasPage'));
 const TiposServicioPage = lazy(() => import('./modules/taller/pages/TiposServicioPage'));
+const HerramientasPage = lazy(() => import('./modules/herramientas/pages/HerramientasPage'));
+const CategoriasHerramientaPage = lazy(() => import('./modules/herramientas/pages/CategoriasHerramientaPage'));
+const AsignacionesPage = lazy(() => import('./modules/herramientas/pages/AsignacionesPage'));
+const MantenimientosPage = lazy(() => import('./modules/herramientas/pages/MantenimientosPage'));
+const IncidenciasPage = lazy(() => import('./modules/herramientas/pages/IncidenciasPage'));
+const ReportesHerramientasPage = lazy(() => import('./modules/herramientas/pages/ReportesHerramientasPage'));
 const ConsultaVehiculoPage = lazy(() => import('./modules/public/pages/ConsultaVehiculoPage'));
 const ConsultaRepuestosPage = lazy(() => import('./modules/public/pages/ConsultaRepuestosPage'));
 const ReservaCitaPublicaPage = lazy(() => import('./modules/public/pages/ReservaCitaPublicaPage'));
@@ -140,6 +146,12 @@ function App() {
                 <Route path="/taller/plantillas" element={<PlantillasPage />} />
                 <Route path="/taller/plantillas-correctivas" element={<PlantillasCorrectivasPage />} />
                 <Route path="/taller/tipos-servicio" element={<TiposServicioPage />} />
+                <Route path="/herramientas" element={<HerramientasPage />} />
+                <Route path="/herramientas/categorias" element={<CategoriasHerramientaPage />} />
+                <Route path="/herramientas/asignaciones" element={<AsignacionesPage />} />
+                <Route path="/herramientas/mantenimientos" element={<MantenimientosPage />} />
+                <Route path="/herramientas/incidencias" element={<IncidenciasPage />} />
+                <Route path="/herramientas/reportes" element={<ReportesHerramientasPage />} />
                 <Route path="/vehiculos" element={<VehiculosPage />} />
                 <Route path="/contactos/clientes" element={<ClientesPage />} />
                 <Route path="/contactos/proveedores" element={<ProveedoresPage />} />

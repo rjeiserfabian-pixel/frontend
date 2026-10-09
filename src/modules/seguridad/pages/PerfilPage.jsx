@@ -7,6 +7,11 @@ import Swal from 'sweetalert2';
 import api from '../../../core/api/axios';
 import { authStorage } from '../../../core/auth/authStorage';
 import { getMediaUrl } from '../../../core/utils/mediaUrl';
+import { premiumTokens } from '../../../core/theme/theme';
+
+const C = premiumTokens.colors;
+const S = premiumTokens.shadow;
+const cardStyle = { backgroundColor: C.surface, border: `1px solid ${C.border}`, boxShadow: S.card };
 
 export const PerfilPage = () => {
   const [loading, setLoading] = useState(true);
@@ -141,9 +146,9 @@ export const PerfilPage = () => {
     <div className="p-6 h-full flex flex-col gap-6 animate-in fade-in duration-500">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex justify-between items-center p-6 rounded-lg" style={cardStyle}>
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: C.text }}>
             Mi Perfil
           </h1>
           <p className="text-slate-500 mt-1">Gestione su información personal y credenciales de acceso.</p>
@@ -166,11 +171,11 @@ export const PerfilPage = () => {
       <div className="flex-1 overflow-y-auto flex flex-col gap-6 pb-6">
         
         {/* RESUMEN DEL PERFIL */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center gap-6">
+        <div className="rounded-lg p-6 flex items-center gap-6" style={cardStyle}>
           <div className="relative group cursor-pointer inline-block">
             <Avatar 
               src={previewUrl} 
-              sx={{ width: 80, height: 80, bgcolor: '#2563eb', fontSize: '2rem' }}
+              sx={{ width: 80, height: 80, bgcolor: C.brand, fontSize: '2rem' }}
             >
               {!previewUrl && (formData.nombres?.charAt(0) || 'U')}
             </Avatar>
@@ -180,13 +185,13 @@ export const PerfilPage = () => {
             </label>
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">{usuario?.username}</h2>
+            <h2 className="text-2xl font-bold" style={{ color: C.text }}>{usuario?.username}</h2>
             <p className="text-slate-500">Rol: {usuario?.rol_nombre || 'Usuario'}</p>
           </div>
         </div>
 
         {/* DATOS PERSONALES */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={cardStyle}>
           <p className="text-base font-bold text-blue-600 mb-1">Datos Personales</p>
           <hr className="border-slate-200 mb-6" />
           <div className="grid grid-cols-12 gap-4">
@@ -248,7 +253,7 @@ export const PerfilPage = () => {
         </div>
 
         {/* CAMBIAR CONTRASEÑA */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="rounded-lg p-6" style={cardStyle}>
           <p className="text-base font-bold text-blue-600 mb-1">Cambiar Contraseña</p>
           <p className="text-sm text-slate-500 mb-4">
             Déjalo en blanco si no deseas cambiar la contraseña actual.
@@ -282,7 +287,7 @@ export const PerfilPage = () => {
                     padding: '4px',
                     display: 'flex',
                     alignItems: 'center',
-                    color: '#64748b',
+                    color: C.textMuted,
                     zIndex: 1,
                   }}
                   aria-label="toggle password visibility"
@@ -319,7 +324,7 @@ export const PerfilPage = () => {
                     padding: '4px',
                     display: 'flex',
                     alignItems: 'center',
-                    color: '#64748b',
+                    color: C.textMuted,
                     zIndex: 1,
                   }}
                   aria-label="toggle confirm password visibility"
