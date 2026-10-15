@@ -28,7 +28,7 @@ const DRAWER_WIDTH = 280;
 const DRAWER_MINI_WIDTH = 80;
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // Cierra sesión tras 15 min sin actividad
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // Cierra sesión tras una hora sin actividad
 
 // Componente para renderizar iconos dinámicamente
 const DynamicIcon = ({ name, size = 22 }) => {

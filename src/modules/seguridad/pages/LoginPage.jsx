@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../core/api/axios';
 import { authStorage } from '../../../core/auth/authStorage';
+import { rememberedUsername } from '../../../core/auth/rememberedUsername';
 import {
   Users,
   ClipboardList,
@@ -45,6 +46,7 @@ const features = [
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [savedUsername] = useState(() => rememberedUsername.get());
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState(
     location.state?.idleTimeout
@@ -56,7 +58,14 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm({ resolver: zodResolver(loginSchema) });
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: savedUsername,
+      password: '',
+      remember: Boolean(savedUsername),
+    },
+  });
 
   /* Envío del formulario */
   const onSubmit = async (data) => {
@@ -68,6 +77,11 @@ export default function LoginPage() {
       });
       const { access, refresh, usuario } = res.data.data;
       authStorage.setSession({ access, refresh, user: usuario });
+      if (data.remember) {
+        rememberedUsername.save(data.username);
+      } else {
+        rememberedUsername.clear();
+      }
       window.location.href = '/dashboard';
     } catch (error) {
       if (error.response?.data?.errores?.non_field_errors) {
@@ -235,9 +249,13 @@ export default function LoginPage() {
                   type="checkbox"
                   id="login-remember"
                   style={styles.checkbox}
-                  {...register('remember')}
+                  {...register('remember', {
+                    onChange: (event) => {
+                      if (!event.target.checked) rememberedUsername.clear();
+                    },
+                  })}
                 />
-                Recordarme
+                Recordar mi usuario
               </label>
               <button type="button" style={styles.forgotBtn}>
                 ¿Olvidaste tu contraseña?
