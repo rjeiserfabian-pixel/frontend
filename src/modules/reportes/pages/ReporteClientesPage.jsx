@@ -115,8 +115,8 @@ export default function ReporteClientesPage() {
                     <td>{c.email}</td>
                     <td style={{ fontWeight: 700, color: '#16a34a' }}>S/ {Number(c.total_comprado).toFixed(2)}</td>
                     <td>
-                      {c.saldo_pendiente > 0
-                        ? <span className="badge badge-red">S/ {Number(c.saldo_pendiente).toFixed(2)}</span>
+                      {c.saldos_por_moneda?.some(s => Number(s.saldo) > 0)
+                        ? c.saldos_por_moneda.filter(s => Number(s.saldo) > 0).map(s => <span key={s.moneda} className="badge badge-red">{s.moneda} {Number(s.saldo).toFixed(2)} </span>)
                         : <span className="badge badge-green">Al día</span>}
                     </td>
                   </tr>

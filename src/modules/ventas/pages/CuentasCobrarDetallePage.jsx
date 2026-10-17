@@ -13,6 +13,9 @@ import { useReactToPrint } from 'react-to-print';
 import TicketReciboAbono from '../components/TicketReciboAbono';
 import { notificarCobroRegistrado } from '../../../shared/utils/vencidasEvents';
 import { premiumTokens } from '../../../core/theme/theme';
+import CreditoAnteriorDialog from '../components/CreditoAnteriorDialog';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { crearSolicitudId } from '../../../shared/utils/solicitudId';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -59,6 +62,10 @@ export default function CuentasCobrarDetallePage() {
   
   const [cuenta, setCuenta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editar, setEditar] = useState(false);
+  const { tienePermiso } = usePermisos();
+  const cobroSolicitud = React.useRef(null);
+  const cobrando = React.useRef(false);
 
   // Dialog de Pago
   const [openPago, setOpenPago] = useState(false);
@@ -132,6 +139,7 @@ export default function CuentasCobrarDetallePage() {
   }, [id]);
 
   const handleOpenPago = (cuota) => {
+    cobroSolicitud.current = null;
     setSelectedCuota(cuota);
     setPagosActuales([]);
     setMontoIngreso(cuota.saldo_pendiente);
@@ -219,6 +227,7 @@ export default function CuentasCobrarDetallePage() {
   const restanteTotal = selectedCuota ? Number(selectedCuota.saldo_pendiente) - totalPorPagar : 0;
 
   const confirmarPago = async () => {
+    if (cobrando.current) return;
     if (pagosActuales.length === 0) {
       Swal.fire('Atención', 'Agregue al menos un método de pago', 'warning');
       return;
@@ -229,16 +238,20 @@ export default function CuentasCobrarDetallePage() {
       return;
     }
 
+    cobrando.current = true;
+    const firma = JSON.stringify(pagosActuales);
+    if (!cobroSolicitud.current || cobroSolicitud.current.firma !== firma) cobroSolicitud.current = { firma, id: crearSolicitudId() };
     try {
       const response = await api.post(`/ventas/cuentas-por-cobrar/pagar-cuota/${selectedCuota.id}/`, {
-        pagos: pagosActuales
+        pagos: pagosActuales, solicitud_id: cobroSolicitud.current.id,
       });
       notificarCobroRegistrado();
       Swal.fire('Éxito', 'Pago registrado correctamente', 'success');
       const nuevosPagos = response.data.pagos || [];
       const agrupadosNuevos = getPagosAgrupados(nuevosPagos);
       const pagoImprimir = agrupadosNuevos.length > 0 ? agrupadosNuevos[0] : null;
-      const cuotaActual = selectedCuota; // Guardamos la cuota actual antes de cerrar el modal
+      const cuotaActual = response.data.cuenta?.cuotas?.find(c => c.id === selectedCuota.id) || selectedCuota;
+      if (response.data.cuenta) setCuenta(response.data.cuenta);
 
       handleClosePago();
       fetchCuentaDetalle();
@@ -259,6 +272,8 @@ export default function CuentasCobrarDetallePage() {
       console.error(error);
       const msg = error.response?.data?.error || 'Ocurrió un error al procesar el pago.';
       Swal.fire('Error', msg, 'error');
+    } finally {
+      cobrando.current = false;
     }
   };
 
@@ -283,11 +298,31 @@ export default function CuentasCobrarDetallePage() {
     return <Typography sx={{ p: 3 }}>Cargando detalle...</Typography>;
   }
 
-  const repuestos = cuenta.venta_detalles ? cuenta.venta_detalles.filter(d => d.repuesto) : [];
-  const servicios = cuenta.venta_detalles ? cuenta.venta_detalles.filter(d => !d.repuesto) : [];
+  const anterior = cuenta.origen === 'CREDITO_ANTERIOR';
+  const detalles = anterior ? (cuenta.detalles_anteriores || []).map(d => ({ ...d, repuesto_nombre: d.descripcion, repuesto_unidad_medida: d.unidad, descripcion_servicio: d.descripcion })) : (cuenta.venta_detalles || []);
+  const repuestos = detalles.filter(d => anterior ? d.tipo === 'REPUESTO' : d.repuesto);
+  const servicios = detalles.filter(d => anterior ? d.tipo === 'SERVICIO' : !d.repuesto);
+  const anularAnterior = async () => {
+    const result = await Swal.fire({ title: 'Anular crédito anterior', input: 'text', inputLabel: 'Motivo obligatorio', showCancelButton: true, confirmButtonText: 'Anular', inputValidator: v => !v?.trim() ? 'Indique el motivo' : undefined });
+    if (!result.isConfirmed) return;
+    try { await api.post(`ventas/cuentas-por-cobrar/${id}/anular-anterior/`, { motivo: result.value }); fetchCuentaDetalle(); notificarCobroRegistrado(); }
+    catch (err) { Swal.fire('No se pudo anular', err.response?.data?.error || 'Revise los cobros y permisos.', 'error'); }
+  };
 
   return (
     <Box sx={{ p: 3 }}>
+      <CreditoAnteriorDialog open={editar} cuenta={cuenta} onClose={() => setEditar(false)} onSaved={() => { setEditar(false); fetchCuentaDetalle(); notificarCobroRegistrado(); }} />
+      {anterior && <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography fontWeight={700}>Crédito anterior · {cuenta.estado === 'ANULADO' ? 'ANULADO' : cuenta.sistema_origen}</Typography>
+        <Typography>{cuenta.concepto}</Typography><Typography>{cuenta.observaciones}</Typography>
+        <Typography>Original: {cuenta.moneda} {cuenta.importe_original} · Abonos anteriores: {cuenta.moneda} {cuenta.abonos_anteriores} · Corte: {cuenta.fecha_corte}</Typography>
+        {cuenta.ajuste_documento !== '0.00' && <Typography>Ajuste del documento: {cuenta.ajuste_documento} · {cuenta.motivo_ajuste}</Typography>}
+        {cuenta.sin_detalle && <Typography>Sin detalle desglosado</Typography>}
+        {cuenta.estado === 'ANULADO' ? <Typography>Motivo: {cuenta.motivo_anulacion}</Typography> : <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+          {tienePermiso('CUENTAS.POR_COBRAR.EDITAR_ANTERIOR') && <Button onClick={() => setEditar(true)}>Corregir crédito</Button>}
+          {tienePermiso('CUENTAS.POR_COBRAR.ANULAR_ANTERIOR') && !cuenta.cuotas?.some(c => c.pagos?.length) && <Button color="error" onClick={anularAnterior}>Anular crédito</Button>}
+        </Box>}
+      </Paper>}
       <Box sx={{
         background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
         borderRadius: 4, color: 'white', p: 3, mb: 3,
@@ -315,7 +350,7 @@ export default function CuentasCobrarDetallePage() {
         </Box>
         <Box sx={{ textAlign: 'right', bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 2, px: 2.5, py: 1 }}>
           <Typography variant="caption" sx={{ opacity: 0.85, display: 'block' }}>Saldo pendiente</Typography>
-          <Typography variant="h6" fontWeight={800}>S/ {Number(cuenta.saldo_pendiente).toFixed(2)}</Typography>
+          <Typography variant="h6" fontWeight={800}>{cuenta.moneda} {Number(cuenta.saldo_pendiente).toFixed(2)}</Typography>
         </Box>
       </Box>
 
@@ -334,18 +369,19 @@ export default function CuentasCobrarDetallePage() {
 
         {/* Sección: Datos de Venta */}
         <Grid size={{ xs: 12, md: 4 }}>
-          <InfoCard icon={<Receipt size={18} />} title="Datos de la Venta" accent="#7c3aed">
-            <InfoField label="Nro Comprobante">{cuenta.venta_serie || 'N/A'}</InfoField>
+          <InfoCard icon={<Receipt size={18} />} title={anterior ? 'Documento anterior' : 'Datos de la Venta'} accent="#7c3aed">
+            <InfoField label="Documento">{cuenta.documento || 'N/A'}</InfoField>
+            <InfoField label="Placa">{cuenta.placa || 'Sin vehículo asociado'}</InfoField>
             <InfoField icon={<Calendar size={15} />} label="Fecha y Hora">
-              {cuenta.venta_fecha ? new Date(cuenta.venta_fecha).toLocaleString() : 'N/A'}
+              {cuenta.fecha_original || (cuenta.venta_fecha ? new Date(cuenta.venta_fecha).toLocaleString() : 'N/A')}
             </InfoField>
-            <InfoField label="Monto Financiado">S/ {Number(cuenta.monto_financiado).toFixed(2)}</InfoField>
+            <InfoField label="Monto Financiado">{cuenta.moneda} {Number(cuenta.monto_financiado).toFixed(2)}</InfoField>
             <Box sx={{ mt: 2.5, p: 1.8, borderRadius: 2, bgcolor: cuenta.saldo_pendiente > 0 ? alpha(C.brand, 0.14) : alpha(C.emerald, 0.14), border: '1px solid', borderColor: cuenta.saldo_pendiente > 0 ? alpha(C.brand, 0.45) : alpha(C.emerald, 0.45) }}>
               <Typography variant="caption" sx={{ color: cuenta.saldo_pendiente > 0 ? '#fca5a5' : '#a7f3d0', fontWeight: 800, textTransform: 'uppercase' }}>
                 Saldo Pendiente Total
               </Typography>
               <Typography variant="h6" fontWeight={800} sx={{ color: cuenta.saldo_pendiente > 0 ? '#fda4af' : '#6ee7b7' }}>
-                S/ {Number(cuenta.saldo_pendiente).toFixed(2)}
+                {cuenta.moneda} {Number(cuenta.saldo_pendiente).toFixed(2)}
               </Typography>
             </Box>
           </InfoCard>
@@ -372,10 +408,10 @@ export default function CuentasCobrarDetallePage() {
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="caption" color="text.secondary">
-                      {detalle.cantidad} {detalle.repuesto_unidad_medida} × S/ {Number(detalle.precio_unitario).toFixed(2)}
+                      {detalle.cantidad} {detalle.repuesto_unidad_medida} × {cuenta.moneda} {Number(detalle.precio_unitario).toFixed(2)}
                     </Typography>
                     <Typography variant="body2" fontWeight={700} color="#16a34a">
-                      S/ {Number(detalle.subtotal_linea).toFixed(2)}
+                      {cuenta.moneda} {Number(detalle.subtotal_linea).toFixed(2)}
                     </Typography>
                   </Box>
                 </Box>
@@ -404,8 +440,8 @@ export default function CuentasCobrarDetallePage() {
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                    <Typography variant="caption" color="textSecondary">Total:</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>S/ {Number(detalle.subtotal_linea).toFixed(2)}</Typography>
+                    <Typography variant="caption" color="textSecondary">{detalle.cantidad} × {cuenta.moneda} {Number(detalle.precio_unitario).toFixed(2)} · Total:</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{cuenta.moneda} {Number(detalle.subtotal_linea).toFixed(2)}</Typography>
                   </Box>
                 </Box>
               </Grid>
@@ -438,12 +474,12 @@ export default function CuentasCobrarDetallePage() {
                 <TableRow key={cuota.id}>
                   <TableCell>{cuota.numero_cuota}</TableCell>
                   <TableCell>{fechaFormat}</TableCell>
-                  <TableCell align="right">S/ {Number(cuota.monto).toFixed(2)}</TableCell>
-                  <TableCell align="right">S/ {Number(cuota.saldo_pendiente).toFixed(2)}</TableCell>
+                  <TableCell align="right">{cuenta.moneda} {Number(cuota.monto).toFixed(2)}</TableCell>
+                  <TableCell align="right">{cuenta.moneda} {Number(cuota.saldo_pendiente).toFixed(2)}</TableCell>
                   <TableCell align="center">{getEstadoChip(cuota)}</TableCell>
                 <TableCell align="center">
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                    {cuota.estado !== 'PAGADA' && (
+                    {cuota.estado !== 'PAGADA' && cuenta.estado !== 'ANULADO' && tienePermiso('CUENTAS.POR_COBRAR.REGISTRAR_PAGO') && (
                       <Button 
                         variant="contained" 
                         size="small" 
@@ -495,7 +531,7 @@ export default function CuentasCobrarDetallePage() {
                 Cobrar Cuota {selectedCuota?.numero_cuota}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                Saldo pendiente: S/ {Number(selectedCuota?.saldo_pendiente).toFixed(2)}
+                Saldo pendiente: {cuenta.moneda} {Number(selectedCuota?.saldo_pendiente).toFixed(2)}
               </Typography>
             </Box>
           </Box>
@@ -564,7 +600,7 @@ export default function CuentasCobrarDetallePage() {
                     <TableRow key={idx}>
                       <TableCell>{p.metodo_nombre}</TableCell>
                       <TableCell>{p.referencia || '-'}</TableCell>
-                      <TableCell align="right">S/ {p.monto.toFixed(2)}</TableCell>
+                      <TableCell align="right">{cuenta.moneda} {p.monto.toFixed(2)}</TableCell>
                       <TableCell align="center">
                         <IconButton size="small" color="error" onClick={() => quitarPago(idx)}>
                           <Trash2 size={16} />
@@ -574,7 +610,7 @@ export default function CuentasCobrarDetallePage() {
                   ))}
                   <TableRow>
                     <TableCell colSpan={2} align="right"><strong>Total a Pagar:</strong></TableCell>
-                    <TableCell align="right"><strong>S/ {totalPorPagar.toFixed(2)}</strong></TableCell>
+                    <TableCell align="right"><strong>{cuenta.moneda} {totalPorPagar.toFixed(2)}</strong></TableCell>
                     <TableCell></TableCell>
                   </TableRow>
                 </TableBody>
@@ -584,12 +620,12 @@ export default function CuentasCobrarDetallePage() {
 
           {restanteTotal > 0 && pagosActuales.length > 0 && (
             <Typography variant="body2" color="warning.main">
-              Falta cobrar: S/ {restanteTotal.toFixed(2)}
+              Falta cobrar: {cuenta.moneda} {restanteTotal.toFixed(2)}
             </Typography>
           )}
           {restanteTotal < 0 && (
             <Typography variant="body2" color="error.main">
-              El monto ingresado excede el saldo de la cuota en S/ {Math.abs(restanteTotal).toFixed(2)}
+              El monto ingresado excede el saldo de la cuota en {cuenta.moneda} {Math.abs(restanteTotal).toFixed(2)}
             </Typography>
           )}
 
@@ -740,7 +776,7 @@ export default function CuentasCobrarDetallePage() {
                 <Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.5}>TOTAL PAGADO</Typography>
                   <Typography variant="h5" fontWeight="bold" sx={{ color: C.text, lineHeight: 1.2, mt: 0.5 }}>
-                    S/ {parseFloat((cuotaHistorial?.monto || 0) - (cuotaHistorial?.saldo_pendiente || 0)).toFixed(2)}
+                    {cuenta.moneda} {parseFloat((cuotaHistorial?.monto || 0) - (cuotaHistorial?.saldo_pendiente || 0)).toFixed(2)}
                   </Typography>
                   <Chip 
                     label={cuotaHistorial?.estado || 'PARCIAL'} 
@@ -813,7 +849,7 @@ export default function CuentasCobrarDetallePage() {
                         </TableCell>
                         <TableCell>
                            <Typography variant="body2" fontWeight={700} sx={{ color: '#10b981' }}>
-                              S/ {parseFloat(pago.monto).toFixed(2)}
+                              {cuenta.moneda} {parseFloat(pago.monto).toFixed(2)}
                            </Typography>
                         </TableCell>
                         <TableCell align="right">

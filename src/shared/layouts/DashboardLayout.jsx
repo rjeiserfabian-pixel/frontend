@@ -118,6 +118,7 @@ export default function DashboardLayout() {
         titulo: r.cliente_nombre,
         subtitulo: `${r.codigo_credito} · Cuota ${r.numero_cuota}`,
         monto: r.saldo_pendiente,
+        moneda: r.moneda || 'PEN',
         diasVencido: r.dias_vencido,
         to: `/cuentas/por-cobrar/credito/${r.cuenta_cobrar_id}`,
       })),

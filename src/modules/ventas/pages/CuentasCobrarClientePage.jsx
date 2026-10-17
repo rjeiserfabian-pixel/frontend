@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, IconButton, Chip, Button, CircularProgress
+  TableHead, TableRow, IconButton, Chip, Button, CircularProgress, TablePagination
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Eye, ArrowLeft, User, Inbox } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { premiumTokens } from '../../../core/theme/theme';
+import CreditoAnteriorDialog from '../components/CreditoAnteriorDialog';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -19,13 +21,21 @@ export default function CuentasCobrarClientePage() {
   const [cuentas, setCuentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [clienteInfo, setClienteInfo] = useState(null);
+  const [page, setPage] = useState(0);
+  const [count, setCount] = useState(0);
+  const [totales, setTotales] = useState([]);
+  const [nuevo, setNuevo] = useState(false);
+  const [params] = useSearchParams();
+  const { tienePermiso } = usePermisos();
 
   const fetchCuentasCliente = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/ventas/cuentas-por-cobrar/?cliente_id=${clienteId}`);
+      const res = await api.get('/ventas/cuentas-por-cobrar/', { params: { cliente_id: clienteId, page: page + 1, page_size: 10, moneda: params.get('moneda') || '' } });
       const data = res.data.results || res.data;
       setCuentas(data);
+      setCount(res.data.count ?? data.length);
+      setTotales(res.data.totales_por_moneda || []);
 
       if (data.length > 0) {
         setClienteInfo({
@@ -45,13 +55,14 @@ export default function CuentasCobrarClientePage() {
     if (clienteId) {
       fetchCuentasCliente();
     }
-  }, [clienteId]);
+  }, [clienteId, page, params]);
 
   const handleOpenCuotas = (cuenta) => {
     navigate(`/cuentas/por-cobrar/credito/${cuenta.id}`);
   };
 
   const getEstadoChip = (cuenta) => {
+    if (cuenta.estado === 'ANULADO') return <Chip label="Anulado" size="small" />;
     // El campo "estado" nunca llega a ATRASADO por sí solo (nada lo
     // actualiza); "esta_atrasada" lo calcula el backend al vuelo comparando
     // fechas, así que tiene prioridad sobre el texto guardado.
@@ -65,16 +76,19 @@ export default function CuentasCobrarClientePage() {
     }
   };
 
-  const saldoTotal = cuentas.reduce((acc, c) => acc + Number(c.saldo_pendiente || 0), 0);
   return (
     <Box sx={{ p: 3 }}>
-      <Button
-        startIcon={<ArrowLeft size={18} />}
-        onClick={() => navigate('/cuentas/por-cobrar')}
-        sx={{ mb: 2, textTransform: 'none', color: 'text.secondary' }}
-      >
-        Volver al Resumen General
-      </Button>
+      <CreditoAnteriorDialog open={nuevo} clienteInicial={Number(clienteId)} onClose={() => setNuevo(false)} onSaved={c => { setNuevo(false); navigate(`/cuentas/por-cobrar/credito/${c.id}`); }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Button
+          startIcon={<ArrowLeft size={18} />}
+          onClick={() => navigate('/cuentas/por-cobrar')}
+          sx={{ textTransform: 'none', color: 'text.secondary' }}
+        >
+          Volver al Resumen General
+        </Button>
+        {tienePermiso('CUENTAS.POR_COBRAR.REGISTRAR_ANTERIOR') && <Button variant="contained" onClick={() => setNuevo(true)}>Registrar crédito anterior</Button>}
+      </Box>
 
       {/* HEADER */}
       <Box sx={{
@@ -98,7 +112,7 @@ export default function CuentasCobrarClientePage() {
         </Box>
         <Box sx={{ textAlign: 'right', bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 2, px: 2.5, py: 1 }}>
           <Typography variant="caption" sx={{ opacity: 0.85, display: 'block' }}>Saldo pendiente total</Typography>
-          <Typography variant="h6" fontWeight={800}>S/ {saldoTotal.toFixed(2)}</Typography>
+          {totales.map(t => <Typography key={t.moneda} variant="h6" fontWeight={800}>{t.moneda} {Number(t.saldo_pendiente).toFixed(2)}</Typography>)}
         </Box>
       </Box>
 
@@ -108,7 +122,7 @@ export default function CuentasCobrarClientePage() {
             <TableHead>
               <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>CÓD. CRÉDITO</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>NRO VENTA</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DOCUMENTO / PLACA / ORIGEN</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>MONTO FINANCIADO</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ESTADO</TableCell>
@@ -131,10 +145,12 @@ export default function CuentasCobrarClientePage() {
                 cuentas.map((row) => (
                   <TableRow key={row.id} hover>
                     <TableCell sx={{ fontWeight: 600 }}>{row.codigo_credito}</TableCell>
-                    <TableCell sx={{ color: '#7dd3fc', fontWeight: 700 }}>{row.venta_serie}</TableCell>
-                    <TableCell align="right">S/ {Number(row.monto_financiado).toFixed(2)}</TableCell>
+                    <TableCell sx={{ color: '#7dd3fc', fontWeight: 700 }}>
+                      {row.documento || 'Sin comprobante'}{row.placa ? ` / ${row.placa}` : ''} · <Typography component="span" variant="caption">{row.origen === 'CREDITO_ANTERIOR' ? 'Crédito anterior' : 'Venta'}</Typography>
+                    </TableCell>
+                    <TableCell align="right">{row.moneda} {Number(row.monto_financiado).toFixed(2)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: row.saldo_pendiente > 0 ? '#dc2626' : '#16a34a' }}>
-                      S/ {Number(row.saldo_pendiente).toFixed(2)}
+                      {row.moneda} {Number(row.saldo_pendiente).toFixed(2)}
                     </TableCell>
                     <TableCell align="center">{getEstadoChip(row)}</TableCell>
                     <TableCell align="center">
@@ -153,6 +169,7 @@ export default function CuentasCobrarClientePage() {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination component="div" count={count} page={page} rowsPerPage={10} rowsPerPageOptions={[10]} onPageChange={(_, p) => setPage(p)} labelDisplayedRows={({ from, to, count: n }) => `${from}–${to} de ${n}`} />
       </Paper>
     </Box>
   );

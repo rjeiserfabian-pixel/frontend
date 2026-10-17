@@ -3,7 +3,10 @@ import { Box, Typography } from '@mui/material';
 import api from '../../../core/api/axios';
 import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
-const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) => {
+const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta: cuentaActual, cuota: cuotaActual }, ref) => {
+  const datos = pagoAbono?.recibo_datos || {};
+  const cuenta = cuentaActual ? { ...cuentaActual, ...datos } : null;
+  const cuota = cuotaActual ? { ...cuotaActual, numero_cuota: datos.numero_cuota ?? cuotaActual.numero_cuota, estado: datos.cuota_estado || cuotaActual.estado, fecha_vencimiento: datos.fecha_vencimiento || cuotaActual.fecha_vencimiento } : null;
   const [empresa, setEmpresa] = useState(null);
 
   useEffect(() => {
@@ -119,14 +122,14 @@ const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) =
             HORA: {new Date(pagoAbono.fecha_pago).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false })}
           </Typography>
           <Typography variant="body2" sx={{ fontSize: '11px', fontWeight: 'bold' }}>
-            MONEDA: SOLES
+            MONEDA: {cuenta.moneda || 'PEN'}
           </Typography>
           <Typography variant="body2" sx={{ fontSize: '11px', fontWeight: 'bold' }}>
             FORMA DE PAGO: {pagoAbono.metodo_pago_nombre}
           </Typography>
           {pagoAbono.subpagos && pagoAbono.subpagos.length > 1 ? (
             <Typography variant="body2" sx={{ fontSize: '11px', fontWeight: 'bold' }}>
-              DETALLE: {pagoAbono.subpagos.map(s => `${s.metodo_pago_nombre}${s.referencia ? ` (Op:${s.referencia})` : ''}: S/ ${Number(s.monto).toFixed(2)}`).join(' | ')}
+              DETALLE: {pagoAbono.subpagos.map(s => `${s.metodo_pago_nombre}${s.referencia ? ` (Op:${s.referencia})` : ''}: ${Number(s.monto).toFixed(2)}`).join(' | ')}
             </Typography>
           ) : pagoAbono.referencia ? (
             <Typography variant="body2" sx={{ fontSize: '11px', fontWeight: 'bold' }}>
@@ -153,13 +156,15 @@ const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) =
           <tbody>
             <tr>
               <td style={{ textAlign: 'left', padding: '4px 0' }}>{cuenta.codigo_credito}</td>
-              <td style={{ textAlign: 'center', padding: '4px 0' }}>{new Date(cuenta.venta_fecha).toLocaleDateString('es-PE')}</td>
-              <td style={{ textAlign: 'right', padding: '4px 0' }}>S/ {Number(cuenta.monto_financiado).toFixed(2)}</td>
-              <td style={{ textAlign: 'right', padding: '4px 0' }}>S/ {Number(cuenta.saldo_pendiente).toFixed(2)}</td>
+              <td style={{ textAlign: 'center', padding: '4px 0' }}>{cuenta.fecha_original ? cuenta.fecha_original.split('-').reverse().join('/') : cuenta.venta_fecha ? new Date(cuenta.venta_fecha).toLocaleDateString('es-PE') : '—'}</td>
+              <td style={{ textAlign: 'right', padding: '4px 0' }}>{Number(cuenta.monto_financiado).toFixed(2)}</td>
+              <td style={{ textAlign: 'right', padding: '4px 0' }}>{Number(cuenta.saldo_pendiente).toFixed(2)}</td>
             </tr>
           </tbody>
         </table>
 
+        <Typography sx={{ fontSize: '11px' }}>DOCUMENTO: {cuenta.documento || cuenta.venta_serie || '—'} · PLACA: {cuenta.placa || 'Sin vehículo'}</Typography>
+        {!datos.codigo_credito && <Typography sx={{ fontSize: '10px' }}>Recibo anterior: el saldo mostrado corresponde a la consulta actual.</Typography>}
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '12px' }}>PAGO DE CUOTAS</Typography>
           <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '11px' }}>
@@ -177,7 +182,7 @@ const TicketReciboAbono = React.forwardRef(({ pagoAbono, cuenta, cuota }, ref) =
 
         <Box sx={{ textAlign: 'center', mt: 3, mb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '18px' }}>
-            Importe Total S/ {Number(pagoAbono.monto).toFixed(2)}
+            Importe Total {Number(pagoAbono.monto).toFixed(2)}
           </Typography>
         </Box>
         

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, IconButton, Chip, TablePagination, CircularProgress
+  TableHead, TableRow, IconButton, Chip, TablePagination, CircularProgress, Button, TextField, MenuItem
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Wallet, DollarSign, Users, Inbox } from 'lucide-react';
 import api from '../../../core/api/axios';
 import Swal from 'sweetalert2';
 import { premiumTokens } from '../../../core/theme/theme';
+import CreditoAnteriorDialog from '../components/CreditoAnteriorDialog';
+import { usePermisos } from '../../../shared/contexts/PermisosContext';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -19,6 +21,10 @@ export default function CuentasCobrarResumenPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalClientes, setTotalClientes] = useState(0);
+  const [nuevo, setNuevo] = useState(false);
+  const [search, setSearch] = useState('');
+  const [origen, setOrigen] = useState('');
+  const { tienePermiso } = usePermisos();
 
   const navigate = useNavigate();
 
@@ -28,7 +34,7 @@ export default function CuentasCobrarResumenPage() {
       const res = await api.get(`/ventas/cuentas-por-cobrar/resumen-clientes/`, {
         params: {
           page: page + 1,
-          page_size: rowsPerPage
+          page_size: rowsPerPage, search, origen,
         }
       });
       setClientes(res.data.results || res.data);
@@ -43,10 +49,10 @@ export default function CuentasCobrarResumenPage() {
 
   useEffect(() => {
     fetchClientes();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, search, origen]);
 
   const handleOpenCliente = (cliente) => {
-    navigate(`/cuentas/por-cobrar/cliente/${cliente.venta__cliente__id}`);
+    navigate(`/cuentas/por-cobrar/cliente/${cliente.cliente_id}?moneda=${cliente.moneda}`);
   };
 
   const getEstadoChip = (row) => {
@@ -62,6 +68,14 @@ export default function CuentasCobrarResumenPage() {
   return (
     <Box sx={{ p: 3 }}>
       {/* HEADER */}
+      <CreditoAnteriorDialog open={nuevo} onClose={() => setNuevo(false)} onSaved={c => { setNuevo(false); navigate(`/cuentas/por-cobrar/credito/${c.id}`); }} />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <TextField size="small" label="Cliente o documento" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+          <TextField select size="small" label="Origen" value={origen} sx={{ minWidth: 180 }} onChange={e => { setOrigen(e.target.value); setPage(0); }}><MenuItem value="">Todos</MenuItem><MenuItem value="VENTA">Ventas del sistema</MenuItem><MenuItem value="CREDITO_ANTERIOR">Créditos anteriores</MenuItem></TextField>
+        </Box>
+        {tienePermiso('CUENTAS.POR_COBRAR.REGISTRAR_ANTERIOR') && <Button variant="contained" onClick={() => setNuevo(true)}>Registrar crédito anterior</Button>}
+      </Box>
       <Box sx={{
         background: `linear-gradient(135deg, ${C.bgElevated}, ${C.surfaceSoft})`,
         border: `1px solid ${C.border}`, borderRadius: '8px', color: 'white', p: 3, mb: 3,
@@ -74,12 +88,12 @@ export default function CuentasCobrarResumenPage() {
           </Box>
           <Box>
             <Typography variant="h5" fontWeight={800} lineHeight={1.2}>Cuentas por Cobrar</Typography>
-            <Typography variant="body2" sx={{ opacity: 0.85 }}>Resumen de deuda por cliente (ventas al crédito)</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.85 }}>Créditos por cliente y moneda · ventas y deudas anteriores</Typography>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 2, px: 2.5, py: 1 }}>
           <Users size={18} />
-          <Typography variant="body2" fontWeight={700}>{totalClientes} cliente{totalClientes !== 1 ? 's' : ''} con crédito</Typography>
+          <Typography variant="body2" fontWeight={700}>{totalClientes} grupo{totalClientes !== 1 ? 's' : ''} de cliente y moneda</Typography>
         </Box>
       </Box>
 
@@ -90,7 +104,7 @@ export default function CuentasCobrarResumenPage() {
               <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DOCUMENTO (DNI/RUC)</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>CLIENTE</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>DEUDA TOTAL HISTÓRICA</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>IMPORTE GESTIONADO</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>SALDO PENDIENTE</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ESTADO</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 800, color: '#bae6fd', fontSize: '0.8rem' }}>ACCIONES</TableCell>
@@ -110,14 +124,14 @@ export default function CuentasCobrarResumenPage() {
                 </TableRow>
               ) : (
                 clientes.map((row) => (
-                  <TableRow key={row.venta__cliente__id} hover>
+                  <TableRow key={`${row.cliente_id}-${row.moneda}`} hover>
                     <TableCell sx={{ color: '#7dd3fc', fontWeight: 700 }}>{row.venta__cliente__dni}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>
                       {(row.venta__cliente__nombres || '') + ' ' + (row.venta__cliente__apellidos || '')}
                     </TableCell>
-                    <TableCell align="right">S/ {Number(row.total_deuda || 0).toFixed(2)}</TableCell>
+                    <TableCell align="right">{row.moneda} {Number(row.total_deuda || 0).toFixed(2)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, color: row.saldo_pendiente_total > 0 ? '#dc2626' : '#16a34a' }}>
-                      S/ {Number(row.saldo_pendiente_total || 0).toFixed(2)}
+                      {row.moneda} {Number(row.saldo_pendiente_total || 0).toFixed(2)}
                     </TableCell>
                     <TableCell align="center">{getEstadoChip(row)}</TableCell>
                     <TableCell align="center">

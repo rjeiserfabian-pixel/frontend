@@ -6,8 +6,8 @@ import {
 } from '@mui/material';
 import { Bell } from 'lucide-react';
 
-const fmtMoney = (v) =>
-  new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v ?? 0);
+const fmtMoney = (v, moneda = 'PEN') =>
+  new Intl.NumberFormat('es-PE', { style: 'currency', currency: moneda }).format(v ?? 0);
 
 // Refresca el contador cada 5 min para que no quede desactualizado mientras
 // el usuario tiene la sesión abierta, sin llegar a saturar al backend.
@@ -134,7 +134,7 @@ const OverdueAccountsBell = ({
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mt: 0.3 }}>
                   <Typography variant="caption" color="text.secondary">{item.subtitulo}</Typography>
                   {item.monto != null && (
-                    <Typography variant="caption" fontWeight="600" color="error.main">{fmtMoney(item.monto)}</Typography>
+                    <Typography variant="caption" fontWeight="600" color="error.main">{fmtMoney(item.monto, item.moneda)}</Typography>
                   )}
                 </Box>
               </ListItemButton>
