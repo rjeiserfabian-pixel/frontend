@@ -57,7 +57,7 @@ const ComprasPage = () => {
   const [cuentaDetalle, setCuentaDetalle] = useState(null);
 
   useEffect(() => {
-    proveedorService.listar()
+    proveedorService.listarTodos()
       .then((data) => {
         const list = Array.isArray(data) ? data : (data.results || data.data || []);
         setProveedores(list);

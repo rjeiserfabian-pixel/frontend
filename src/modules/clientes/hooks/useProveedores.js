@@ -7,10 +7,10 @@ export const useProveedores = () => {
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
 
-  const cargarProveedores = useCallback(async (page = 1, search = '') => {
+  const cargarProveedores = useCallback(async (page = 1, search = '', pageSize = 10) => {
     setLoading(true);
     try {
-      const data = await proveedorService.listar(page, search);
+      const data = await proveedorService.listar(page, search, pageSize);
       setProveedores(data.results || data);
       setTotalCount(data.count || 0);
     } catch (error) {

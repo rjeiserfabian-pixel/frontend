@@ -151,7 +151,7 @@ const NuevaCompraPage = () => {
 
   const fetchProveedores = async () => {
     try {
-      const data = await proveedorService.listar();
+      const data = await proveedorService.listarTodos();
       const list = Array.isArray(data) ? data : (data.results || data.data || []);
       setProveedores(list);
     } catch (error) {

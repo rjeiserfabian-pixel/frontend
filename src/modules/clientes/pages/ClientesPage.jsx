@@ -37,10 +37,10 @@ const ClientesPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       // DRF paginates 1-indexed
-      cargarClientes(page + 1, search);
+      cargarClientes(page + 1, search, rowsPerPage);
     }, 400); // 400ms debounce
     return () => clearTimeout(timer);
-  }, [page, search, cargarClientes]);
+  }, [page, search, rowsPerPage, cargarClientes]);
 
   const handleOpenModal = (cliente = null) => {
     setClienteEdit(cliente);
@@ -67,7 +67,7 @@ const ClientesPage = () => {
       if (result.isConfirmed) {
         const success = await eliminarCliente(id);
         if (success) {
-          cargarClientes(page + 1, search);
+          cargarClientes(page + 1, search, rowsPerPage);
         }
       }
     });
@@ -226,7 +226,7 @@ const ClientesPage = () => {
       <ClientesForm
         open={modalOpen}
         onClose={handleCloseModal}
-        onSuccess={() => cargarClientes(page + 1, search)}
+        onSuccess={() => cargarClientes(page + 1, search, rowsPerPage)}
         clienteEdit={clienteEdit}
       />
 

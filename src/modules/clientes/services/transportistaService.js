@@ -4,11 +4,23 @@ const BASE_URL = 'clientes/transportistas/';
 
 export const transportistaService = {
   // Paginación y listado (Regla 1.2: Paginación delegada al backend)
-  listar: async (page = 1, search = '') => {
-    const params = new URLSearchParams({ page });
+  listar: async (page = 1, search = '', pageSize = 10, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.sin_paginar || page === null) {
+      params.append('sin_paginar', 'true');
+    } else {
+      if (page) params.append('page', page);
+      if (pageSize) params.append('page_size', pageSize);
+    }
     if (search) params.append('search', search);
     const response = await api.get(`${BASE_URL}?${params.toString()}`);
     return response.data;
+  },
+
+  listarTodos: async () => {
+    const response = await api.get(`${BASE_URL}?sin_paginar=true`);
+    const data = response.data;
+    return Array.isArray(data) ? data : (data.results || data.data || []);
   },
 
   obtener: async (id) => {

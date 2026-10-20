@@ -44,8 +44,8 @@ const TransportistasPage = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    cargarTransportistas(page + 1, debouncedSearch);
-  }, [cargarTransportistas, debouncedSearch, page]);
+    cargarTransportistas(page + 1, debouncedSearch, rowsPerPage);
+  }, [cargarTransportistas, debouncedSearch, page, rowsPerPage]);
 
   const handleOpenModal = (transportista = null) => {
     setTransportistaEdit(transportista);
@@ -58,7 +58,7 @@ const TransportistasPage = () => {
   };
 
   const handleSuccess = () => {
-    cargarTransportistas(page + 1, debouncedSearch);
+    cargarTransportistas(page + 1, debouncedSearch, rowsPerPage);
   };
 
   // Regla 5.1: Confirmación explícita para acciones destructivas
@@ -76,7 +76,7 @@ const TransportistasPage = () => {
       if (result.isConfirmed) {
         const success = await eliminarTransportista(id);
         if (success) {
-          cargarTransportistas(page + 1, debouncedSearch);
+          cargarTransportistas(page + 1, debouncedSearch, rowsPerPage);
         }
       }
     });

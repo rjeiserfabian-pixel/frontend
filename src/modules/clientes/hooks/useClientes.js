@@ -8,10 +8,10 @@ export const useClientes = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   // Regla 2.3: Estabilidad de funciones con useCallback
-  const cargarClientes = useCallback(async (page = 1, search = '') => {
+  const cargarClientes = useCallback(async (page = 1, search = '', pageSize = 10) => {
     setLoading(true);
     try {
-      const data = await clienteService.listar(page, search);
+      const data = await clienteService.listar(page, search, pageSize);
       setClientes(data.results || data);
       setTotalCount(data.count || 0);
     } catch (error) {

@@ -44,8 +44,8 @@ const ProveedoresPage = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    cargarProveedores(page + 1, debouncedSearch);
-  }, [cargarProveedores, debouncedSearch, page]);
+    cargarProveedores(page + 1, debouncedSearch, rowsPerPage);
+  }, [cargarProveedores, debouncedSearch, page, rowsPerPage]);
 
   const handleOpenModal = (proveedor = null) => {
     setProveedorEdit(proveedor);
@@ -58,7 +58,7 @@ const ProveedoresPage = () => {
   };
 
   const handleSuccess = () => {
-    cargarProveedores(page + 1, debouncedSearch);
+    cargarProveedores(page + 1, debouncedSearch, rowsPerPage);
   };
 
   // Regla 5.1: Confirmación explícita para acciones destructivas
@@ -76,7 +76,7 @@ const ProveedoresPage = () => {
       if (result.isConfirmed) {
         const success = await eliminarProveedor(id);
         if (success) {
-          cargarProveedores(page + 1, debouncedSearch);
+          cargarProveedores(page + 1, debouncedSearch, rowsPerPage);
         }
       }
     });

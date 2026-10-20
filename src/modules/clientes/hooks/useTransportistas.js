@@ -7,10 +7,10 @@ export const useTransportistas = () => {
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
 
-  const cargarTransportistas = useCallback(async (page = 1, search = '') => {
+  const cargarTransportistas = useCallback(async (page = 1, search = '', pageSize = 10) => {
     setLoading(true);
     try {
-      const data = await transportistaService.listar(page, search);
+      const data = await transportistaService.listar(page, search, pageSize);
       setTransportistas(data.results || data);
       setTotalCount(data.count || 0);
     } catch (error) {

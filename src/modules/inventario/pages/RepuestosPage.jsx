@@ -91,6 +91,7 @@ export default function RepuestosPage() {
       setLoading(true);
       const params = {
         page: page + 1,
+        page_size: rowsPerPage,
         search: searchQuery,
         categoria: filterCategoria,
         marca: filterMarca,
@@ -129,7 +130,7 @@ export default function RepuestosPage() {
       fetchData();
     }, 400); // debounce para no saturar al buscar
     return () => clearTimeout(delayDebounceFn);
-  }, [page, searchQuery, filterCategoria, filterMarca, filterUbicacion, filterKiosko, orderBy, order]);
+  }, [page, rowsPerPage, searchQuery, filterCategoria, filterMarca, filterUbicacion, filterKiosko, orderBy, order]);
 
   const handleOpenModal = (repuesto = null) => {
     if (repuesto) {
@@ -706,11 +707,13 @@ export default function RepuestosPage() {
             page={page}
             onPageChange={(e, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
             onRowsPerPageChange={(e) => {
               setRowsPerPage(parseInt(e.target.value, 10));
               setPage(0);
             }}
             labelRowsPerPage="Filas por página:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`}
           />
           </>
         )}
