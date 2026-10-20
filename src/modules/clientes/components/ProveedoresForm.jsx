@@ -16,6 +16,7 @@ const schema = z.object({
   tipo_documento: z.enum(['DNI', 'RUC']),
   numero_documento: z.string().min(8, 'Debe tener al menos 8 caracteres'),
   nombre_o_razon_social: z.string().min(2, 'Obligatorio'),
+  rubro_comercial: z.string().optional(),
   telefono: z.string().optional(),
   direccion: z.string().optional(),
   email: z.string().email('Email inválido').or(z.literal('')).optional(),
@@ -28,7 +29,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
   const { control, handleSubmit, reset, setValue, getValues, formState: { errors, isSubmitting }, watch } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      tipo_documento: 'RUC', numero_documento: '', nombre_o_razon_social: '', telefono: '', direccion: '', email: ''
+      tipo_documento: 'RUC', numero_documento: '', nombre_o_razon_social: '', rubro_comercial: '', telefono: '', direccion: '', email: ''
     }
   });
 
@@ -38,7 +39,6 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
   // Auto-corrección en tiempo real mientras el usuario escribe
   useEffect(() => {
     if (numDocWatch) {
-      // Remover todo lo que no sea número para contar
       const numLength = numDocWatch.replace(/\D/g, '').length;
       if (numLength === 8 && tipoDocWatch !== 'DNI') {
         setValue('tipo_documento', 'DNI');
@@ -52,20 +52,21 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
     if (proveedorEdit) {
       reset({
          ...proveedorEdit,
+         rubro_comercial: proveedorEdit.rubro_comercial || '',
          email: proveedorEdit.email || ''
       });
     } else {
-      reset({ tipo_documento: 'RUC', numero_documento: '', nombre_o_razon_social: '', telefono: '', direccion: '', email: '' });
+      reset({ tipo_documento: 'RUC', numero_documento: '', nombre_o_razon_social: '', rubro_comercial: '', telefono: '', direccion: '', email: '' });
     }
   }, [proveedorEdit, open, reset]);
 
+  // Regla 1.4: AbortController para búsquedas si se desmonta o cierra
   const handleConsultarDocumento = async () => {
     let tipo = getValues('tipo_documento');
     const docActual = getValues('numero_documento');
     
     if (!docActual || docActual.length < 8) return;
 
-    // Auto-corrección inteligente basada en la longitud
     if (docActual.length === 8 && tipo !== 'DNI') {
       tipo = 'DNI';
       setValue('tipo_documento', 'DNI');
@@ -87,6 +88,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
   };
 
   const onSubmit = async (data) => {
+    // Regla 3.3: Botón deshabilitado al enviar (controlado por isSubmitting)
     const exito = await guardarProveedor(data, proveedorEdit?.id);
     if (exito) {
       if (onSuccess) onSuccess(exito);
@@ -140,7 +142,7 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
                   )}
                 />
                 <Button 
-                  variant="contained"
+                  variant="contained" 
                   onClick={handleConsultarDocumento} 
                   disabled={isSearchingDni || isSubmitting || proveedorEdit != null}
                   sx={{ minWidth: '120px' }}
@@ -166,6 +168,26 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
                 )}
               />
             </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <Controller
+                name="rubro_comercial"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Productos / Servicios que provee (Opcional)"
+                    placeholder="Ej: Lubricantes, llantas, repuestos de suspensión, torno..."
+                    fullWidth
+                    size="small"
+                    value={field.value || ''}
+                    error={!!errors.rubro_comercial}
+                    helperText={errors.rubro_comercial?.message}
+                  />
+                )}
+              />
+            </Grid>
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="telefono"
@@ -233,5 +255,4 @@ const ProveedoresForm = ({ open, onClose, onSuccess, proveedorEdit }) => {
   );
 };
 
-// Regla 2.1: Evitar re-renders innecesarios
-export default React.memo(ProveedoresForm);
+export default ProveedoresForm;

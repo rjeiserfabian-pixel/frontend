@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, Button,
-  TextField, CircularProgress, IconButton, Grid, Box, MenuItem
+  TextField, CircularProgress, IconButton, Grid, Box, MenuItem,
+  Autocomplete
 } from '@mui/material';
+import api from '../../../core/api/axios';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
+import { Plus } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
+import ClientesForm from '../../clientes/components/ClientesForm';
 
 // Regla 4.3: Validación con Zod
 const schema = z.object({
@@ -28,8 +32,11 @@ const schema = z.object({
   kilometraje_actual: z.union([z.string(), z.number()]).optional(),
 });
 
-const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
+const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial }) => {
   const [isSearching, setIsSearching] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const [clienteModalOpen, setClienteModalOpen] = useState(false);
 
   const { control, handleSubmit, reset, setValue, getValues, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -38,6 +45,23 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
       color: '', clase: '', tipo: '', uso: '', tipo_combustible: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
     }
   });
+
+  const fetchClientes = async (query = '') => {
+    if (query.length === 1) return;
+    try {
+      const res = await api.get('clientes/', { params: { search: query } });
+      const data = res.data.results || res.data;
+      setClientes(data);
+    } catch (err) {
+      console.error('Error cargando clientes:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (clienteSeleccionado?.id) {
+      setClientes(prev => prev.some(c => c.id === clienteSeleccionado.id) ? prev : [clienteSeleccionado, ...prev]);
+    }
+  }, [clienteSeleccionado]);
 
   useEffect(() => {
     if (vehiculoEdit) {
@@ -56,13 +80,19 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
         numero_asientos: vehiculoEdit.numero_asientos || '',
         kilometraje_actual: vehiculoEdit.kilometraje_actual || '',
       });
+      if (vehiculoEdit.clientes_detalle && vehiculoEdit.clientes_detalle.length > 0) {
+        setClienteSeleccionado(vehiculoEdit.clientes_detalle[0]);
+      } else {
+        setClienteSeleccionado(null);
+      }
     } else {
       reset({
         placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '',
         color: '', clase: '', tipo: '', uso: '', tipo_combustible: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
       });
+      setClienteSeleccionado(clienteInicial || null);
     }
-  }, [vehiculoEdit, open, reset]);
+  }, [vehiculoEdit, open, reset, clienteInicial]);
 
   // Regla 1.4: Cancelación de peticiones HTTP en caso de desmontaje
   const handleBuscarPlaca = async () => {
@@ -120,9 +150,14 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
 
   const onSubmit = async (data) => {
     try {
+      const payload = {
+        ...data,
+        cliente_id: clienteSeleccionado?.id || null,
+      };
+
       // Regla 3.3: Botones deshabilitados (controlado por isSubmitting)
       if (vehiculoEdit) {
-        await vehiculoService.updateVehiculo(vehiculoEdit.id, data);
+        const res = await vehiculoService.updateVehiculo(vehiculoEdit.id, payload);
         Swal.fire({
           icon: 'success',
           title: 'Éxito',
@@ -132,8 +167,11 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
             if (container) container.style.zIndex = '9999';
           }
         });
+        onSuccess(res.data || res);
+        onClose();
+        return;
       } else {
-        const res = await vehiculoService.createVehiculo(data);
+        const res = await vehiculoService.createVehiculo(payload);
         Swal.fire({
           icon: 'success',
           title: 'Éxito',
@@ -147,8 +185,6 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
         onClose();
         return; // Early return to avoid double onSuccess call below
       }
-      onSuccess();
-      onClose();
     } catch (error) {
       console.error(error);
       let errorMessage = 'Hubo un error al guardar';
@@ -180,7 +216,8 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         {vehiculoEdit ? 'Editar Vehículo' : 'Nuevo Vehículo'}
         <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -191,6 +228,61 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent dividers>
           <Grid container spacing={2}>
+            <Grid size={{ xs: 12 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Autocomplete
+                    options={clientes}
+                    value={clienteSeleccionado}
+                    onOpen={() => {
+                      if (clientes.length === 0) fetchClientes('');
+                    }}
+                    onInputChange={(e, newInputValue, reason) => {
+                      if (reason === 'input' || reason === 'clear') {
+                        fetchClientes(newInputValue);
+                      }
+                    }}
+                    getOptionLabel={(option) => {
+                      if (!option) return '';
+                      return `${option.dni || ''} - ${option.nombres || ''} ${option.apellidos || ''}`.trim();
+                    }}
+                    isOptionEqualToValue={(option, val) => option?.id === val?.id}
+                    onChange={(e, val) => setClienteSeleccionado(val)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Asociar Cliente / Propietario"
+                        placeholder="Buscar por DNI o nombres..."
+                        helperText="Selecciona el cliente al que pertenece este vehículo (opcional)"
+                        InputProps={{
+                          ...(params.InputProps || {}),
+                          sx: { borderRadius: '12px' }
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setClienteModalOpen(true)}
+                  title="Registrar nuevo cliente"
+                  sx={{ 
+                    minWidth: '56px', 
+                    height: '56px', 
+                    borderRadius: '12px',
+                    p: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'primary.main',
+                    '&:hover': { bgcolor: 'primary.dark' },
+                    boxShadow: 'none'
+                  }}
+                >
+                  <Plus size={24} />
+                </Button>
+              </Box>
+            </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Controller
@@ -297,7 +389,21 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit }) => {
           </Button>
         </DialogActions>
       </form>
-    </Dialog>
+      </Dialog>
+
+      {/* Modal para registro rápido de cliente */}
+      {clienteModalOpen && (
+        <ClientesForm
+          open={clienteModalOpen}
+          onClose={() => setClienteModalOpen(false)}
+          onSuccess={(createdClient) => {
+            if (!createdClient?.id) return;
+            setClientes(prev => prev.some(c => c.id === createdClient.id) ? prev : [createdClient, ...prev]);
+            setClienteSeleccionado(createdClient);
+          }}
+        />
+      )}
+    </>
   );
 };
 

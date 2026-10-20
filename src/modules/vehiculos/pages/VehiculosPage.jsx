@@ -141,6 +141,7 @@ export default function VehiculosPage() {
                   <TableCell><strong>Placa</strong></TableCell>
                   <TableCell><strong>Marca</strong></TableCell>
                   <TableCell><strong>Modelo</strong></TableCell>
+                  <TableCell><strong>Propietario(s)</strong></TableCell>
                   <TableCell><strong>Clase</strong></TableCell>
                   <TableCell><strong>Combustible</strong></TableCell>
                   <TableCell><strong>Color</strong></TableCell>
@@ -151,7 +152,7 @@ export default function VehiculosPage() {
               <TableBody>
                 {vehiculos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center">
+                    <TableCell colSpan={9} align="center">
                       <Typography variant="body1" color="textSecondary" sx={{ py: 3 }}>
                         No hay vehículos registrados.
                       </Typography>
@@ -163,6 +164,19 @@ export default function VehiculosPage() {
                       <TableCell sx={{ fontWeight: 700, color: '#bae6fd' }}>{row.placa}</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>{row.marca}</TableCell>
                       <TableCell>{row.modelo}</TableCell>
+                      <TableCell>
+                        {row.clientes_detalle && row.clientes_detalle.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            {row.clientes_detalle.map((c) => (
+                              <span key={c.id} style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0' }}>
+                                {c.dni} - {c.nombres} {c.apellidos || ''}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin propietario</span>
+                        )}
+                      </TableCell>
                       <TableCell>{row.clase || '-'}</TableCell>
                       <TableCell>{row.tipo_combustible === 'GASOLINA' ? 'Gasolinero' : row.tipo_combustible === 'PETROLEO' ? 'Petrolero' : '-'}</TableCell>
                       <TableCell>{row.color || '-'}</TableCell>

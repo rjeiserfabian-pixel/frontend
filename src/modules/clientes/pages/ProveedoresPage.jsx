@@ -20,9 +20,9 @@ const ProveedoresPage = () => {
   const puedeEditar = tienePermiso('CONTACTOS.PROVEEDORES.EDITAR');
   const puedeEliminar = tienePermiso('CONTACTOS.PROVEEDORES.ELIMINAR');
 
-  const {
-    proveedores, loading, cargarProveedores, eliminarProveedor,
-    totalCount
+  const { 
+    proveedores, loading, cargarProveedores, eliminarProveedor, 
+    totalCount 
   } = useProveedores();
   
   const [openModal, setOpenModal] = useState(false);
@@ -102,7 +102,7 @@ const ProveedoresPage = () => {
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
           <TextField
             size="small"
-            placeholder="Buscar por DNI, RUC o Nombre..."
+            placeholder="Buscar por DNI, RUC, Nombre o Productos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -112,12 +112,12 @@ const ProveedoresPage = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ width: 300 }}
+            sx={{ width: 340 }}
           />
           {puedeCrear && (
-            <Button
-              variant="contained"
-              startIcon={<Plus size={20} />}
+            <Button 
+              variant="contained" 
+              startIcon={<Plus size={20} />} 
               onClick={() => handleOpenModal()}
             >
               Nuevo Proveedor
@@ -133,6 +133,7 @@ const ProveedoresPage = () => {
                 <TableCell><strong>Tipo</strong></TableCell>
                 <TableCell><strong>N° Documento</strong></TableCell>
                 <TableCell><strong>Nombre/Razón Social</strong></TableCell>
+                <TableCell><strong>Suministro / Rubro</strong></TableCell>
                 <TableCell><strong>Teléfono</strong></TableCell>
                 <TableCell><strong>Dirección</strong></TableCell>
                 <TableCell align="center"><strong>Acciones</strong></TableCell>
@@ -141,11 +142,11 @@ const ProveedoresPage = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>Cargando proveedores...</TableCell>
+                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>Cargando proveedores...</TableCell>
                 </TableRow>
               ) : proveedores.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1" color="text.secondary">
                       No se encontraron resultados
                     </Typography>
@@ -157,12 +158,13 @@ const ProveedoresPage = () => {
                     <TableCell>{proveedor.tipo_documento}</TableCell>
                     <TableCell>{proveedor.numero_documento}</TableCell>
                     <TableCell>{proveedor.nombre_o_razon_social}</TableCell>
+                    <TableCell>{proveedor.rubro_comercial || '-'}</TableCell>
                     <TableCell>{proveedor.telefono || '-'}</TableCell>
                     <TableCell>{proveedor.direccion || '-'}</TableCell>
                     <TableCell align="center">
                       {puedeEditar && (
-                        <IconButton
-                          color="secondary"
+                        <IconButton 
+                          color="secondary" 
                           onClick={() => handleOpenModal(proveedor)}
                           size="small"
                           sx={{ mr: 1, bgcolor: alpha(C.blue, 0.08), border: `1px solid ${alpha(C.blue, 0.18)}` }}
@@ -171,14 +173,14 @@ const ProveedoresPage = () => {
                         </IconButton>
                       )}
                       {puedeEliminar && (
-                      <IconButton
-                        color="error"
-                        onClick={() => handleDelete(proveedor.id)}
-                        size="small"
-                        sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
+                        <IconButton 
+                          color="error" 
+                          onClick={() => handleDelete(proveedor.id)}
+                          size="small"
+                          sx={{ bgcolor: alpha(C.brand, 0.08), border: `1px solid ${alpha(C.brandLight, 0.18)}` }}
+                        >
+                          <Trash2 size={18} />
+                        </IconButton>
                       )}
                     </TableCell>
                   </TableRow>

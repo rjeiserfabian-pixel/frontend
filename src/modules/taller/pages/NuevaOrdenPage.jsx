@@ -51,7 +51,6 @@ export default function NuevaOrdenPage() {
   const [nuevoTipoNombre, setNuevoTipoNombre] = useState('');
 
   useEffect(() => {
-    fetchVehiculos();
     fetchClientes();
     fetchPlantillas();
     fetchPlantillasCorrectivas();
@@ -126,14 +125,28 @@ export default function NuevaOrdenPage() {
   };
 
   const [vehiculoBusqueda, setVehiculoBusqueda] = useState('');
-  const fetchVehiculos = async (query = '') => {
+  const [loadingVehiculos, setLoadingVehiculos] = useState(false);
+  const fetchVehiculos = async (query = '', clienteId = formData.cliente_id) => {
     if (query.length === 1) return;
+    if (!clienteId) {
+      setVehiculos([]);
+      return;
+    }
     try {
-      const res = await api.get('vehiculos/', { params: { search: query } });
+      setLoadingVehiculos(true);
+      const params = {
+        cliente_id: clienteId,
+        sin_paginar: true,
+      };
+      if (query) params.search = query;
+      const res = await api.get('vehiculos/', { params });
       const data = res.data.results || res.data;
-      setVehiculos(data);
+      setVehiculos(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error cargando vehículos:', err);
+      console.error('Error cargando vehículos del cliente:', err);
+      setVehiculos([]);
+    } finally {
+      setLoadingVehiculos(false);
     }
   };
 
@@ -210,18 +223,6 @@ export default function NuevaOrdenPage() {
     }
   };
 
-  // No se ocultan vehículos no vinculados aún al cliente seleccionado: esta
-  // pantalla es precisamente donde se vincula un vehículo existente a un
-  // cliente. Solo se ordenan primero los que ya le pertenecen, como ayuda
-  // visual, sin excluir el resto.
-  const vehiculosFiltrados = formData.cliente_id
-    ? [...vehiculos].sort((a, b) => {
-        const aPertenece = a.clientes?.some(c => (c.id || c) === formData.cliente_id) ? 0 : 1;
-        const bPertenece = b.clientes?.some(c => (c.id || c) === formData.cliente_id) ? 0 : 1;
-        return aPertenece - bPertenece;
-      })
-    : vehiculos;
-
   const selectedTipo = tiposServicio.find(t => t.id === formData.tipo_servicio_id);
   const nombreTipo = selectedTipo?.nombre?.toLowerCase() || '';
   const isPreventivo = nombreTipo.includes('preventivo');
@@ -273,23 +274,25 @@ export default function NuevaOrdenPage() {
                     }}
                     onInputChange={(e, newInputValue, reason) => {
                       setClienteBusqueda(newInputValue);
-                      // 'reset' ocurre cuando MUI sincroniza el texto tras una selección
-                      // (o al recalcular el value); si volvemos a buscar en ese momento con
-                      // el label completo, el backend no lo encuentra, la lista se vacía,
-                      // el value pasa a null, MUI vuelve a resetear el input... y entra en loop.
                       if (reason === 'input' || reason === 'clear') {
                         fetchClientes(newInputValue);
                       }
                     }}
                     getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
                     onChange={(e, val) => {
-                      // No se limpia el vehículo ya seleccionado aunque todavía no
-                      // esté vinculado a este cliente: se vinculan al registrar la
-                      // orden (ver handleSubmit), nunca se desvincula nada aquí.
+                      const nuevoClienteId = val?.id || null;
                       setFormData(prev => ({
                         ...prev,
-                        cliente_id: val?.id || null,
+                        cliente_id: nuevoClienteId,
+                        vehiculo_id: null,
+                        kilometraje: '',
                       }));
+                      setVehiculoBusqueda('');
+                      if (nuevoClienteId) {
+                        fetchVehiculos('', nuevoClienteId);
+                      } else {
+                        setVehiculos([]);
+                      }
                     }}
                     renderInput={(params) => <TextField {...params} label="Buscar Cliente *" error={!!formErrors.cliente} helperText={formErrors.cliente} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
                   />
@@ -306,41 +309,59 @@ export default function NuevaOrdenPage() {
               <div className="flex gap-2 w-full">
                 <div className="flex-1">
                   <Autocomplete
-                    options={vehiculosFiltrados}
+                    options={vehiculos}
+                    disabled={!formData.cliente_id}
+                    loading={loadingVehiculos}
+                    noOptionsText={
+                      !formData.cliente_id 
+                        ? 'Primero seleccione un cliente' 
+                        : 'El cliente no tiene vehículos registrados'
+                    }
                     value={vehiculos.find(v => v.id === formData.vehiculo_id) || null}
                     inputValue={vehiculoBusqueda}
                     onOpen={() => {
-                      if (vehiculos.length === 0) fetchVehiculos('');
+                      if (formData.cliente_id && vehiculos.length === 0) {
+                        fetchVehiculos('', formData.cliente_id);
+                      }
                     }}
                     onInputChange={(e, newInputValue, reason) => {
                       setVehiculoBusqueda(newInputValue);
-                      if (reason === 'input' || reason === 'clear') {
-                        fetchVehiculos(newInputValue);
+                      if ((reason === 'input' || reason === 'clear') && formData.cliente_id) {
+                        fetchVehiculos(newInputValue, formData.cliente_id);
                       }
                     }}
                     getOptionLabel={(option) => `${option.placa} - ${option.marca} ${option.modelo}`}
                     onChange={(e, val) => {
-                      // Solo se autocompleta el cliente si el usuario todavía no
-                      // eligió uno; si ya hay un cliente seleccionado no se
-                      // sobrescribe (se vinculará al registrar la orden).
-                      let suggestedClientId = formData.cliente_id;
-                      if (!suggestedClientId && val && val.clientes && val.clientes.length > 0) {
-                        suggestedClientId = val.clientes[0].id || val.clientes[0];
-                      }
-
                       setFormData(prev => ({
                         ...prev,
                         vehiculo_id: val?.id || null,
                         kilometraje: val?.kilometraje_actual || '',
-                        cliente_id: val ? suggestedClientId : prev.cliente_id
                       }));
                     }}
-                    renderInput={(params) => <TextField {...params} label="Buscar Vehículo por Placa *" error={!!formErrors.vehiculo} helperText={formErrors.vehiculo} InputProps={{...params.InputProps, sx: { borderRadius: '12px' }}} />}
+                    renderInput={(params) => (
+                      <TextField 
+                        {...params} 
+                        label={formData.cliente_id ? "Buscar Vehículo por Placa *" : "Seleccione primero un Cliente *"} 
+                        error={!!formErrors.vehiculo} 
+                        helperText={
+                          formErrors.vehiculo || 
+                          (!formData.cliente_id 
+                            ? 'Seleccione el cliente por su DNI o nombres para ver sus vehículos' 
+                            : (vehiculos.length === 0 ? 'Sin vehículos. Puede registrar uno con el botón (+)' : '')
+                          )
+                        } 
+                        InputProps={{
+                          ...(params.InputProps || {}), 
+                          sx: { borderRadius: '12px' }
+                        }} 
+                      />
+                    )}
                   />
                 </div>
                 <Button 
                   variant="contained" 
                   onClick={() => setVehicleModalOpen(true)}
+                  title="Registrar nuevo vehículo"
                   sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
                 >
                   <Plus size={24} />
@@ -500,10 +521,16 @@ export default function NuevaOrdenPage() {
         <VehiculosForm
           open={vehicleModalOpen}
           onClose={() => setVehicleModalOpen(false)}
+          clienteInicial={clientes.find(c => c.id === formData.cliente_id) || null}
           onSuccess={(createdVehicle) => {
             if (!createdVehicle?.id) return;
-            // Se inyecta directo en la lista local y se selecciona; no depende de que
-            // el vehículo recién creado caiga dentro de la página que devuelva el fetch.
+            // Si no había cliente seleccionado en la orden pero el vehículo fue asociado a uno
+            if (!formData.cliente_id && createdVehicle.clientes_detalle && createdVehicle.clientes_detalle.length > 0) {
+              const c = createdVehicle.clientes_detalle[0];
+              setClientes(prev => prev.some(cli => cli.id === c.id) ? prev : [c, ...prev]);
+              setFormData(prev => ({ ...prev, cliente_id: c.id }));
+              setClienteBusqueda(`${c.dni} - ${c.nombres} ${c.apellidos || ''}`.trim());
+            }
             setVehiculos(prev => prev.some(v => v.id === createdVehicle.id) ? prev : [createdVehicle, ...prev]);
             setFormData(prev => ({
               ...prev,
