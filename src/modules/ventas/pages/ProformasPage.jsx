@@ -8,7 +8,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import {
   CheckCircle2, FileText, Pencil, Plus, Printer, RefreshCw, Search, Send,
-  Trash2
+  Trash2, Car
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ import { ventasService } from '../services/ventasApi';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { clienteService } from '../../clientes/services/clienteService';
 import ClientesForm from '../../clientes/components/ClientesForm';
+import VehiculosForm from '../../vehiculos/components/VehiculosForm';
 import { premiumTokens } from '../../../core/theme/theme';
 import api from '../../../core/api/axios';
 
@@ -39,6 +40,8 @@ const nuevaLinea = () => ({
 
 const formInicial = () => ({
   cliente: null,
+  vehiculo: null,
+  kilometraje: '',
   forma_pago: 'CONTADO',
   observaciones: '',
   incluye_igv: true,
@@ -61,6 +64,10 @@ const ProformasPage = () => {
 
   const [proformas, setProformas] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
+  const [loadingVehiculos, setLoadingVehiculos] = useState(false);
+  const [vehiculoBusqueda, setVehiculoBusqueda] = useState('');
+  const [openVehicleModal, setOpenVehicleModal] = useState(false);
   const [repuestos, setRepuestos] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
@@ -146,10 +153,36 @@ const ProformasPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.moneda]);
 
+  const fetchVehiculos = async (query = '', clienteId = form.cliente?.id) => {
+    if (query.length === 1) return;
+    if (!clienteId) {
+      setVehiculos([]);
+      return;
+    }
+    try {
+      setLoadingVehiculos(true);
+      const params = {
+        cliente_id: clienteId,
+        sin_paginar: true,
+      };
+      if (query) params.search = query;
+      const res = await api.get('vehiculos/', { params });
+      const data = res.data.results || res.data;
+      setVehiculos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error cargando vehículos del cliente:', err);
+      setVehiculos([]);
+    } finally {
+      setLoadingVehiculos(false);
+    }
+  };
+
   const cerrarFormulario = () => {
     setOpenForm(false);
     setEditingId(null);
     setForm(formInicial());
+    setVehiculos([]);
+    setVehiculoBusqueda('');
     // Resetear el ref para que en la próxima apertura del diálogo vuelva a consultar si es necesario
     tcObtenidoRef.current = false;
   };
@@ -157,6 +190,8 @@ const ProformasPage = () => {
   const abrirNueva = () => {
     setEditingId(null);
     setForm(formInicial());
+    setVehiculos([]);
+    setVehiculoBusqueda('');
     setOpenForm(true);
   };
 
@@ -208,6 +243,8 @@ const ProformasPage = () => {
 
     const payload = {
       cliente: form.cliente.id,
+      vehiculo: form.vehiculo?.id || null,
+      kilometraje: form.kilometraje !== '' && form.kilometraje !== null ? parseInt(form.kilometraje, 10) : null,
       sucursal: activeSucursalId,
       forma_pago: form.forma_pago,
       observaciones: form.observaciones,
@@ -243,13 +280,25 @@ const ProformasPage = () => {
 
   const editar = (proforma) => {
     setEditingId(proforma.id);
+    const cliObj = proforma.cliente ? {
+      id: proforma.cliente,
+      nombres: proforma.cliente_nombre,
+      apellidos: proforma.cliente_apellidos,
+      dni: proforma.cliente_dni,
+    } : null;
+
+    const vehObj = proforma.vehiculo ? {
+      id: proforma.vehiculo,
+      placa: proforma.vehiculo_placa,
+      marca: proforma.vehiculo_marca,
+      modelo: proforma.vehiculo_modelo,
+      kilometraje_actual: proforma.kilometraje,
+    } : null;
+
     setForm({
-      cliente: {
-        id: proforma.cliente,
-        nombres: proforma.cliente_nombre,
-        apellidos: proforma.cliente_apellidos,
-        dni: proforma.cliente_dni,
-      },
+      cliente: cliObj,
+      vehiculo: vehObj,
+      kilometraje: proforma.kilometraje ?? '',
       forma_pago: proforma.forma_pago,
       observaciones: proforma.observaciones || '',
       incluye_igv: proforma.incluye_igv,
@@ -272,6 +321,12 @@ const ProformasPage = () => {
         descuento: d.descuento,
       })),
     });
+    if (proforma.cliente) {
+      fetchVehiculos('', proforma.cliente);
+    } else {
+      setVehiculos([]);
+    }
+    setVehiculoBusqueda(vehObj ? `${vehObj.placa} - ${vehObj.marca || ''} ${vehObj.modelo || ''}`.trim() : '');
     setOpenForm(true);
   };
 
@@ -377,7 +432,34 @@ const ProformasPage = () => {
                     {p.creado_en ? new Date(p.creado_en).toLocaleDateString('es-PE') : ''}
                   </Typography>
                 </TableCell>
-                <TableCell>{`${p.cliente_nombre || ''} ${p.cliente_apellidos || ''}`.trim()}</TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight="500">
+                    {`${p.cliente_nombre || ''} ${p.cliente_apellidos || ''}`.trim() || 'Cliente sin nombre'}
+                  </Typography>
+                  {p.vehiculo_placa && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
+                      <Chip
+                        icon={<Car size={13} style={{ marginLeft: 6 }} />}
+                        label={p.vehiculo_placa}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          bgcolor: alpha(C.blue, 0.12),
+                          color: C.blue,
+                          border: `1px solid ${alpha(C.blue, 0.25)}`,
+                          '& .MuiChip-icon': { color: 'inherit' }
+                        }}
+                      />
+                      {p.kilometraje ? (
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {Number(p.kilometraje).toLocaleString()} km
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  )}
+                </TableCell>
                 <TableCell>{p.forma_pago}</TableCell>
                 <TableCell>{p.valido_hasta ? new Date(`${p.valido_hasta}T00:00:00`).toLocaleDateString('es-PE') : '-'}</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800 }}>{money(p.total)}</TableCell>
@@ -410,18 +492,32 @@ const ProformasPage = () => {
           <Divider sx={{ mb: 2 }} />
 
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 7 }}>
-              {/* Cliente con botón de registro rápido */}
+            {/* Cliente con botón de registro rápido */}
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                 <Box sx={{ flex: 1 }}>
                   <Autocomplete
                     options={clientes}
                     value={form.cliente}
                     onInputChange={(e, val) => cargarClientes(val)}
-                    onChange={(e, value) => setForm(prev => ({ ...prev, cliente: value }))}
-                    getOptionLabel={(option) => option ? `${option.dni || ''} ${option.nombres || ''} ${option.apellidos || ''}`.trim() : ''}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                    renderInput={(params) => <TextField {...params} label="Cliente" size="small" />}
+                    onChange={(e, value) => {
+                      const nuevoClienteId = value?.id || null;
+                      setForm(prev => ({
+                        ...prev,
+                        cliente: value,
+                        vehiculo: null,
+                        kilometraje: '',
+                      }));
+                      setVehiculoBusqueda('');
+                      if (nuevoClienteId) {
+                        fetchVehiculos('', nuevoClienteId);
+                      } else {
+                        setVehiculos([]);
+                      }
+                    }}
+                    getOptionLabel={(option) => option ? `${option.dni || ''} - ${option.nombres || ''} ${option.apellidos || ''}`.trim() : ''}
+                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                    renderInput={(params) => <TextField {...params} label="Buscar Cliente *" size="small" />}
                   />
                 </Box>
                 <Tooltip title="Registrar nuevo cliente">
@@ -442,18 +538,112 @@ const ProformasPage = () => {
                 </Tooltip>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }}>
+
+            {/* Vehículo con botón de registro rápido */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Autocomplete
+                    options={vehiculos}
+                    disabled={!form.cliente?.id}
+                    loading={loadingVehiculos}
+                    noOptionsText={
+                      !form.cliente?.id 
+                        ? 'Primero seleccione un cliente' 
+                        : 'El cliente no tiene vehículos registrados'
+                    }
+                    value={form.vehiculo}
+                    inputValue={vehiculoBusqueda}
+                    onOpen={() => {
+                      if (form.cliente?.id && vehiculos.length === 0) {
+                        fetchVehiculos('', form.cliente.id);
+                      }
+                    }}
+                    onInputChange={(e, newInputValue, reason) => {
+                      setVehiculoBusqueda(newInputValue);
+                      if ((reason === 'input' || reason === 'clear') && form.cliente?.id) {
+                        fetchVehiculos(newInputValue, form.cliente.id);
+                      }
+                    }}
+                    getOptionLabel={(option) => option ? `${option.placa || ''} - ${option.marca || ''} ${option.modelo || ''}`.trim() : ''}
+                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                    onChange={(e, val) => {
+                      setForm(prev => ({
+                        ...prev,
+                        vehiculo: val,
+                        kilometraje: val?.kilometraje_actual !== undefined && val?.kilometraje_actual !== null 
+                          ? String(val.kilometraje_actual) 
+                          : prev.kilometraje,
+                      }));
+                    }}
+                    renderInput={(params) => (
+                      <TextField 
+                        {...params} 
+                        label={form.cliente?.id ? "Buscar Vehículo por Placa (Opcional)" : "Seleccione primero un Cliente"} 
+                        size="small"
+                        helperText={
+                          !form.cliente?.id 
+                            ? 'Seleccione el cliente para habilitar sus vehículos' 
+                            : (vehiculos.length === 0 ? 'Sin vehículos. Puede registrar uno con el botón (+)' : '')
+                        }
+                      />
+                    )}
+                  />
+                </Box>
+                <Tooltip title="Registrar nuevo vehículo">
+                  <span>
+                    <Button
+                      variant="contained"
+                      disabled={!form.cliente?.id}
+                      onClick={() => setOpenVehicleModal(true)}
+                      sx={{
+                        minWidth: 40, px: 0, height: 40,
+                        borderRadius: '8px',
+                        bgcolor: alpha('#e11d48', 0.85),
+                        '&:hover': { bgcolor: '#e11d48' },
+                        boxShadow: 'none',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Plus size={20} />
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
+            </Grid>
+
+            {/* Kilometraje Actual */}
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField
+                label="Kilometraje Actual"
+                type="number"
+                size="small"
+                fullWidth
+                placeholder="Ej. 45000"
+                value={form.kilometraje}
+                onChange={e => setForm(prev => ({ ...prev, kilometraje: e.target.value }))}
+                inputProps={{ min: '0' }}
+                helperText="Editable libremente"
+              />
+            </Grid>
+
+            {/* Forma de pago */}
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Forma de pago</InputLabel>
                 <Select value={form.forma_pago} label="Forma de pago" onChange={e => setForm(prev => ({ ...prev, forma_pago: e.target.value }))}>
                   <MenuItem value="CONTADO">Contado</MenuItem>
-                  <MenuItem value="CREDITO">Credito</MenuItem>
+                  <MenuItem value="CREDITO">Crédito</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }}>
-              <TextField label="Valido hasta" type="date" size="small" fullWidth InputLabelProps={{ shrink: true }} value={form.valido_hasta} onChange={e => setForm(prev => ({ ...prev, valido_hasta: e.target.value }))} />
+
+            {/* Válido hasta */}
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField label="Válido hasta" type="date" size="small" fullWidth InputLabelProps={{ shrink: true }} value={form.valido_hasta} onChange={e => setForm(prev => ({ ...prev, valido_hasta: e.target.value }))} />
             </Grid>
+
+            {/* Moneda */}
             <Grid size={{ xs: 12, md: 3 }}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Moneda</InputLabel>
@@ -462,7 +652,6 @@ const ProformasPage = () => {
                   label="Moneda"
                   onChange={e => {
                     const nuevaMoneda = e.target.value;
-                    // Resetear ref para forzar nueva consulta si cambia entre monedas extranjeras
                     if (nuevaMoneda !== form.moneda) tcObtenidoRef.current = false;
                     setForm(prev => ({
                       ...prev,
@@ -477,7 +666,9 @@ const ProformasPage = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+
+            {/* T. Cambio */}
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 label="T. Cambio"
                 type="number"
@@ -497,11 +688,15 @@ const ProformasPage = () => {
                 helperText={form.moneda === 'PEN' ? 'No aplica' : 'Obtenido de SUNAT'}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 8 }}>
-              <TextField label="Observaciones" size="small" fullWidth multiline minRows={2} value={form.observaciones} onChange={e => setForm(prev => ({ ...prev, observaciones: e.target.value }))} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+
+            {/* Descuento global */}
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField label="Descuento global" type="number" size="small" fullWidth value={form.descuento_global} onChange={e => setForm(prev => ({ ...prev, descuento_global: e.target.value }))} />
+            </Grid>
+
+            {/* Observaciones */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField label="Observaciones" size="small" fullWidth multiline minRows={1} value={form.observaciones} onChange={e => setForm(prev => ({ ...prev, observaciones: e.target.value }))} />
             </Grid>
             {/* SWITCH IGV */}
             <Grid size={{ xs: 12 }}>
@@ -674,8 +869,37 @@ const ProformasPage = () => {
           onSuccess={(createdClient) => {
             if (!createdClient?.id) return;
             setClientes(prev => prev.some(c => c.id === createdClient.id) ? prev : [createdClient, ...prev]);
-            setForm(prev => ({ ...prev, cliente: createdClient }));
+            setForm(prev => ({
+              ...prev,
+              cliente: createdClient,
+              vehiculo: null,
+              kilometraje: '',
+            }));
+            setVehiculos([]);
+            setVehiculoBusqueda('');
             setOpenClientModal(false);
+          }}
+        />
+      )}
+
+      {/* Modal de registro rápido de vehículo */}
+      {openVehicleModal && (
+        <VehiculosForm
+          open={openVehicleModal}
+          onClose={() => setOpenVehicleModal(false)}
+          clienteInicial={form.cliente}
+          onSuccess={(createdVehicle) => {
+            if (!createdVehicle?.id) return;
+            setVehiculos(prev => prev.some(v => v.id === createdVehicle.id) ? prev : [createdVehicle, ...prev]);
+            setForm(prev => ({
+              ...prev,
+              vehiculo: createdVehicle,
+              kilometraje: createdVehicle.kilometraje_actual !== undefined && createdVehicle.kilometraje_actual !== null 
+                ? String(createdVehicle.kilometraje_actual) 
+                : prev.kilometraje,
+            }));
+            setVehiculoBusqueda(`${createdVehicle.placa} - ${createdVehicle.marca || ''} ${createdVehicle.modelo || ''}`.trim());
+            setOpenVehicleModal(false);
           }}
         />
       )}
