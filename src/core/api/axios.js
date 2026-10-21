@@ -15,6 +15,18 @@ const api = axios.create({
 const PUBLIC_PATHS = ['/kiosko', '/estado-vehiculo', '/consulta-repuestos', '/reservar-cita', '/historial-vehiculo'];
 api.interceptors.request.use(
   (config) => {
+    // Si la petición contiene FormData, eliminamos el Content-Type por defecto ('application/json')
+    // para que el navegador y Axios configuren 'multipart/form-data; boundary=...' automáticamente
+    if (config.data instanceof FormData) {
+      if (config.headers?.delete) {
+        config.headers.delete('Content-Type');
+        config.headers.delete('content-type');
+      } else if (config.headers) {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    }
+
     const isPublicPath = PUBLIC_PATHS.some(path => window.location.pathname.startsWith(path));
     if (!isPublicPath) {
       const token = authStorage.getAccessToken();

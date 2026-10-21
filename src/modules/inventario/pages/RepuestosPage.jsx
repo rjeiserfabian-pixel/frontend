@@ -8,12 +8,14 @@ import {
   TablePagination, TableSortLabel, Autocomplete, FormControlLabel, Switch
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, X, Warehouse, Tag, Download, FileText, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Warehouse, Tag, Download, FileText, Search, Image as ImageIcon, Camera, UploadCloud, Eye } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
+import { compressImage } from '../../../utils/imageCompressor';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -32,6 +34,14 @@ export default function RepuestosPage() {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Estados de Imagen
+  const [imagenFile, setImagenFile] = useState(null);
+  const [imagenPreview, setImagenPreview] = useState(null);
+  const [imagenEliminada, setImagenEliminada] = useState(false);
+  const [comprimiendoImagen, setComprimiendoImagen] = useState(false);
+  const [modalFotoOpen, setModalFotoOpen] = useState(false);
+  const [modalFotoData, setModalFotoData] = useState({ url: '', titulo: '' });
 
   // Estados de tabla (Nuevos)
   const [page, setPage] = useState(0);
@@ -133,8 +143,11 @@ export default function RepuestosPage() {
   }, [page, rowsPerPage, searchQuery, filterCategoria, filterMarca, filterUbicacion, filterKiosko, orderBy, order]);
 
   const handleOpenModal = (repuesto = null) => {
+    setImagenFile(null);
+    setImagenEliminada(false);
     if (repuesto) {
       setEditingId(repuesto.id);
+      setImagenPreview(repuesto.imagen ? getMediaUrl(repuesto.imagen) : null);
       reset({ 
         codigo: repuesto.codigo,
         codigo_barra: repuesto.codigo_barra || '',
@@ -154,6 +167,7 @@ export default function RepuestosPage() {
       });
     } else {
       setEditingId(null);
+      setImagenPreview(null);
       reset({ 
         codigo: '', codigo_barra: '', nombre: '', categoria: '', marca: '', unidad_medida: '', viscosidad: '', tipo_igv: '', stock: 0,
         precio_compra: '', precio_por_mayor: '', precio_cash: '', precio_lista: '',
@@ -166,7 +180,47 @@ export default function RepuestosPage() {
 
   const handleCloseModal = () => {
     setOpenModal(false);
+    setImagenFile(null);
+    setImagenPreview(null);
+    setImagenEliminada(false);
     reset();
+  };
+
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      Swal.fire('Formato no válido', 'Por favor selecciona un archivo de imagen (JPG, PNG, WEBP).', 'warning');
+      return;
+    }
+
+    // Límite inicial de 10MB para archivo crudo
+    if (file.size > 10 * 1024 * 1024) {
+      Swal.fire('Imagen muy pesada', 'La imagen no debe superar los 10MB.', 'warning');
+      return;
+    }
+
+    try {
+      setComprimiendoImagen(true);
+      const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+      setImagenFile(compressed);
+      setImagenPreview(URL.createObjectURL(compressed));
+      setImagenEliminada(false);
+    } catch (err) {
+      console.error('Error al procesar imagen:', err);
+      setImagenFile(file);
+      setImagenPreview(URL.createObjectURL(file));
+      setImagenEliminada(false);
+    } finally {
+      setComprimiendoImagen(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagenFile(null);
+    setImagenPreview(null);
+    setImagenEliminada(true);
   };
 
   const onSubmit = async (data) => {
@@ -185,11 +239,32 @@ export default function RepuestosPage() {
         }));
       }
 
+      // Si hay archivo de imagen o se eliminó la existente, enviamos FormData
+      let requestData;
+      if (imagenFile || imagenEliminada) {
+        const formData = new FormData();
+        Object.keys(payload).forEach(key => {
+          if (key === 'aplicaciones') {
+            formData.append('aplicaciones', JSON.stringify(payload.aplicaciones || []));
+          } else if (payload[key] !== null && payload[key] !== undefined) {
+            formData.append(key, payload[key]);
+          }
+        });
+        if (imagenFile) {
+          formData.append('imagen', imagenFile);
+        } else if (imagenEliminada) {
+          formData.append('imagen', '');
+        }
+        requestData = formData;
+      } else {
+        requestData = payload;
+      }
+
       if (editingId) {
-        await inventarioService.updateRepuesto(editingId, payload);
+        await inventarioService.updateRepuesto(editingId, requestData);
         Swal.fire('Éxito', 'Repuesto actualizado correctamente', 'success');
       } else {
-        await inventarioService.createRepuesto(payload);
+        await inventarioService.createRepuesto(requestData);
         Swal.fire('Éxito', 'Repuesto creado correctamente', 'success');
       }
       handleCloseModal();
@@ -563,6 +638,7 @@ export default function RepuestosPage() {
             <Table>
               <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
+                  <TableCell align="center" sx={{ width: 60 }}><strong>Foto</strong></TableCell>
                   <TableCell>
                     <TableSortLabel active={orderBy === 'codigo'} direction={orderBy === 'codigo' ? order : 'asc'} onClick={() => handleRequestSort('codigo')}>
                       <strong>Código</strong>
@@ -594,7 +670,7 @@ export default function RepuestosPage() {
               <TableBody>
                 {repuestos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">No hay repuestos registrados.</TableCell>
+                    <TableCell colSpan={11} align="center">No hay repuestos registrados.</TableCell>
                   </TableRow>
                 ) : (
                   repuestos.map((row) => {
@@ -602,6 +678,49 @@ export default function RepuestosPage() {
                     const stockColor = (row.stock_minimo_global !== undefined && stockNum <= row.stock_minimo_global) ? "error" : "success";
                     return (
                     <TableRow key={row.id} hover>
+                      <TableCell align="center" sx={{ width: 60, py: 1 }}>
+                        {row.imagen ? (
+                          <Box
+                            component="img"
+                            src={getMediaUrl(row.imagen)}
+                            alt={row.nombre}
+                            onClick={() => {
+                              setModalFotoData({ url: getMediaUrl(row.imagen), titulo: `${row.codigo} - ${row.nombre}` });
+                              setModalFotoOpen(true);
+                            }}
+                            sx={{
+                              width: 42,
+                              height: 42,
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              cursor: 'pointer',
+                              border: `1px solid ${C.border}`,
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                              '&:hover': {
+                                transform: 'scale(1.08)',
+                                boxShadow: `0 0 10px ${alpha(C.brand, 0.5)}`
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 42,
+                              height: 42,
+                              borderRadius: '8px',
+                              backgroundColor: alpha('#ffffff', 0.04),
+                              border: `1px dashed ${alpha('#ffffff', 0.15)}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'text.secondary',
+                              margin: '0 auto'
+                            }}
+                          >
+                            <ImageIcon size={18} opacity={0.35} />
+                          </Box>
+                        )}
+                      </TableCell>
                       <TableCell>{row.codigo}</TableCell>
                       <TableCell>{row.codigo_barra || <span style={{color: 'gray'}}>—</span>}</TableCell>
                       <TableCell>{row.nombre}</TableCell>
@@ -859,6 +978,101 @@ export default function RepuestosPage() {
                 />
               </Grid>
             </Grid>
+
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              Fotografía del Repuesto (Opcional)
+            </Typography>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                mb: 3,
+                border: `1px dashed ${alpha(C.border, 0.8)}`,
+                backgroundColor: alpha(C.surfaceSoft, 0.4),
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2.5,
+                flexWrap: 'wrap'
+              }}
+            >
+              {imagenPreview ? (
+                <Box sx={{ position: 'relative', width: 84, height: 84 }}>
+                  <Box
+                    component="img"
+                    src={imagenPreview}
+                    alt="Preview"
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: `1px solid ${C.border}`
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={handleRemoveImage}
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      backgroundColor: '#ef4444',
+                      color: '#ffffff',
+                      '&:hover': { backgroundColor: '#dc2626' },
+                      width: 22,
+                      height: 22
+                    }}
+                  >
+                    <X size={14} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: '8px',
+                    border: `1px dashed ${alpha('#ffffff', 0.2)}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: alpha('#ffffff', 0.02),
+                    color: 'text.secondary'
+                  }}
+                >
+                  <ImageIcon size={26} opacity={0.35} />
+                </Box>
+              )}
+
+              <Box sx={{ flex: 1, minWidth: 200 }}>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  size="small"
+                  startIcon={<UploadCloud size={16} />}
+                  disabled={comprimiendoImagen}
+                  sx={{ mb: 0.8 }}
+                >
+                  {imagenPreview ? 'Cambiar Foto' : 'Subir Foto'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </Button>
+                {comprimiendoImagen && (
+                  <Typography variant="caption" sx={{ display: 'block', color: C.brand, fontWeight: 'bold' }}>
+                    Optimizando imagen...
+                  </Typography>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Formatos: JPG, PNG, WEBP. Se optimiza y comprime automáticamente.
+                </Typography>
+              </Box>
+            </Paper>
 
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Precios (S/)</Typography>
             <Grid container spacing={2} mb={3}>
@@ -1135,6 +1349,47 @@ export default function RepuestosPage() {
           </Box>
         )}
       </Popover>
+
+      {/* --- MODAL PARA VER FOTO EN TAMAÑO COMPLETO --- */}
+      <Dialog
+        open={modalFotoOpen}
+        onClose={() => setModalFotoOpen(false)}
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            backgroundColor: '#0f172a',
+            border: `1px solid ${C.border}`,
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, px: 2.5 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            {modalFotoData.titulo || 'Fotografía del Repuesto'}
+          </Typography>
+          <IconButton size="small" onClick={() => setModalFotoOpen(false)} sx={{ color: 'text.secondary' }}>
+            <X size={18} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#020617' }}>
+          {modalFotoData.url && (
+            <Box
+              component="img"
+              src={modalFotoData.url}
+              alt="Repuesto"
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '75vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                display: 'block',
+                margin: '0 auto'
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
     </Box>
   );

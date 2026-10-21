@@ -7,7 +7,7 @@ import {
   LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
@@ -15,6 +15,7 @@ import api from '../../../core/api/axios';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
+import { compressImage } from '../../../utils/imageCompressor';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -71,6 +72,10 @@ export default function DetalleOrdenPage() {
   const [savingMecanico, setSavingMecanico] = useState(false);
   
   const [repuestosInventario, setRepuestosInventario] = useState([]);
+
+  // Evidencias / Fotos de Ingreso del Vehículo
+  const [modalFotoGrande, setModalFotoGrande] = useState({ open: false, url: '', titulo: '' });
+  const [subiendoEvidencia, setSubiendoEvidencia] = useState(false);
 
   useEffect(() => {
     fetchOrden();
@@ -601,6 +606,55 @@ export default function DetalleOrdenPage() {
   };
   const LIMITE_HORAS_SIN_ASIGNAR = 2;
   const alertaSinAsignar = orden.estado === 'RECEPCIONADO' && !orden.mecanico_nombre && horasEnTaller >= LIMITE_HORAS_SIN_ASIGNAR;
+
+  const handleSubirMasFotos = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      setSubiendoEvidencia(true);
+      const formDataFotos = new FormData();
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.82 });
+        formDataFotos.append('imagenes', compressed);
+      }
+      formDataFotos.append('descripcion', 'Evidencia adjunta en taller');
+      await tallerService.subirEvidenciasOrden(id, formDataFotos);
+      Swal.fire({ icon: 'success', title: 'Fotos agregadas', timer: 1500, showConfirmButton: false });
+      fetchOrden();
+    } catch (err) {
+      console.error('Error subiendo fotos:', err);
+      Swal.fire('Error', 'No se pudieron subir las fotografías', 'error');
+    } finally {
+      setSubiendoEvidencia(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleEliminarEvidencia = async (evidenciaId) => {
+    const res = await Swal.fire({
+      title: '¿Eliminar fotografía?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (res.isConfirmed) {
+      try {
+        await tallerService.eliminarEvidencia(evidenciaId);
+        Swal.fire({ icon: 'success', title: 'Fotografía eliminada', timer: 1200, showConfirmButton: false });
+        fetchOrden();
+      } catch (err) {
+        console.error('Error eliminando foto:', err);
+        Swal.fire('Error', 'No se pudo eliminar la fotografía', 'error');
+      }
+    }
+  };
 
   return (
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
@@ -1339,6 +1393,161 @@ export default function DetalleOrdenPage() {
               </Table>
             </Paper>
 
+            {/* 4. Fotos y Evidencias de Ingreso */}
+            <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+              <Box sx={{ p: 3, bgcolor: alpha(C.brand, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
+                    <Camera size={20} className="text-rose-400" />
+                    4. Fotos y Evidencias de Ingreso
+                    <Chip label={(orden.evidencias_ingreso || []).length} size="small" sx={{ fontWeight: 700, bgcolor: alpha('#ffffff', 0.1), color: C.text }} />
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Registro fotográfico del estado del vehículo al ingresar al taller.
+                  </Typography>
+                </Box>
+
+                {puedeEditar && (
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      component="label"
+                      disabled={subiendoEvidencia}
+                      startIcon={<Camera size={16} />}
+                      sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                    >
+                      Tomar Foto
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleSubirMasFotos}
+                      />
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      component="label"
+                      disabled={subiendoEvidencia}
+                      startIcon={<UploadCloud size={16} />}
+                      sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                    >
+                      Subir Foto
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        multiple
+                        onChange={handleSubirMasFotos}
+                      />
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+
+              <Box sx={{ p: 3 }}>
+                {subiendoEvidencia && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, color: C.brandLight }}>
+                    <CircularProgress size={20} color="inherit" />
+                    <Typography variant="body2">Optimizando y subiendo fotografías...</Typography>
+                  </Box>
+                )}
+
+                {(!orden.evidencias_ingreso || orden.evidencias_ingreso.length === 0) ? (
+                  <Box py={4} textAlign="center">
+                    <ImageIcon size={36} className="text-slate-500 opacity-50" style={{ margin: '0 auto 8px auto' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No se registraron fotos durante la recepción de este vehículo.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Grid container spacing={2}>
+                    {orden.evidencias_ingreso.map((ev, i) => (
+                      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={ev.id}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            borderRadius: '12px',
+                            border: `1px solid ${C.border}`,
+                            overflow: 'hidden',
+                            bgcolor: alpha('#ffffff', 0.02),
+                            position: 'relative',
+                            transition: 'all 0.2s ease',
+                            '&:hover': { borderColor: alpha(C.brand, 0.5), transform: 'translateY(-2px)' }
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: '100%',
+                              aspectRatio: '4/3',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              position: 'relative'
+                            }}
+                            onClick={() => setModalFotoGrande({
+                              open: true,
+                              url: ev.imagen,
+                              titulo: `OT-${orden.numero} - ${ev.descripcion || `Foto #${i + 1}`}`
+                            })}
+                          >
+                            <Box
+                              component="img"
+                              src={ev.imagen}
+                              alt={ev.descripcion || `Evidencia ${i + 1}`}
+                              sx={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 6,
+                                left: 6,
+                                bgcolor: 'rgba(0,0,0,0.7)',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                color: '#ffffff'
+                              }}
+                            >
+                              Foto #{i + 1}
+                            </Box>
+                          </Box>
+
+                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ overflow: 'hidden' }}>
+                              <Typography variant="body2" fontWeight="600" noWrap title={ev.descripcion || 'Sin descripción'}>
+                                {ev.descripcion || 'Foto de recepción'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                {ev.fecha_registro ? new Date(ev.fecha_registro).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                              </Typography>
+                            </Box>
+                            {puedeEliminarSubrecursos && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleEliminarEvidencia(ev.id)}
+                                title="Eliminar foto"
+                              >
+                                <Trash2 size={16} />
+                              </IconButton>
+                            )}
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+            </Paper>
+
             {/* Acciones Generales (Enviar Cotizacion) */}
             {orden.estado === 'INSPECCION' && puedeAprobar && (
               <Box sx={{ p: 3, display: 'flex', justifyContent: 'flex-end' }}>
@@ -1525,6 +1734,47 @@ export default function DetalleOrdenPage() {
           <Button onClick={() => setAprobacionModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
           <Button onClick={handleAprobarCotizacion} variant="contained" color="success" sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Confirmar Aprobación</Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Modal para ver foto de evidencia en tamaño completo */}
+      <Dialog
+        open={modalFotoGrande.open}
+        onClose={() => setModalFotoGrande({ open: false, url: '', titulo: '' })}
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            backgroundColor: '#0f172a',
+            border: `1px solid ${C.border}`,
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, px: 2.5 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            {modalFotoGrande.titulo || 'Evidencia de Ingreso'}
+          </Typography>
+          <IconButton size="small" onClick={() => setModalFotoGrande({ open: false, url: '', titulo: '' })} sx={{ color: 'text.secondary' }}>
+            <X size={18} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#020617' }}>
+          {modalFotoGrande.url && (
+            <Box
+              component="img"
+              src={modalFotoGrande.url}
+              alt="Evidencia"
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '75vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                display: 'block',
+                margin: '0 auto'
+              }}
+            />
+          )}
+        </DialogContent>
       </Dialog>
 
     </Box>

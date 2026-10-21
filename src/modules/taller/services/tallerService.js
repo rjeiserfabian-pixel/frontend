@@ -240,4 +240,22 @@ export const tallerService = {
     const response = await api.delete(`taller/plantillas-correctivas/${id}/`);
     return response.data;
   },
+
+  // Evidencias de Ingreso (Fotos del Vehículo al recepcionar)
+  getEvidenciasOrden: async (ordenId) => {
+    const response = await api.get(`taller/ordenes/${ordenId}/evidencias/`);
+    return response.data;
+  },
+
+  subirEvidenciasOrden: async (ordenId, formData) => {
+    const response = await api.post(`taller/ordenes/${ordenId}/evidencias/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  eliminarEvidencia: async (evidenciaId) => {
+    const response = await api.delete(`taller/evidencias/${evidenciaId}/`);
+    return response.data;
+  },
 };

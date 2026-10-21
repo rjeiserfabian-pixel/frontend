@@ -11,6 +11,8 @@
  */
 export function getMediaUrl(path) {
   if (!path) return null;
+  // Si es un Blob local o Data URL (previsualización en navegador), retornar directamente
+  if (path.startsWith('blob:') || path.startsWith('data:')) return path;
   // Si ya es una URL absoluta (http/https), extraer solo la parte del path
   // para que pase por el proxy de Vite y funcione también en Ngrok
   if (path.startsWith('http://') || path.startsWith('https://')) {

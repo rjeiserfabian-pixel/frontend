@@ -5,7 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Camera, UploadCloud, Trash2, Image as ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { tallerService } from '../services/tallerService';
@@ -14,6 +14,7 @@ import VehiculosForm from '../../vehiculos/components/VehiculosForm';
 import ClientesForm from '../../clientes/components/ClientesForm';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
+import { compressImage } from '../../../utils/imageCompressor';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -43,6 +44,10 @@ export default function NuevaOrdenPage() {
   const [preventivo, setPreventivo] = useState({});
   const [correctivo, setCorrectivo] = useState({});
   const [observaciones, setObservaciones] = useState('');
+
+  // Evidencias / Fotos de Recepción del Vehículo
+  const [fotos, setFotos] = useState([]);
+  const [comprimiendoFotos, setComprimiendoFotos] = useState(false);
 
   // Quick Registration Modals
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
@@ -214,6 +219,20 @@ export default function NuevaOrdenPage() {
         }
       }
 
+      // Subir evidencias fotográficas de ingreso si se adjuntaron
+      if (fotos.length > 0) {
+        try {
+          const formDataFotos = new FormData();
+          fotos.forEach(foto => {
+            formDataFotos.append('imagenes', foto.file);
+          });
+          formDataFotos.append('descripciones', JSON.stringify(fotos.map(f => f.descripcion.trim())));
+          await tallerService.subirEvidenciasOrden(newOrden.id, formDataFotos);
+        } catch (fotoErr) {
+          console.error('Error subiendo fotos de recepción:', fotoErr);
+        }
+      }
+
       navigate(`/taller/ordenes/${newOrden.id}`);
     } catch (error) {
       console.error('Error creando orden:', error);
@@ -221,6 +240,40 @@ export default function NuevaOrdenPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFotosSeleccionadas = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    setComprimiendoFotos(true);
+    try {
+      const nuevasFotos = [];
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.82 });
+        nuevasFotos.push({
+          id: Math.random().toString(36).substring(2, 9),
+          file: compressed,
+          preview: URL.createObjectURL(compressed),
+          descripcion: ''
+        });
+      }
+      setFotos(prev => [...prev, ...nuevasFotos]);
+    } catch (err) {
+      console.error('Error al procesar fotos:', err);
+    } finally {
+      setComprimiendoFotos(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleEliminarFoto = (id) => {
+    setFotos(prev => prev.filter(f => f.id !== id));
+  };
+
+  const handleDescripcionFotoChange = (id, descripcion) => {
+    setFotos(prev => prev.map(f => f.id === id ? { ...f, descripcion } : f));
   };
 
   const selectedTipo = tiposServicio.find(t => t.id === formData.tipo_servicio_id);
@@ -235,6 +288,7 @@ export default function NuevaOrdenPage() {
   const secNumPrev = 2;
   const secNumCorr = showPreventiva ? 3 : 2;
   const secNumObs = (showPreventiva ? 1 : 0) + (showCorrectiva ? 1 : 0) + 2;
+  const secNumFotos = secNumObs + 1;
 
 
   return (
@@ -496,6 +550,142 @@ export default function NuevaOrdenPage() {
                 onChange={(e) => setObservaciones(e.target.value)}
                 InputProps={{ sx: { borderRadius: '12px' } }}
               />
+            </div>
+          </section>
+
+          {/* SECCION 5: Fotos de Ingreso / Estado del Vehículo */}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">{secNumFotos}</div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-white tracking-tight">Fotos de Ingreso / Estado del Vehículo</h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Documenta rayones, golpes, odómetro y estado visual en que ingresa el vehículo al taller.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 bg-slate-900/60 rounded-xl border border-slate-700 flex flex-col gap-4">
+              {/* Botones de acción para cámara y archivo */}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="contained"
+                  component="label"
+                  disabled={comprimiendoFotos}
+                  startIcon={<Camera size={20} />}
+                  sx={{
+                    borderRadius: '10px',
+                    bgcolor: '#e11d48',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    px: 2.5,
+                    py: 1,
+                    '&:hover': { bgcolor: '#be123c' }
+                  }}
+                >
+                  Tomar Foto con Cámara
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFotosSeleccionadas}
+                  />
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  component="label"
+                  disabled={comprimiendoFotos}
+                  startIcon={<UploadCloud size={20} />}
+                  sx={{
+                    borderRadius: '10px',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    color: '#e2e8f0',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    px: 2.5,
+                    py: 1,
+                    '&:hover': { borderColor: 'rgba(255, 255, 255, 0.4)', bgcolor: 'rgba(255, 255, 255, 0.05)' }
+                  }}
+                >
+                  Subir desde Galería
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    multiple
+                    onChange={handleFotosSeleccionadas}
+                  />
+                </Button>
+
+                {comprimiendoFotos && (
+                  <div className="flex items-center gap-2 text-rose-400 text-sm font-medium">
+                    <CircularProgress size={18} color="inherit" />
+                    <span>Optimizando fotografías...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Lista / Grid de Fotos tomadas */}
+              {fotos.length === 0 ? (
+                <div className="p-6 text-center border border-dashed border-slate-700/80 rounded-lg bg-slate-950/30 flex flex-col items-center justify-center gap-2">
+                  <ImageIcon size={36} className="text-slate-500 opacity-60" />
+                  <p className="text-sm font-medium text-slate-300">No se han adjuntado fotos de ingreso todavía.</p>
+                  <p className="text-xs text-slate-500">Puedes tomar fotos desde una tablet o smartphone, o seleccionar imágenes de tu computadora.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-1">
+                  {fotos.map((foto, index) => (
+                    <div
+                      key={foto.id}
+                      className="group relative flex flex-col bg-slate-950/70 border border-slate-700/80 rounded-xl overflow-hidden shadow-sm transition-all hover:border-slate-500"
+                    >
+                      <div className="relative aspect-[4/3] bg-black overflow-hidden">
+                        <img
+                          src={foto.preview}
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarFoto(foto.id)}
+                          className="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-600 text-white p-1.5 rounded-full shadow-lg transition-transform hover:scale-110 focus:outline-none"
+                          title="Eliminar foto"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <span className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-[11px] font-semibold text-white px-2 py-0.5 rounded">
+                          Foto #{index + 1}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 flex flex-col gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Descripción (ej. Frontal, Rayón...)"
+                          value={foto.descripcion}
+                          onChange={(e) => handleDescripcionFotoChange(foto.id, e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                        />
+                        <div className="flex gap-1 flex-wrap">
+                          {['Frontal', 'Posterior', 'Lat. Izq.', 'Lat. Der.', 'Odómetro'].map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => handleDescripcionFotoChange(foto.id, tag)}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 

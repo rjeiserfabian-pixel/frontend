@@ -15,6 +15,7 @@ export const premiumTokens = {
     brand: '#e11d2e',
     brandLight: '#fb4b5b',
     brandDark: '#9f1020',
+    primary: '#e11d2e',
     blue: '#38bdf8',
     emerald: '#10b981',
     amber: '#f59e0b',

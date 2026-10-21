@@ -78,11 +78,13 @@ export const inventarioService = {
     return response.data;
   },
   createRepuesto: async (data) => {
-    const response = await api.post(URL_REPUESTOS, data);
+    const isFormData = data instanceof FormData;
+    const response = await api.post(URL_REPUESTOS, data, isFormData ? { headers: { 'Content-Type': undefined } } : {});
     return response.data;
   },
   updateRepuesto: async (id, data) => {
-    const response = await api.put(`${URL_REPUESTOS}${id}/`, data);
+    const isFormData = data instanceof FormData;
+    const response = await api.put(`${URL_REPUESTOS}${id}/`, data, isFormData ? { headers: { 'Content-Type': undefined } } : {});
     return response.data;
   },
   patchRepuesto: async (id, data) => {

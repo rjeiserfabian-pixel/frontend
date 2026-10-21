@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, 
-  CircularProgress, TablePagination, TextField 
+  CircularProgress, TablePagination, TextField,
+  Dialog, DialogTitle, DialogContent
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Plus, Edit, Trash2, Search, History, QrCode, Wrench, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, QrCode, Wrench, FileText, Image as ImageIcon, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import VehiculosForm from '../components/VehiculosForm';
@@ -15,6 +16,7 @@ import MantenimientosVehiculoModal from '../components/MantenimientosVehiculoMod
 import DocumentosDialog from '../../documentos/components/DocumentosDialog';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -33,6 +35,8 @@ export default function VehiculosPage() {
   const [qrVehiculoId, setQrVehiculoId] = useState(null);
   const [mantenimientoVehiculoId, setMantenimientoVehiculoId] = useState(null);
   const [documentosVehiculo, setDocumentosVehiculo] = useState(null);
+  const [modalFotoOpen, setModalFotoOpen] = useState(false);
+  const [modalFotoData, setModalFotoData] = useState({ url: '', titulo: '' });
 
   // Pagination and search
   const [page, setPage] = useState(0); // MUI TablePagination uses 0-indexed pages
@@ -123,7 +127,7 @@ export default function VehiculosPage() {
             setPage(0); // Volver a la primera página al buscar
           }}
           sx={{ minWidth: 300 }}
-          InputProps={{ endAdornment: <Search size={20} style={{ opacity: 0.5 }} /> }}
+          slotProps={{ input: { endAdornment: <Search size={20} style={{ opacity: 0.5 }} /> } }}
         />
         <Box sx={{ flexGrow: 1 }} />
       </Paper>
@@ -138,6 +142,7 @@ export default function VehiculosPage() {
             <Table>
               <TableHead sx={{ backgroundColor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableRow>
+                  <TableCell align="center" sx={{ width: 60 }}><strong>Foto</strong></TableCell>
                   <TableCell><strong>Placa</strong></TableCell>
                   <TableCell><strong>Marca</strong></TableCell>
                   <TableCell><strong>Modelo</strong></TableCell>
@@ -152,7 +157,7 @@ export default function VehiculosPage() {
               <TableBody>
                 {vehiculos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
+                    <TableCell colSpan={10} align="center">
                       <Typography variant="body1" color="textSecondary" sx={{ py: 3 }}>
                         No hay vehículos registrados.
                       </Typography>
@@ -161,6 +166,49 @@ export default function VehiculosPage() {
                 ) : (
                   vehiculos.map((row) => (
                     <TableRow key={row.id} hover>
+                      <TableCell align="center" sx={{ width: 60, py: 1 }}>
+                        {row.imagen ? (
+                          <Box
+                            component="img"
+                            src={getMediaUrl(row.imagen)}
+                            alt={row.placa}
+                            onClick={() => {
+                              setModalFotoData({ url: getMediaUrl(row.imagen), titulo: `${row.placa} - ${row.marca} ${row.modelo}` });
+                              setModalFotoOpen(true);
+                            }}
+                            sx={{
+                              width: 44,
+                              height: 34,
+                              borderRadius: '6px',
+                              objectFit: 'cover',
+                              cursor: 'pointer',
+                              border: `1px solid ${C.border}`,
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                              '&:hover': {
+                                transform: 'scale(1.1)',
+                                boxShadow: `0 0 10px ${alpha(C.brand, 0.5)}`
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 44,
+                              height: 34,
+                              borderRadius: '6px',
+                              backgroundColor: alpha('#ffffff', 0.04),
+                              border: `1px dashed ${alpha('#ffffff', 0.15)}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'text.secondary',
+                              margin: '0 auto'
+                            }}
+                          >
+                            <ImageIcon size={16} opacity={0.35} />
+                          </Box>
+                        )}
+                      </TableCell>
                       <TableCell sx={{ fontWeight: 700, color: '#bae6fd' }}>{row.placa}</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>{row.marca}</TableCell>
                       <TableCell>{row.modelo}</TableCell>
@@ -268,6 +316,47 @@ export default function VehiculosPage() {
           onClose={() => setMantenimientoVehiculoId(null)}
         />
       )}
+
+      {/* --- MODAL PARA VER FOTO DE VEHÍCULO EN TAMAÑO COMPLETO --- */}
+      <Dialog
+        open={modalFotoOpen}
+        onClose={() => setModalFotoOpen(false)}
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            backgroundColor: '#0f172a',
+            border: `1px solid ${C.border}`,
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, px: 2.5 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            {modalFotoData.titulo || 'Fotografía del Vehículo'}
+          </Typography>
+          <IconButton size="small" onClick={() => setModalFotoOpen(false)} sx={{ color: 'text.secondary' }}>
+            <X size={18} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#020617' }}>
+          {modalFotoData.url && (
+            <Box
+              component="img"
+              src={modalFotoData.url}
+              alt="Vehículo"
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '75vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                display: 'block',
+                margin: '0 auto'
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

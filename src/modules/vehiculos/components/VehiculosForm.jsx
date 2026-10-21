@@ -7,13 +7,15 @@ import {
 import api from '../../../core/api/axios';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
-import { Plus } from 'lucide-react';
+import { Plus, Image as ImageIcon, UploadCloud, X } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Swal from 'sweetalert2';
 import { vehiculoService } from '../services/vehiculosService';
 import ClientesForm from '../../clientes/components/ClientesForm';
+import { compressImage } from '../../../utils/imageCompressor';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 // Regla 4.3: Validación con Zod
 const schema = z.object({
@@ -37,6 +39,12 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
   const [clientes, setClientes] = useState([]);
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [clienteModalOpen, setClienteModalOpen] = useState(false);
+
+  // Estados de Imagen del Vehículo
+  const [imagenFile, setImagenFile] = useState(null);
+  const [imagenPreview, setImagenPreview] = useState(null);
+  const [imagenEliminada, setImagenEliminada] = useState(false);
+  const [comprimiendoImagen, setComprimiendoImagen] = useState(false);
 
   const { control, handleSubmit, reset, setValue, getValues, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -64,7 +72,10 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
   }, [clienteSeleccionado]);
 
   useEffect(() => {
+    setImagenFile(null);
+    setImagenEliminada(false);
     if (vehiculoEdit) {
+      setImagenPreview(vehiculoEdit.imagen ? getMediaUrl(vehiculoEdit.imagen) : null);
       reset({
         placa: vehiculoEdit.placa || '',
         marca: vehiculoEdit.marca || '',
@@ -86,6 +97,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
         setClienteSeleccionado(null);
       }
     } else {
+      setImagenPreview(null);
       reset({
         placa: '', marca: '', modelo: '', numero_motor: '', numero_serie: '',
         color: '', clase: '', tipo: '', uso: '', tipo_combustible: '', anio_fabricacion: '', numero_asientos: '', kilometraje_actual: ''
@@ -148,6 +160,42 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
     }
   };
 
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      Swal.fire('Formato no válido', 'Por favor selecciona un archivo de imagen (JPG, PNG, WEBP).', 'warning');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      Swal.fire('Imagen muy pesada', 'La imagen no debe superar los 10MB.', 'warning');
+      return;
+    }
+
+    try {
+      setComprimiendoImagen(true);
+      const compressed = await compressImage(file, { maxWidth: 1280, maxHeight: 960, quality: 0.85 });
+      setImagenFile(compressed);
+      setImagenPreview(URL.createObjectURL(compressed));
+      setImagenEliminada(false);
+    } catch (err) {
+      console.error('Error al procesar imagen de vehículo:', err);
+      setImagenFile(file);
+      setImagenPreview(URL.createObjectURL(file));
+      setImagenEliminada(false);
+    } finally {
+      setComprimiendoImagen(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagenFile(null);
+    setImagenPreview(null);
+    setImagenEliminada(true);
+  };
+
   const onSubmit = async (data) => {
     try {
       const payload = {
@@ -155,9 +203,28 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
         cliente_id: clienteSeleccionado?.id || null,
       };
 
+      // Si hay archivo de imagen o se eliminó la existente, armamos FormData
+      let requestData;
+      if (imagenFile || imagenEliminada) {
+        const formData = new FormData();
+        Object.keys(payload).forEach(key => {
+          if (payload[key] !== null && payload[key] !== undefined && payload[key] !== '') {
+            formData.append(key, payload[key]);
+          }
+        });
+        if (imagenFile) {
+          formData.append('imagen', imagenFile);
+        } else if (imagenEliminada) {
+          formData.append('imagen', '');
+        }
+        requestData = formData;
+      } else {
+        requestData = payload;
+      }
+
       // Regla 3.3: Botones deshabilitados (controlado por isSubmitting)
       if (vehiculoEdit) {
-        const res = await vehiculoService.updateVehiculo(vehiculoEdit.id, payload);
+        const res = await vehiculoService.updateVehiculo(vehiculoEdit.id, requestData);
         Swal.fire({
           icon: 'success',
           title: 'Éxito',
@@ -171,7 +238,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
         onClose();
         return;
       } else {
-        const res = await vehiculoService.createVehiculo(payload);
+        const res = await vehiculoService.createVehiculo(requestData);
         Swal.fire({
           icon: 'success',
           title: 'Éxito',
@@ -374,15 +441,109 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
                 <TextField {...field} label="Kilometraje Actual" fullWidth type="number" />
               )}/>
             </Grid>
+
+            {/* Fotografía del Vehículo */}
+            <Grid size={{ xs: 12 }}>
+              <Box
+                sx={{
+                  p: 2,
+                  mt: 0.5,
+                  border: '1px dashed rgba(255, 255, 255, 0.18)',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2.5,
+                  flexWrap: 'wrap'
+                }}
+              >
+                {imagenPreview ? (
+                  <Box sx={{ position: 'relative', width: 90, height: 75 }}>
+                    <Box
+                      component="img"
+                      src={imagenPreview}
+                      alt="Vehículo"
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={handleRemoveImage}
+                      sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        backgroundColor: '#ef4444',
+                        color: '#ffffff',
+                        '&:hover': { backgroundColor: '#dc2626' },
+                        width: 22,
+                        height: 22
+                      }}
+                    >
+                      <X size={14} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      width: 90,
+                      height: 75,
+                      borderRadius: '8px',
+                      border: '1px dashed rgba(255, 255, 255, 0.2)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <ImageIcon size={28} opacity={0.35} />
+                  </Box>
+                )}
+
+                <Box sx={{ flex: 1, minWidth: 200 }}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    size="small"
+                    startIcon={<UploadCloud size={16} />}
+                    disabled={comprimiendoImagen}
+                    sx={{ mb: 0.8, borderRadius: '8px' }}
+                  >
+                    {imagenPreview ? 'Cambiar Foto' : 'Subir Foto del Vehículo'}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </Button>
+                  {comprimiendoImagen && (
+                    <Box sx={{ color: 'primary.main', fontSize: '0.75rem', fontWeight: 600 }}>
+                      Optimizando imagen...
+                    </Box>
+                  )}
+                  <Box sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                    Foto frontal o lateral del vehículo (JPG, PNG, WEBP). Se comprime automáticamente.
+                  </Box>
+                </Box>
+              </Box>
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+          <Button onClick={onClose} disabled={isSubmitting || comprimiendoImagen}>Cancelar</Button>
           <Button 
             type="submit" 
             variant="contained" 
             color="primary" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || comprimiendoImagen}
             startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
           >
             Guardar

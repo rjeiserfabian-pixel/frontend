@@ -14,11 +14,13 @@ export const vehiculoService = {
     return response.data;
   },
   createVehiculo: async (data) => {
-    const response = await api.post(URL_VEHICULOS, data);
+    const isFormData = data instanceof FormData;
+    const response = await api.post(URL_VEHICULOS, data, isFormData ? { headers: { 'Content-Type': undefined } } : {});
     return response.data;
   },
   updateVehiculo: async (id, data) => {
-    const response = await api.put(`${URL_VEHICULOS}${id}/`, data);
+    const isFormData = data instanceof FormData;
+    const response = await api.put(`${URL_VEHICULOS}${id}/`, data, isFormData ? { headers: { 'Content-Type': undefined } } : {});
     return response.data;
   },
   deleteVehiculo: async (id) => {
