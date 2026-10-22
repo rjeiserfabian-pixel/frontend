@@ -35,7 +35,10 @@ export default function TiposServicioPage() {
   const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       nombre: '',
-      estado: true
+      estado: true,
+      aplica_checklist_preventivo: false,
+      aplica_checklist_correctivo: false,
+      aplica_checklist_diagnostico: false,
     }
   });
 
@@ -62,13 +65,19 @@ export default function TiposServicioPage() {
       setEditingId(tipo.id);
       reset({
         nombre: tipo.nombre,
-        estado: tipo.estado
+        estado: tipo.estado,
+        aplica_checklist_preventivo: tipo.aplica_checklist_preventivo ?? false,
+        aplica_checklist_correctivo: tipo.aplica_checklist_correctivo ?? false,
+        aplica_checklist_diagnostico: tipo.aplica_checklist_diagnostico ?? false,
       });
     } else {
       setEditingId(null);
       reset({
         nombre: '',
-        estado: true
+        estado: true,
+        aplica_checklist_preventivo: false,
+        aplica_checklist_correctivo: false,
+        aplica_checklist_diagnostico: false,
       });
     }
     setModalOpen(true);
@@ -160,6 +169,7 @@ export default function TiposServicioPage() {
               <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
                 <TableCell sx={{ fontWeight: 800, color: C.textMuted }}>Nº</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: C.textMuted }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: C.textMuted }}>Checklists Activos en Recepción</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: C.textMuted, textAlign: 'center' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: C.textMuted, textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
@@ -167,13 +177,13 @@ export default function TiposServicioPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : tipos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3, color: C.textMuted }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3, color: C.textMuted }}>
                     No hay tipos de servicio registrados
                   </TableCell>
                 </TableRow>
@@ -182,6 +192,54 @@ export default function TiposServicioPage() {
                   <TableRow key={row.id} hover>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: C.text }}>{row.nombre}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {row.aplica_checklist_preventivo && (
+                          <Chip 
+                            label="Preventivo" 
+                            size="small" 
+                            sx={{ 
+                              bgcolor: alpha(C.blue, 0.12), 
+                              color: '#93c5fd', 
+                              border: `1px solid ${alpha(C.blue, 0.28)}`, 
+                              fontWeight: 600, 
+                              fontSize: '0.72rem' 
+                            }} 
+                          />
+                        )}
+                        {row.aplica_checklist_correctivo && (
+                          <Chip 
+                            label="Correctivo" 
+                            size="small" 
+                            sx={{ 
+                              bgcolor: alpha(C.amber, 0.12), 
+                              color: '#fcd34d', 
+                              border: `1px solid ${alpha(C.amber, 0.28)}`, 
+                              fontWeight: 600, 
+                              fontSize: '0.72rem' 
+                            }} 
+                          />
+                        )}
+                        {row.aplica_checklist_diagnostico && (
+                          <Chip 
+                            label="Diagnóstico" 
+                            size="small" 
+                            sx={{ 
+                              bgcolor: alpha('#a855f7', 0.14), 
+                              color: '#d8b4fe', 
+                              border: `1px solid ${alpha('#a855f7', 0.3)}`, 
+                              fontWeight: 600, 
+                              fontSize: '0.72rem' 
+                            }} 
+                          />
+                        )}
+                        {!row.aplica_checklist_preventivo && !row.aplica_checklist_correctivo && !row.aplica_checklist_diagnostico && (
+                          <Typography variant="caption" sx={{ color: C.textMuted, fontStyle: 'italic' }}>
+                            Sin checklist
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
                     <TableCell align="center">
                       <Chip 
                         label={row.estado ? 'Activo' : 'Inactivo'} 
@@ -250,6 +308,43 @@ export default function TiposServicioPage() {
                 helperText={errors.nombre?.message}
                 placeholder="Ej. Mantenimiento Preventivo"
               />
+
+              {/* Configuración de Checklists */}
+              <Box sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(C.surfaceSoft, 0.5), border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Checklists que se activan en la Recepción
+                </Typography>
+                <Controller
+                  name="aplica_checklist_preventivo"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
+                      label={<Typography variant="body2" sx={{ fontWeight: 500 }}>Activar Checklist Preventivo</Typography>}
+                    />
+                  )}
+                />
+                <Controller
+                  name="aplica_checklist_correctivo"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
+                      label={<Typography variant="body2" sx={{ fontWeight: 500 }}>Activar Checklist Correctivo</Typography>}
+                    />
+                  )}
+                />
+                <Controller
+                  name="aplica_checklist_diagnostico"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} color="primary" />}
+                      label={<Typography variant="body2" sx={{ fontWeight: 500 }}>Activar Checklist de Diagnóstico</Typography>}
+                    />
+                  )}
+                />
+              </Box>
               
               <Controller
                 name="estado"

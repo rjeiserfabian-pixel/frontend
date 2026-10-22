@@ -51,6 +51,8 @@ const DynamicIcon = ({ name, size = 22 }) => {
     'map-pin': Icons.MapPin,
     'clipboard-list': Icons.ClipboardList,
     'list-checks': Icons.ListChecks,
+    'shield-check': Icons.ShieldCheck,
+    'package-check': Icons.PackageCheck,
     'credit-card': Icons.CreditCard,
     'truck': Icons.Truck,
     'calendar': Icons.CalendarDays,

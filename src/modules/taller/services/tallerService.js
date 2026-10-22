@@ -241,6 +241,27 @@ export const tallerService = {
     return response.data;
   },
 
+  // Plantillas de Diagnóstico
+  getPlantillasDiagnostico: async (params) => {
+    const response = await api.get('taller/plantillas-diagnostico/', { params });
+    return response.data;
+  },
+
+  crearPlantillaDiagnostico: async (data) => {
+    const response = await api.post('taller/plantillas-diagnostico/', data);
+    return response.data;
+  },
+
+  actualizarPlantillaDiagnostico: async (id, data) => {
+    const response = await api.put(`taller/plantillas-diagnostico/${id}/`, data);
+    return response.data;
+  },
+
+  eliminarPlantillaDiagnostico: async (id) => {
+    const response = await api.delete(`taller/plantillas-diagnostico/${id}/`);
+    return response.data;
+  },
+
   // Evidencias de Ingreso (Fotos del Vehículo al recepcionar)
   getEvidenciasOrden: async (ordenId) => {
     const response = await api.get(`taller/ordenes/${ordenId}/evidencias/`);
@@ -258,4 +279,36 @@ export const tallerService = {
     const response = await api.delete(`taller/evidencias/${evidenciaId}/`);
     return response.data;
   },
+
+  // Accesorios y Pertenencias
+  getAccesorios: async (params) => {
+    const response = await api.get('taller/accesorios/', { params });
+    return response.data;
+  },
+
+  crearAccesorio: async (data) => {
+    const response = await api.post('taller/accesorios/', data);
+    return response.data;
+  },
+
+  actualizarAccesorio: async (id, data) => {
+    const response = await api.patch(`taller/accesorios/${id}/`, data);
+    return response.data;
+  },
+
+  eliminarAccesorio: async (id) => {
+    const response = await api.delete(`taller/accesorios/${id}/`);
+    return response.data;
+  },
+
+  getAccesoriosOrden: async (ordenId) => {
+    const response = await api.get(`taller/ordenes/${ordenId}/accesorios/`);
+    return response.data;
+  },
+
+  guardarAccesoriosOrden: async (ordenId, accesorios) => {
+    const response = await api.post(`taller/ordenes/${ordenId}/accesorios/`, { accesorios });
+    return response.data;
+  },
 };
+

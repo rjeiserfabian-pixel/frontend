@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
   Button, TextField, Grid, MenuItem, CircularProgress,
@@ -8,17 +8,26 @@ import { Search } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { proveedorService } from '../../clientes/services/proveedorService';
 
+const defaultFormData = {
+  tipo_documento: 'RUC',
+  numero_documento: '',
+  nombre_o_razon_social: '',
+  rubro_comercial: '',
+  telefono: '',
+  email: '',
+  direccion: ''
+};
+
 const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [formData, setFormData] = useState({
-    tipo_documento: 'RUC',
-    numero_documento: '',
-    nombre_o_razon_social: '',
-    direccion: '',
-    telefono: '',
-    email: ''
-  });
+  const [formData, setFormData] = useState(defaultFormData);
+
+  useEffect(() => {
+    if (open) {
+      setFormData(defaultFormData);
+    }
+  }, [open]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,11 +72,11 @@ const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
       
       if (data && data.data) {
         const payload = data.data;
-        setFormData({
-          ...formData,
+        setFormData(prev => ({
+          ...prev,
           nombre_o_razon_social: payload.nombre_o_razon_social || payload.nombre || payload.razon_social || '',
           direccion: payload.direccion || ''
-        });
+        }));
         Swal.fire({
           icon: 'success',
           title: 'Datos encontrados',
@@ -96,8 +105,14 @@ const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
 
     try {
       setLoading(true);
-      // Aquí usamos proveedorService.crear directamente
-      const nuevoProveedor = await proveedorService.crear(formData);
+      const payload = {
+        ...formData,
+        rubro_comercial: formData.rubro_comercial?.trim() || null,
+        direccion: formData.direccion?.trim() || null,
+        telefono: formData.telefono?.trim() || null,
+        email: formData.email?.trim() || null,
+      };
+      const nuevoProveedor = await proveedorService.crear(payload);
       
       Swal.fire({
         icon: 'success',
@@ -157,20 +172,27 @@ const ModalNuevoProveedor = ({ open, onClose, onSuccess }) => {
           </Grid>
           <Grid size={{ xs: 12 }}>
              <TextField
-               fullWidth label="Dirección" name="direccion"
-               value={formData.direccion} onChange={handleChange}
+               fullWidth label="Productos / Servicios que provee (Opcional)" name="rubro_comercial"
+               placeholder="Ej: Lubricantes, llantas, repuestos de suspensión, torno..."
+               value={formData.rubro_comercial} onChange={handleChange}
              />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
              <TextField
-               fullWidth label="Teléfono" name="telefono"
+               fullWidth label="Teléfono (Opcional)" name="telefono"
                value={formData.telefono} onChange={handleChange}
              />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
              <TextField
-               fullWidth label="Email" name="email" type="email"
+               fullWidth label="Email (Opcional)" name="email" type="email"
                value={formData.email} onChange={handleChange}
+             />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+             <TextField
+               fullWidth label="Dirección (Opcional)" name="direccion"
+               value={formData.direccion} onChange={handleChange}
              />
           </Grid>
         </Grid>

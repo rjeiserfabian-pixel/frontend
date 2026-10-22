@@ -7,7 +7,7 @@ import {
   LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
@@ -16,6 +16,7 @@ import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
 import { compressImage } from '../../../utils/imageCompressor';
+import { getMediaUrl } from '../../../core/utils/mediaUrl';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -1488,13 +1489,13 @@ export default function DetalleOrdenPage() {
                             }}
                             onClick={() => setModalFotoGrande({
                               open: true,
-                              url: ev.imagen,
+                              url: getMediaUrl(ev.imagen),
                               titulo: `OT-${orden.numero} - ${ev.descripcion || `Foto #${i + 1}`}`
                             })}
                           >
                             <Box
                               component="img"
-                              src={ev.imagen}
+                              src={getMediaUrl(ev.imagen)}
                               alt={ev.descripcion || `Evidencia ${i + 1}`}
                               sx={{
                                 width: '100%',
@@ -1543,6 +1544,106 @@ export default function DetalleOrdenPage() {
                         </Paper>
                       </Grid>
                     ))}
+                  </Grid>
+                )}
+              </Box>
+            </Paper>
+
+            {/* 5. Accesorios y Pertenencias en Custodia */}
+            <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+              <Box sx={{ p: 3, bgcolor: alpha(C.brand, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
+                    <ShieldCheck size={20} className="text-rose-400" />
+                    5. Accesorios y Pertenencias en Custodia
+                    <Chip 
+                      label={(orden.accesorios_pertenencias || []).length} 
+                      size="small" 
+                      sx={{ fontWeight: 700, bgcolor: alpha('#ffffff', 0.1), color: C.text }} 
+                    />
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Inventario de herramientas, extintor, repuesto y objetos del cliente recibidos al momento del ingreso.
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ p: 3 }}>
+                {(!orden.accesorios_pertenencias || orden.accesorios_pertenencias.length === 0) ? (
+                  <Box py={4} textAlign="center">
+                    <ShieldCheck size={36} className="text-slate-500 opacity-40" style={{ margin: '0 auto 8px auto' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No se registraron accesorios ni pertenencias en custodia para este vehículo.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Grid container spacing={2}>
+                    {orden.accesorios_pertenencias.map((item) => {
+                      const estConfig = {
+                        BUENO: { label: 'Bueno', bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
+                        REGULAR: { label: 'Regular', bg: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
+                        MALO: { label: 'Malo', bg: 'rgba(239, 68, 68, 0.15)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' }
+                      }[item.estado_conservacion] || { label: item.estado_conservacion_display || item.estado_conservacion, bg: 'rgba(255, 255, 255, 0.05)', text: '#cbd5e1', border: 'rgba(255, 255, 255, 0.1)' };
+
+                      return (
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.id}>
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: 2,
+                              borderRadius: '14px',
+                              border: `1px solid ${C.border}`,
+                              bgcolor: alpha('#ffffff', 0.02),
+                              display: 'flex',
+                              flexDirection: 'col',
+                              gap: 1.5,
+                              transition: 'all 0.2s ease',
+                              '&:hover': { borderColor: alpha(C.brand, 0.4) }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                              <Typography variant="subtitle2" fontWeight="700" color="text.primary">
+                                {item.accesorio_nombre}
+                              </Typography>
+                              <Chip
+                                label={`x${item.cantidad}`}
+                                size="small"
+                                sx={{
+                                  fontWeight: 700,
+                                  fontSize: '0.75rem',
+                                  bgcolor: alpha('#ffffff', 0.08),
+                                  color: C.text
+                                }}
+                              />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Estado:
+                              </Typography>
+                              <Chip
+                                label={estConfig.label}
+                                size="small"
+                                sx={{
+                                  height: '22px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                  bgcolor: estConfig.bg,
+                                  color: estConfig.text,
+                                  border: `1px solid ${estConfig.border}`
+                                }}
+                              />
+                            </Box>
+
+                            {item.observaciones && (
+                              <Typography variant="caption" color="text.secondary" sx={{ bgcolor: alpha('#ffffff', 0.03), p: 1, borderRadius: '8px', fontStyle: 'italic' }}>
+                                &ldquo;{item.observaciones}&rdquo;
+                              </Typography>
+                            )}
+                          </Paper>
+                        </Grid>
+                      );
+                    })}
                   </Grid>
                 )}
               </Box>
@@ -1762,7 +1863,7 @@ export default function DetalleOrdenPage() {
           {modalFotoGrande.url && (
             <Box
               component="img"
-              src={modalFotoGrande.url}
+              src={getMediaUrl(modalFotoGrande.url)}
               alt="Evidencia"
               sx={{
                 maxWidth: '100%',

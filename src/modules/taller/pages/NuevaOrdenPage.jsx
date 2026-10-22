@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, TextField, Grid,
   FormControlLabel, Checkbox, Divider, Autocomplete, CircularProgress, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions
+  Dialog, DialogTitle, DialogContent, DialogActions, Switch, Chip
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Save, Plus, X, Camera, UploadCloud, Trash2, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck, Check } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { tallerService } from '../services/tallerService';
@@ -24,12 +24,22 @@ export default function NuevaOrdenPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
   const puedeCrearTipoServicio = tienePermiso('TIPOS_SERVICIO.CREAR');
+  const puedeCrearAccesorio = tienePermiso('ACCESORIOS_TALLER.CREAR');
   const [loading, setLoading] = useState(false);
   const [vehiculos, setVehiculos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
   const [plantillasCorrectivas, setPlantillasCorrectivas] = useState([]);
+  const [plantillasDiagnostico, setPlantillasDiagnostico] = useState([]);
   const [tiposServicio, setTiposServicio] = useState([]);
+  const [accesoriosCatalogo, setAccesoriosCatalogo] = useState([]);
+
+  // Accesorios y Pertenencias en Custodia
+  const [registrarAccesorios, setRegistrarAccesorios] = useState(false);
+  const [accesoriosSeleccionados, setAccesoriosSeleccionados] = useState({});
+  const [accesorioModalOpen, setAccesorioModalOpen] = useState(false);
+  const [nuevoAccesorioNombre, setNuevoAccesorioNombre] = useState('');
+  const [nuevoAccesorioDesc, setNuevoAccesorioDesc] = useState('');
 
   const [formData, setFormData] = useState({
     cliente_id: null,
@@ -43,6 +53,7 @@ export default function NuevaOrdenPage() {
 
   const [preventivo, setPreventivo] = useState({});
   const [correctivo, setCorrectivo] = useState({});
+  const [diagnostico, setDiagnostico] = useState({});
   const [observaciones, setObservaciones] = useState('');
 
   // Evidencias / Fotos de Recepción del Vehículo
@@ -54,12 +65,17 @@ export default function NuevaOrdenPage() {
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [tipoServicioModalOpen, setTipoServicioModalOpen] = useState(false);
   const [nuevoTipoNombre, setNuevoTipoNombre] = useState('');
+  const [nuevoTipoPrev, setNuevoTipoPrev] = useState(false);
+  const [nuevoTipoCorr, setNuevoTipoCorr] = useState(false);
+  const [nuevoTipoDiag, setNuevoTipoDiag] = useState(false);
 
   useEffect(() => {
     fetchClientes();
     fetchPlantillas();
     fetchPlantillasCorrectivas();
+    fetchPlantillasDiagnostico();
     fetchTiposServicio();
+    fetchAccesoriosCatalogo();
   }, []);
 
   const fetchPlantillas = async () => {
@@ -81,6 +97,15 @@ export default function NuevaOrdenPage() {
     }
   };
 
+  const fetchPlantillasDiagnostico = async () => {
+    try {
+      const res = await tallerService.getPlantillasDiagnostico({ activo: true });
+      setPlantillasDiagnostico(res.results || res);
+    } catch (err) {
+      console.error('Error cargando plantillas de diagnóstico:', err);
+    }
+  };
+
   const fetchTiposServicio = async () => {
     try {
       const res = await tallerService.getTiposServicio({ estado: true });
@@ -88,6 +113,82 @@ export default function NuevaOrdenPage() {
       setTiposServicio(data);
     } catch (err) {
       console.error('Error cargando tipos de servicio:', err);
+    }
+  };
+
+  const fetchAccesoriosCatalogo = async () => {
+    try {
+      const res = await tallerService.getAccesorios({ activo: true, sin_paginar: true });
+      const data = res.results || (Array.isArray(res) ? res : []);
+      setAccesoriosCatalogo(data);
+    } catch (err) {
+      console.error('Error cargando accesorios:', err);
+    }
+  };
+
+  const handleToggleAccesorio = (accesorioId) => {
+    setAccesoriosSeleccionados(prev => {
+      const actual = prev[accesorioId];
+      if (actual && actual.checked) {
+        const copy = { ...prev };
+        delete copy[accesorioId];
+        return copy;
+      }
+      return {
+        ...prev,
+        [accesorioId]: {
+          checked: true,
+          cantidad: 1,
+          estado_conservacion: 'BUENO',
+          observaciones: ''
+        }
+      };
+    });
+  };
+
+  const handleAccesorioChange = (accesorioId, campo, valor) => {
+    setAccesoriosSeleccionados(prev => ({
+      ...prev,
+      [accesorioId]: {
+        ...(prev[accesorioId] || { checked: true, cantidad: 1, estado_conservacion: 'BUENO', observaciones: '' }),
+        [campo]: valor
+      }
+    }));
+  };
+
+  const handleSaveNuevoAccesorio = async () => {
+    if (!nuevoAccesorioNombre.trim()) {
+      setModalError('El nombre del accesorio es obligatorio');
+      return;
+    }
+    setModalError('');
+    try {
+      setLoading(true);
+      const nuevo = await tallerService.crearAccesorio({
+        nombre: nuevoAccesorioNombre.trim(),
+        descripcion: nuevoAccesorioDesc.trim() || null,
+        orden: accesoriosCatalogo.length + 1,
+        activo: true
+      });
+      setAccesoriosCatalogo(prev => [...prev, nuevo]);
+      setAccesoriosSeleccionados(prev => ({
+        ...prev,
+        [nuevo.id]: { checked: true, cantidad: 1, estado_conservacion: 'BUENO', observaciones: '' }
+      }));
+      setNuevoAccesorioNombre('');
+      setNuevoAccesorioDesc('');
+      setAccesorioModalOpen(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Accesorio agregado',
+        text: `"${nuevo.nombre}" añadido y seleccionado`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      Swal.fire('Error', err.response?.data?.nombre?.[0] || 'Error al guardar accesorio', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,10 +200,19 @@ export default function NuevaOrdenPage() {
     setModalError('');
     try {
       setLoading(true);
-      const nuevo = await tallerService.crearTipoServicio({ nombre: nuevoTipoNombre, estado: true });
+      const nuevo = await tallerService.crearTipoServicio({ 
+        nombre: nuevoTipoNombre, 
+        estado: true,
+        aplica_checklist_preventivo: nuevoTipoPrev,
+        aplica_checklist_correctivo: nuevoTipoCorr,
+        aplica_checklist_diagnostico: nuevoTipoDiag,
+      });
       Swal.fire('Éxito', 'Tipo de Servicio registrado', 'success');
       setTipoServicioModalOpen(false);
       setNuevoTipoNombre('');
+      setNuevoTipoPrev(false);
+      setNuevoTipoCorr(false);
+      setNuevoTipoDiag(false);
       // Se inyecta directo en la lista local y se selecciona; no depende de que el
       // tipo recién creado caiga dentro de la página que devuelva el listado (mismo
       // problema que afectaba a clientes y vehículos).
@@ -219,6 +329,17 @@ export default function NuevaOrdenPage() {
         }
       }
 
+      // Crear servicios de diagnóstico dinámicos seleccionados
+      for (const plantilla of plantillasDiagnostico) {
+        if (diagnostico[plantilla.id]) {
+          await tallerService.crearServicio({ 
+            orden: newOrden.id, 
+            descripcion: plantilla.nombre,
+            precio_estimado: plantilla.precio_base || 0
+          });
+        }
+      }
+
       // Subir evidencias fotográficas de ingreso si se adjuntaron
       if (fotos.length > 0) {
         try {
@@ -230,6 +351,26 @@ export default function NuevaOrdenPage() {
           await tallerService.subirEvidenciasOrden(newOrden.id, formDataFotos);
         } catch (fotoErr) {
           console.error('Error subiendo fotos de recepción:', fotoErr);
+        }
+      }
+
+      // Guardar accesorios y pertenencias en custodia si se activó la opción
+      if (registrarAccesorios) {
+        const payloadAccesorios = Object.entries(accesoriosSeleccionados)
+          .filter(([_, item]) => item && item.checked)
+          .map(([id, item]) => ({
+            accesorio_id: parseInt(id, 10),
+            cantidad: Math.max(1, parseInt(item.cantidad, 10) || 1),
+            estado_conservacion: item.estado_conservacion || 'BUENO',
+            observaciones: (item.observaciones || '').trim()
+          }));
+
+        if (payloadAccesorios.length > 0) {
+          try {
+            await tallerService.guardarAccesoriosOrden(newOrden.id, payloadAccesorios);
+          } catch (accErr) {
+            console.error('Error guardando accesorios de recepción:', accErr);
+          }
         }
       }
 
@@ -280,15 +421,21 @@ export default function NuevaOrdenPage() {
   const nombreTipo = selectedTipo?.nombre?.toLowerCase() || '';
   const isPreventivo = nombreTipo.includes('preventivo');
   const isCorrectivo = nombreTipo.includes('correctivo');
+  const isDiagnostico = nombreTipo.includes('diagn');
   
-  // Si no se selecciona nada o es un servicio general, no mostramos las plantillas.
-  const showPreventiva = !!formData.tipo_servicio_id && isPreventivo;
-  const showCorrectiva = !!formData.tipo_servicio_id && isCorrectivo;
+  // Detección híbrida: flags booleanos del modelo + respaldo por coincidencia de nombre
+  const showPreventiva = !!formData.tipo_servicio_id && (selectedTipo?.aplica_checklist_preventivo || isPreventivo);
+  const showCorrectiva = !!formData.tipo_servicio_id && (selectedTipo?.aplica_checklist_correctivo || isCorrectivo);
+  const showDiagnostico = !!formData.tipo_servicio_id && (selectedTipo?.aplica_checklist_diagnostico || isDiagnostico);
 
-  const secNumPrev = 2;
-  const secNumCorr = showPreventiva ? 3 : 2;
-  const secNumObs = (showPreventiva ? 1 : 0) + (showCorrectiva ? 1 : 0) + 2;
-  const secNumFotos = secNumObs + 1;
+  // Numeración correlativa automática y dinámica
+  let curSec = 1;
+  const secNumPrev = showPreventiva ? ++curSec : null;
+  const secNumCorr = showCorrectiva ? ++curSec : null;
+  const secNumDiag = showDiagnostico ? ++curSec : null;
+  const secNumAccesorios = ++curSec;
+  const secNumObs = ++curSec;
+  const secNumFotos = ++curSec;
 
 
   return (
@@ -532,6 +679,224 @@ export default function NuevaOrdenPage() {
             </section>
           )}
 
+          {/* SECCION: Diagnóstico */}
+          {showDiagnostico && (
+            <section className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">{secNumDiag}</div>
+                <h2 className="text-lg font-semibold text-white tracking-tight">Plantillas de Diagnóstico (Checklist)</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-900/60 rounded-lg border border-slate-700 mt-2">
+                {plantillasDiagnostico.length === 0 ? (
+                  <p className="text-sm text-slate-300 font-medium">No hay plantillas de diagnóstico configuradas.</p>
+                ) : (
+                  plantillasDiagnostico.map((plantilla) => (
+                    <FormControlLabel
+                      key={plantilla.id}
+                      control={
+                        <Checkbox
+                          checked={diagnostico[plantilla.id] || false}
+                          onChange={(e) => setDiagnostico({ ...diagnostico, [plantilla.id]: e.target.checked })}
+                          sx={{ color: 'slate.300', '&.Mui-checked': { color: 'slate.900' } }}
+                        />
+                      }
+                      label={
+                        <span className="text-sm font-medium text-slate-100">
+                          {plantilla.nombre} 
+                          {plantilla.precio_base ? <span className="text-slate-300"> (S/ {plantilla.precio_base})</span> : ''}
+                          {plantilla.tiempo_estimado_minutos ? <span className="text-slate-300"> [{plantilla.tiempo_estimado_minutos} min]</span> : ''}
+                        </span>
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* SECCION ACCESORIOS Y PERTENENCIAS (DINAMICO Y COLAPSABLE) */}
+          <section className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">
+                  {secNumAccesorios}
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white tracking-tight flex items-center gap-2">
+                    <ShieldCheck size={20} className="text-rose-500" />
+                    Accesorios y Pertenencias en Custodia
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    ¿El cliente deja extintor, llanta de repuesto, herramientas u otros objetos en el vehículo?
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Principal: No ocupa espacio si no deja nada */}
+              <div 
+                onClick={() => setRegistrarAccesorios(!registrarAccesorios)}
+                className={`cursor-pointer px-4 py-2 rounded-xl border transition-all flex items-center gap-3 select-none ${
+                  registrarAccesorios 
+                    ? 'bg-rose-500/10 border-rose-500/50 shadow-sm' 
+                    : 'bg-slate-900/60 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span className="text-xs font-semibold text-slate-200">
+                  {registrarAccesorios ? 'Registrando pertenencias' : '¿Dejan accesorios?'}
+                </span>
+                <Switch
+                  size="small"
+                  checked={registrarAccesorios}
+                  onChange={(e) => setRegistrarAccesorios(e.target.checked)}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#f43f5e' },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#f43f5e' },
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Bloque desplegable solo cuando el usuario activa registrar accesorios */}
+            {registrarAccesorios && (
+              <div className="flex flex-col gap-4 p-5 bg-slate-900/70 rounded-2xl border border-slate-700/80 animate-in fade-in duration-200 mt-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-800">
+                  <div className="text-xs text-slate-300">
+                    Marque los accesorios que quedan en custodia en el taller e indique su estado y observaciones.
+                  </div>
+                  {puedeCrearAccesorio && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Plus size={16} />}
+                      onClick={() => setAccesorioModalOpen(true)}
+                      sx={{
+                        borderColor: alpha(C.primary, 0.5),
+                        color: C.primary,
+                        '&:hover': { borderColor: C.primary, bgcolor: alpha(C.primary, 0.08) },
+                        borderRadius: '8px',
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        px: 2,
+                        py: 0.5
+                      }}
+                    >
+                      Nuevo Accesorio
+                    </Button>
+                  )}
+                </div>
+
+                {accesoriosCatalogo.length === 0 ? (
+                  <p className="text-sm text-slate-400 py-3 italic">
+                    No hay accesorios configurados en el catálogo. Puede agregar uno con el botón (+).
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {accesoriosCatalogo.map((acc) => {
+                      const sel = accesoriosSeleccionados[acc.id];
+                      const isChecked = !!sel?.checked;
+
+                      return (
+                        <div
+                          key={acc.id}
+                          className={`flex flex-col gap-2.5 p-3.5 rounded-xl border transition-all ${
+                            isChecked
+                              ? 'bg-slate-950/90 border-rose-500/60 shadow-md ring-1 ring-rose-500/30'
+                              : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          {/* Fila Cabecera del Accesorio: Checkbox + Nombre */}
+                          <div className="flex items-start justify-between gap-2">
+                            <label className="flex items-start gap-2.5 cursor-pointer flex-1 select-none">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleToggleAccesorio(acc.id)}
+                                className="mt-1 w-4 h-4 rounded border-slate-700 text-rose-600 focus:ring-rose-500 bg-slate-900 cursor-pointer"
+                              />
+                              <div>
+                                <span className={`text-sm font-semibold ${isChecked ? 'text-white' : 'text-slate-300'}`}>
+                                  {acc.nombre}
+                                </span>
+                                {acc.descripcion && (
+                                  <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                                    {acc.descripcion}
+                                  </p>
+                                )}
+                              </div>
+                            </label>
+
+                            {isChecked && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                En custodia
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Campos adicionales desplegados cuando está marcado */}
+                          {isChecked && (
+                            <div className="flex flex-col gap-2 pt-2 border-t border-slate-800/80 mt-1 pl-6">
+                              <div className="flex flex-wrap items-center gap-3">
+                                {/* Cantidad */}
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[11px] text-slate-400 font-medium">Cant:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value={sel.cantidad || 1}
+                                    onChange={(e) => handleAccesorioChange(acc.id, 'cantidad', e.target.value)}
+                                    className="w-14 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-rose-500"
+                                  />
+                                </div>
+
+                                {/* Estado de conservación */}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] text-slate-400 font-medium mr-1">Estado:</span>
+                                  {[
+                                    { key: 'BUENO', label: 'Bueno', color: 'hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/40 bg-emerald-500/15' },
+                                    { key: 'REGULAR', label: 'Regular', color: 'hover:bg-amber-500/20 text-amber-400 border-amber-500/40 bg-amber-500/15' },
+                                    { key: 'MALO', label: 'Malo', color: 'hover:bg-rose-500/20 text-rose-400 border-rose-500/40 bg-rose-500/15' }
+                                  ].map((st) => {
+                                    const active = (sel.estado_conservacion || 'BUENO') === st.key;
+                                    return (
+                                      <button
+                                        key={st.key}
+                                        type="button"
+                                        onClick={() => handleAccesorioChange(acc.id, 'estado_conservacion', st.key)}
+                                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-all ${
+                                          active 
+                                            ? st.color + ' ring-1 ring-current font-bold' 
+                                            : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200'
+                                        }`}
+                                      >
+                                        {st.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Input Observación */}
+                              <input
+                                type="text"
+                                placeholder="Detalles u observación (ej. Vence 12/26, en maletera, sin estuche...)"
+                                value={sel.observaciones || ''}
+                                onChange={(e) => handleAccesorioChange(acc.id, 'observaciones', e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* SECCION 4: Observaciones */}
           <section className="flex flex-col gap-4">
             <div className="flex items-center gap-3 pb-3 border-b border-slate-700">
@@ -766,6 +1131,21 @@ export default function NuevaOrdenPage() {
             helperText={modalError}
             InputProps={{ sx: { borderRadius: '12px' } }}
           />
+          <div className="flex flex-col gap-1 mt-3 p-3 bg-slate-800/40 rounded-lg border border-slate-700">
+            <span className="text-xs font-semibold text-slate-400 uppercase">Activar Checklists en Recepción</span>
+            <FormControlLabel
+              control={<Switch size="small" checked={nuevoTipoPrev} onChange={(e) => setNuevoTipoPrev(e.target.checked)} />}
+              label={<span className="text-xs text-slate-200">Preventivo</span>}
+            />
+            <FormControlLabel
+              control={<Switch size="small" checked={nuevoTipoCorr} onChange={(e) => setNuevoTipoCorr(e.target.checked)} />}
+              label={<span className="text-xs text-slate-200">Correctivo</span>}
+            />
+            <FormControlLabel
+              control={<Switch size="small" checked={nuevoTipoDiag} onChange={(e) => setNuevoTipoDiag(e.target.checked)} />}
+              label={<span className="text-xs text-slate-200">Diagnóstico</span>}
+            />
+          </div>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setTipoServicioModalOpen(false)} sx={{ color: 'slate.500' }}>Cancelar</Button>
@@ -776,6 +1156,71 @@ export default function NuevaOrdenPage() {
             sx={{ bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' } }}
           >
             {loading ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal para registro rápido de nuevo accesorio */}
+      <Dialog 
+        open={accesorioModalOpen} 
+        onClose={() => setAccesorioModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: C.surface,
+            backgroundImage: 'none',
+            border: `1px solid ${C.border}`,
+            borderRadius: '16px',
+            boxShadow: S.card
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: C.text, fontWeight: 700 }}>Nuevo Accesorio o Pertenencia</DialogTitle>
+        <DialogContent className="flex flex-col gap-3 mt-2">
+          <TextField
+            autoFocus
+            label="Nombre del accesorio *"
+            placeholder="Ej. Silla de bebé, Cargador rápido..."
+            fullWidth
+            value={nuevoAccesorioNombre}
+            onChange={(e) => {
+              setNuevoAccesorioNombre(e.target.value);
+              if (modalError) setModalError('');
+            }}
+            error={!!modalError}
+            helperText={modalError}
+            InputProps={{ sx: { borderRadius: '12px' } }}
+          />
+          <TextField
+            label="Descripción / Detalles"
+            placeholder="Ej. Marca, color, observaciones..."
+            fullWidth
+            multiline
+            rows={2}
+            value={nuevoAccesorioDesc}
+            onChange={(e) => setNuevoAccesorioDesc(e.target.value)}
+            InputProps={{ sx: { borderRadius: '12px' } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, borderTop: `1px solid ${C.border}` }}>
+          <Button onClick={() => setAccesorioModalOpen(false)} sx={{ color: C.textMuted, textTransform: 'none' }}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSaveNuevoAccesorio} 
+            variant="contained" 
+            disabled={loading}
+            sx={{
+              backgroundColor: C.primary,
+              '&:hover': { backgroundColor: alpha(C.primary, 0.85) },
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+            }}
+          >
+            {loading ? 'Guardando...' : 'Guardar y Seleccionar'}
           </Button>
         </DialogActions>
       </Dialog>

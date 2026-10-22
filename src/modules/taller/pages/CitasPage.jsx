@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControlLabel, IconButton, MenuItem,
@@ -145,7 +145,12 @@ export default function CitasPage() {
 
   const [citas, setCitas] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [clienteBusqueda, setClienteBusqueda] = useState('');
   const [vehiculos, setVehiculos] = useState([]);
+  const [vehiculoBusqueda, setVehiculoBusqueda] = useState('');
+  const [loadingVehiculos, setLoadingVehiculos] = useState(false);
+  const timerClientesRef = useRef(null);
+  const timerVehiculosRef = useRef(null);
   const [sucursales, setSucursales] = useState([]);
   const [tiposServicio, setTiposServicio] = useState([]);
   const [mecanicos, setMecanicos] = useState([]);
@@ -460,16 +465,54 @@ export default function CitasPage() {
     });
   };
 
-  const fetchClientes = async (query = '') => {
+  const fetchClientes = (query = '') => {
     if (query.length === 1) return;
-    const res = await api.get('clientes/', { params: { search: query } });
-    setClientes(getList(res.data));
+    if (timerClientesRef.current) clearTimeout(timerClientesRef.current);
+    const ejecutar = async () => {
+      try {
+        const res = await api.get('clientes/', { params: { search: query } });
+        setClientes(getList(res.data));
+      } catch (err) {
+        console.error('Error cargando clientes:', err);
+      }
+    };
+    if (!query) {
+      ejecutar();
+    } else {
+      timerClientesRef.current = setTimeout(ejecutar, 350);
+    }
   };
 
-  const fetchVehiculos = async (query = '') => {
+  const fetchVehiculos = (query = '', clienteId = form.cliente?.id) => {
     if (query.length === 1) return;
-    const res = await api.get('vehiculos/', { params: { search: query } });
-    setVehiculos(getList(res.data));
+    if (!clienteId) {
+      setVehiculos([]);
+      return;
+    }
+    if (timerVehiculosRef.current) clearTimeout(timerVehiculosRef.current);
+    const ejecutar = async () => {
+      try {
+        setLoadingVehiculos(true);
+        const params = {
+          cliente_id: clienteId,
+          sin_paginar: true,
+        };
+        if (query) params.search = query;
+        const res = await api.get('vehiculos/', { params });
+        const data = res.data.results || res.data;
+        setVehiculos(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error cargando vehículos del cliente:', err);
+        setVehiculos([]);
+      } finally {
+        setLoadingVehiculos(false);
+      }
+    };
+    if (!query) {
+      ejecutar();
+    } else {
+      timerVehiculosRef.current = setTimeout(ejecutar, 350);
+    }
   };
 
   const openNewDialog = (slotInicio = null) => {
@@ -478,6 +521,9 @@ export default function CitasPage() {
       .find((slot) => slot.disponible);
     setEditing(null);
     setErrors({});
+    setVehiculos([]);
+    setVehiculoBusqueda('');
+    setClienteBusqueda('');
     setForm({
       ...emptyForm,
       sucursal: agendaSucursal || activeSucursalId || sucursales[0]?.id || '',
@@ -486,7 +532,6 @@ export default function CitasPage() {
     });
     setDialogOpen(true);
     if (clientes.length === 0) fetchClientes('');
-    if (vehiculos.length === 0) fetchVehiculos('');
   };
 
   const openEditDialog = (cita) => {
@@ -508,7 +553,14 @@ export default function CitasPage() {
       observaciones_internas: cita.observaciones_internas || '',
     });
     setClientes(prev => cita.cliente_detalle && !prev.some(c => c.id === cita.cliente_detalle.id) ? [cita.cliente_detalle, ...prev] : prev);
-    setVehiculos(prev => cita.vehiculo_detalle && !prev.some(v => v.id === cita.vehiculo_detalle.id) ? [cita.vehiculo_detalle, ...prev] : prev);
+    setClienteBusqueda(cita.cliente_detalle ? `${cita.cliente_detalle.dni} - ${cita.cliente_detalle.nombres} ${cita.cliente_detalle.apellidos || ''}`.trim() : '');
+    setVehiculoBusqueda(cita.vehiculo_detalle ? `${cita.vehiculo_detalle.placa} - ${cita.vehiculo_detalle.marca || ''} ${cita.vehiculo_detalle.modelo || ''}`.trim() : '');
+    if (cita.cliente_detalle?.id) {
+      fetchVehiculos('', cita.cliente_detalle.id);
+      setVehiculos(prev => cita.vehiculo_detalle && !prev.some(v => v.id === cita.vehiculo_detalle.id) ? [cita.vehiculo_detalle, ...prev] : prev);
+    } else {
+      setVehiculos(cita.vehiculo_detalle ? [cita.vehiculo_detalle] : []);
+    }
     setDialogOpen(true);
   };
 
@@ -1179,13 +1231,30 @@ export default function CitasPage() {
                 <Autocomplete
                   options={clientes}
                   value={form.cliente}
+                  inputValue={clienteBusqueda}
                   onOpen={() => clientes.length === 0 && fetchClientes('')}
                   onInputChange={(e, value, reason) => {
+                    setClienteBusqueda(value);
                     if (reason === 'input' || reason === 'clear') fetchClientes(value);
                   }}
-                  getOptionLabel={(option) => `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim()}
-                  onChange={(e, value) => setForm(prev => ({ ...prev, cliente: value }))}
-                  renderInput={(params) => <TextField {...params} label="Cliente *" error={!!errors.cliente} helperText={errors.cliente} />}
+                  getOptionLabel={(option) => option ? `${option.dni} - ${option.nombres} ${option.apellidos || ''}`.trim() : ''}
+                  isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                  onChange={(e, value) => {
+                    const nuevoClienteId = value?.id || null;
+                    setForm(prev => ({
+                      ...prev,
+                      cliente: value,
+                      vehiculo: null,
+                      kilometraje_estimado: '',
+                    }));
+                    setVehiculoBusqueda('');
+                    if (nuevoClienteId) {
+                      fetchVehiculos('', nuevoClienteId);
+                    } else {
+                      setVehiculos([]);
+                    }
+                  }}
+                  renderInput={(params) => <TextField {...params} label="Buscar Cliente *" error={!!errors.cliente} helperText={errors.cliente} />}
                 />
               </Box>
               <Tooltip title="Registrar nuevo cliente">
@@ -1211,31 +1280,69 @@ export default function CitasPage() {
               <Box sx={{ flex: 1 }}>
                 <Autocomplete
                   options={vehiculos}
+                  disabled={!form.cliente?.id}
+                  loading={loadingVehiculos}
+                  noOptionsText={
+                    !form.cliente?.id
+                      ? 'Primero seleccione un cliente'
+                      : 'El cliente no tiene vehículos registrados'
+                  }
                   value={form.vehiculo}
-                  onOpen={() => vehiculos.length === 0 && fetchVehiculos('')}
-                  onInputChange={(e, value, reason) => {
-                    if (reason === 'input' || reason === 'clear') fetchVehiculos(value);
+                  inputValue={vehiculoBusqueda}
+                  onOpen={() => {
+                    if (form.cliente?.id && vehiculos.length === 0) {
+                      fetchVehiculos('', form.cliente.id);
+                    }
                   }}
-                  getOptionLabel={(option) => `${option.placa} - ${option.marca} ${option.modelo}`}
-                  onChange={(e, value) => setForm(prev => ({ ...prev, vehiculo: value, kilometraje_estimado: value?.kilometraje_actual || prev.kilometraje_estimado }))}
-                  renderInput={(params) => <TextField {...params} label="Vehiculo *" error={!!errors.vehiculo} helperText={errors.vehiculo} />}
+                  onInputChange={(e, value, reason) => {
+                    setVehiculoBusqueda(value);
+                    if ((reason === 'input' || reason === 'clear') && form.cliente?.id) {
+                      fetchVehiculos(value, form.cliente.id);
+                    }
+                  }}
+                  getOptionLabel={(option) => option ? `${option.placa} - ${option.marca || ''} ${option.modelo || ''}`.trim() : ''}
+                  isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                  onChange={(e, value) => setForm(prev => ({
+                    ...prev,
+                    vehiculo: value,
+                    kilometraje_estimado: (value?.kilometraje_actual !== undefined && value?.kilometraje_actual !== null)
+                      ? value.kilometraje_actual
+                      : prev.kilometraje_estimado,
+                  }))}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={form.cliente?.id ? "Buscar Vehículo por Placa *" : "Seleccione primero un Cliente *"}
+                      error={!!errors.vehiculo}
+                      helperText={
+                        errors.vehiculo ||
+                        (!form.cliente?.id
+                          ? 'Seleccione el cliente por su DNI o nombres para ver sus vehículos'
+                          : (vehiculos.length === 0 ? 'Sin vehículos. Puede registrar uno con el botón (+)' : '')
+                        )
+                      }
+                    />
+                  )}
                 />
               </Box>
               <Tooltip title="Registrar nuevo vehículo">
-                <Button
-                  variant="contained"
-                  onClick={() => setVehicleModalOpen(true)}
-                  sx={{
-                    minWidth: 44, px: 0, height: 56,
-                    borderRadius: '8px',
-                    bgcolor: alpha('#e11d48', 0.85),
-                    '&:hover': { bgcolor: '#e11d48' },
-                    boxShadow: 'none',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Plus size={22} />
-                </Button>
+                <span>
+                  <Button
+                    variant="contained"
+                    disabled={!form.cliente?.id}
+                    onClick={() => setVehicleModalOpen(true)}
+                    sx={{
+                      minWidth: 44, px: 0, height: 56,
+                      borderRadius: '8px',
+                      bgcolor: alpha('#e11d48', 0.85),
+                      '&:hover': { bgcolor: '#e11d48' },
+                      boxShadow: 'none',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Plus size={22} />
+                  </Button>
+                </span>
               </Tooltip>
             </Box>
             <TextField select label="Sucursal *" value={form.sucursal} onChange={(e) => setForm(prev => ({ ...prev, sucursal: e.target.value }))} error={!!errors.sucursal} helperText={errors.sucursal}>
@@ -1523,8 +1630,12 @@ export default function CitasPage() {
           onSuccess={(createdClient) => {
             if (!createdClient?.id) return;
             setClientes(prev => prev.some(c => c.id === createdClient.id) ? prev : [createdClient, ...prev]);
-            setForm(prev => ({ ...prev, cliente: createdClient }));
+            setForm(prev => ({ ...prev, cliente: createdClient, vehiculo: null, kilometraje_estimado: '' }));
+            setClienteBusqueda(`${createdClient.dni} - ${createdClient.nombres} ${createdClient.apellidos || ''}`.trim());
+            setVehiculos([]);
+            setVehiculoBusqueda('');
             setClientModalOpen(false);
+            fetchVehiculos('', createdClient.id);
           }}
         />
       )}
@@ -1536,14 +1647,18 @@ export default function CitasPage() {
         <VehiculosForm
           open={vehicleModalOpen}
           onClose={() => setVehicleModalOpen(false)}
+          clienteInicial={form.cliente}
           onSuccess={(createdVehicle) => {
             if (!createdVehicle?.id) return;
             setVehiculos(prev => prev.some(v => v.id === createdVehicle.id) ? prev : [createdVehicle, ...prev]);
             setForm(prev => ({
               ...prev,
               vehiculo: createdVehicle,
-              kilometraje_estimado: createdVehicle.kilometraje_actual || prev.kilometraje_estimado,
+              kilometraje_estimado: (createdVehicle.kilometraje_actual !== undefined && createdVehicle.kilometraje_actual !== null)
+                ? createdVehicle.kilometraje_actual
+                : prev.kilometraje_estimado,
             }));
+            setVehiculoBusqueda(`${createdVehicle.placa} - ${createdVehicle.marca || ''} ${createdVehicle.modelo || ''}`.trim());
             setVehicleModalOpen(false);
           }}
         />

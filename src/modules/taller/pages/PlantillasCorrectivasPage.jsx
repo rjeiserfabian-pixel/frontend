@@ -122,6 +122,7 @@ export default function PlantillasCorrectivasPage() {
         >
           <Tab label="Servicios Preventivos" value="/taller/plantillas" />
           <Tab label="Servicios Correctivos" value="/taller/plantillas-correctivas" />
+          <Tab label="Servicios de Diagnóstico" value="/taller/plantillas-diagnostico" />
         </Tabs>
       </Box>
 

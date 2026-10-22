@@ -53,6 +53,8 @@ const NuevaOrdenPage = lazy(() => import('./modules/taller/pages/NuevaOrdenPage'
 const DetalleOrdenPage = lazy(() => import('./modules/taller/pages/DetalleOrdenPage'));
 const PlantillasPage = lazy(() => import('./modules/taller/pages/PlantillasPage'));
 const PlantillasCorrectivasPage = lazy(() => import('./modules/taller/pages/PlantillasCorrectivasPage'));
+const PlantillasDiagnosticoPage = lazy(() => import('./modules/taller/pages/PlantillasDiagnosticoPage'));
+const AccesoriosPage = lazy(() => import('./modules/taller/pages/AccesoriosPage'));
 const TiposServicioPage = lazy(() => import('./modules/taller/pages/TiposServicioPage'));
 const HerramientasPage = lazy(() => import('./modules/herramientas/pages/HerramientasPage'));
 const CategoriasHerramientaPage = lazy(() => import('./modules/herramientas/pages/CategoriasHerramientaPage'));
@@ -152,6 +154,8 @@ function App() {
                 <Route path="/taller/ordenes/:id" element={<DetalleOrdenPage />} />
                 <Route path="/taller/plantillas" element={<PlantillasPage />} />
                 <Route path="/taller/plantillas-correctivas" element={<PlantillasCorrectivasPage />} />
+                <Route path="/taller/plantillas-diagnostico" element={<PlantillasDiagnosticoPage />} />
+                <Route path="/taller/accesorios" element={<AccesoriosPage />} />
                 <Route path="/taller/tipos-servicio" element={<TiposServicioPage />} />
                 <Route path="/herramientas" element={<HerramientasPage />} />
                 <Route path="/herramientas/categorias" element={<CategoriasHerramientaPage />} />

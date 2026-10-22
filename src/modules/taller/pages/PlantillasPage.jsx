@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Button, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
@@ -185,6 +185,7 @@ export default function PlantillasPage() {
         >
           <Tab label="Servicios Preventivos" value="/taller/plantillas" />
           <Tab label="Servicios Correctivos" value="/taller/plantillas-correctivas" />
+          <Tab label="Servicios de Diagnóstico" value="/taller/plantillas-diagnostico" />
         </Tabs>
       </Box>
 

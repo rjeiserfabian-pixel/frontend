@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, Grid, CircularProgress, Autocomplete, Typography
+  Button, TextField, Grid, CircularProgress, Autocomplete, Typography,
+  Box, Paper, IconButton
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { Image as ImageIcon, UploadCloud, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { inventarioService } from '../services/inventarioService';
+import { premiumTokens } from '../../../core/theme/theme';
+import { compressImage } from '../../../utils/imageCompressor';
+
+const C = premiumTokens.colors;
 
 const defaultForm = {
   codigo: '',
@@ -33,10 +40,18 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [errors, setErrors] = useState({});
 
+  // Estados de Imagen del Repuesto
+  const [imagenFile, setImagenFile] = useState(null);
+  const [imagenPreview, setImagenPreview] = useState(null);
+  const [comprimiendoImagen, setComprimiendoImagen] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     setFormData(defaultForm);
     setErrors({});
+    setImagenFile(null);
+    setImagenPreview(null);
+    setComprimiendoImagen(false);
 
     const cargarCatalogos = async () => {
       setCatalogosLoading(true);
@@ -63,6 +78,34 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
   const handleChange = (field) => (e) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      Swal.fire('Imagen muy pesada', 'La imagen no debe superar los 10MB.', 'warning');
+      return;
+    }
+
+    try {
+      setComprimiendoImagen(true);
+      const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+      setImagenFile(compressed);
+      setImagenPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      console.error('Error al procesar imagen:', err);
+      setImagenFile(file);
+      setImagenPreview(URL.createObjectURL(file));
+    } finally {
+      setComprimiendoImagen(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagenFile(null);
+    setImagenPreview(null);
   };
 
   const validar = () => {
@@ -130,7 +173,21 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
         precio_lista: Number(formData.precio_lista),
       };
 
-      const nuevoRepuesto = await inventarioService.createRepuesto(payload);
+      let requestData;
+      if (imagenFile) {
+        const formDataToSend = new FormData();
+        Object.keys(payload).forEach(key => {
+          if (payload[key] !== null && payload[key] !== undefined) {
+            formDataToSend.append(key, payload[key]);
+          }
+        });
+        formDataToSend.append('imagen', imagenFile);
+        requestData = formDataToSend;
+      } else {
+        requestData = payload;
+      }
+
+      const nuevoRepuesto = await inventarioService.createRepuesto(requestData);
 
       Swal.fire({
         icon: 'success',
@@ -274,6 +331,102 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+              Fotografía del Repuesto (Opcional)
+            </Typography>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                border: `1px dashed ${alpha(C.border, 0.8)}`,
+                backgroundColor: alpha(C.surfaceSoft, 0.4),
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2.5,
+                flexWrap: 'wrap'
+              }}
+            >
+              {imagenPreview ? (
+                <Box sx={{ position: 'relative', width: 84, height: 84 }}>
+                  <Box
+                    component="img"
+                    src={imagenPreview}
+                    alt="Preview"
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: `1px solid ${C.border}`
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={handleRemoveImage}
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      backgroundColor: '#ef4444',
+                      color: '#ffffff',
+                      '&:hover': { backgroundColor: '#dc2626' },
+                      width: 22,
+                      height: 22
+                    }}
+                  >
+                    <X size={14} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: '8px',
+                    border: `1px dashed ${alpha('#ffffff', 0.2)}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: alpha('#ffffff', 0.02),
+                    color: 'text.secondary'
+                  }}
+                >
+                  <ImageIcon size={26} opacity={0.35} />
+                </Box>
+              )}
+
+              <Box sx={{ flex: 1, minWidth: 200 }}>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  size="small"
+                  startIcon={<UploadCloud size={16} />}
+                  disabled={comprimiendoImagen}
+                  sx={{ mb: 0.8 }}
+                >
+                  {imagenPreview ? 'Cambiar Foto' : 'Subir Foto'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </Button>
+                {comprimiendoImagen && (
+                  <Typography variant="caption" sx={{ display: 'block', color: C.brand, fontWeight: 'bold' }}>
+                    Optimizando imagen...
+                  </Typography>
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Formatos: JPG, PNG, WEBP. Se optimiza y comprime automáticamente.
+                </Typography>
+              </Box>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
             <Typography variant="caption" color="text.secondary">
               Los precios "Por Mayor" y "Cash" se registran igual al precio de lista;
               puedes diferenciarlos luego desde Inventario &gt; Repuestos.
@@ -282,8 +435,8 @@ const ModalNuevoRepuesto = ({ open, onClose, onSuccess }) => {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="inherit" disabled={loading}>Cancelar</Button>
-        <Button onClick={handleSubmit} variant="contained" color="primary" disabled={loading}>
+        <Button onClick={onClose} color="inherit" disabled={loading || comprimiendoImagen}>Cancelar</Button>
+        <Button onClick={handleSubmit} variant="contained" color="primary" disabled={loading || comprimiendoImagen}>
           {loading ? <CircularProgress size={24} /> : 'Guardar Repuesto'}
         </Button>
       </DialogActions>
