@@ -63,6 +63,21 @@ export default function DetalleOrdenPage() {
   const [nuevoHallazgo, setNuevoHallazgo] = useState('');
   const [nuevaSeveridad, setNuevaSeveridad] = useState('MEDIA');
   const [editingHallazgoId, setEditingHallazgoId] = useState(null);
+  const [fotosHallazgo, setFotosHallazgo] = useState([]); // [{ file: File, preview: string }]
+  const [fotosExistentesHallazgo, setFotosExistentesHallazgo] = useState([]); // [{ id, imagen }]
+  const [subiendoHallazgo, setSubiendoHallazgo] = useState(false);
+  const [comprimiendoFotoHallazgo, setComprimiendoFotoHallazgo] = useState(false);
+
+  // Plantillas de Servicios
+  const [plantillasPreventivas, setPlantillasPreventivas] = useState([]);
+  const [plantillasCorrectivas, setPlantillasCorrectivas] = useState([]);
+  const [plantillasDiagnostico, setPlantillasDiagnostico] = useState([]);
+  const [cargandoPlantillas, setCargandoPlantillas] = useState(false);
+  const [origenServicio, setOrigenServicio] = useState('PLANTILLA'); // 'PLANTILLA' | 'MANUAL'
+  const [tipoPlantillaServicio, setTipoPlantillaServicio] = useState('PREVENTIVO'); // 'PREVENTIVO' | 'CORRECTIVO' | 'DIAGNOSTICO'
+  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+  const [guardandoServicio, setGuardandoServicio] = useState(false);
+
   const [nuevoServicio, setNuevoServicio] = useState({ descripcion: '', precio: 0 });
   const [hallazgoOrigenId, setHallazgoOrigenId] = useState(null);
   const [editingServicioId, setEditingServicioId] = useState(null);
@@ -155,10 +170,37 @@ export default function DetalleOrdenPage() {
     }
   };
 
+  const fetchPlantillasServicio = async () => {
+    if (plantillasPreventivas.length > 0 || plantillasCorrectivas.length > 0 || plantillasDiagnostico.length > 0) {
+      return;
+    }
+    try {
+      setCargandoPlantillas(true);
+      const [prevRes, corrRes, diagRes] = await Promise.allSettled([
+        tallerService.getPlantillas({ activo: true }),
+        tallerService.getPlantillasCorrectivas({ activo: true }),
+        tallerService.getPlantillasDiagnostico({ activo: true }),
+      ]);
+      const prev = prevRes.status === 'fulfilled' ? (prevRes.value?.results || prevRes.value || []) : [];
+      const corr = corrRes.status === 'fulfilled' ? (corrRes.value?.results || corrRes.value || []) : [];
+      const diag = diagRes.status === 'fulfilled' ? (diagRes.value?.results || diagRes.value || []) : [];
+      setPlantillasPreventivas(Array.isArray(prev) ? prev : []);
+      setPlantillasCorrectivas(Array.isArray(corr) ? corr : []);
+      setPlantillasDiagnostico(Array.isArray(diag) ? diag : []);
+    } catch (err) {
+      console.error("Error al cargar plantillas de servicios:", err);
+    } finally {
+      setCargandoPlantillas(false);
+    }
+  };
+
   const handleOpenNuevoHallazgo = () => {
     setEditingHallazgoId(null);
     setNuevoHallazgo('');
     setNuevaSeveridad('MEDIA');
+    fotosHallazgo.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
+    setFotosHallazgo([]);
+    setFotosExistentesHallazgo([]);
     setHallazgoModal(true);
   };
 
@@ -166,23 +208,129 @@ export default function DetalleOrdenPage() {
     setEditingHallazgoId(hallazgo.id);
     setNuevoHallazgo(hallazgo.descripcion);
     setNuevaSeveridad(hallazgo.severidad || 'MEDIA');
+    fotosHallazgo.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
+    setFotosHallazgo([]);
+    setFotosExistentesHallazgo(hallazgo.fotos || []);
     setHallazgoModal(true);
   };
 
-  const handleAddHallazgo = async () => {
+  const handleCloseHallazgoModal = () => {
+    if (subiendoHallazgo) return;
+    fotosHallazgo.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
+    setFotosHallazgo([]);
+    setFotosExistentesHallazgo([]);
+    setEditingHallazgoId(null);
+    setNuevoHallazgo('');
+    setHallazgoModal(false);
+  };
+
+  const handleSeleccionarFotosHallazgo = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const totalActual = fotosExistentesHallazgo.length + fotosHallazgo.length;
+    const disponibles = 2 - totalActual;
+
+    if (disponibles <= 0) {
+      Swal.fire('Límite alcanzado', 'Solo puedes adjuntar un máximo de 2 fotos por hallazgo.', 'info');
+      event.target.value = '';
+      return;
+    }
+
+    const archivosAProcesar = files.slice(0, disponibles);
+    if (files.length > disponibles) {
+      Swal.fire('Aviso', `Solo se procesaron ${disponibles} fotografía(s) para no exceder el máximo de 2.`, 'info');
+    }
+
     try {
-      if (editingHallazgoId) {
-        await tallerService.actualizarHallazgo(editingHallazgoId, { descripcion: nuevoHallazgo, severidad: nuevaSeveridad });
-      } else {
-        await tallerService.crearHallazgo({ orden: id, descripcion: nuevoHallazgo, severidad: nuevaSeveridad });
+      setComprimiendoFotoHallazgo(true);
+      const nuevasFotos = [];
+      for (const file of archivosAProcesar) {
+        if (!file.type.startsWith('image/')) continue;
+        const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.82 });
+        const preview = URL.createObjectURL(compressed);
+        nuevasFotos.push({ file: compressed, preview });
       }
-      setHallazgoModal(false);
-      setNuevoHallazgo('');
-      setEditingHallazgoId(null);
+      setFotosHallazgo(prev => [...prev, ...nuevasFotos]);
+    } catch (err) {
+      console.error('Error al optimizar imagen de hallazgo:', err);
+      Swal.fire('Error', 'No se pudo optimizar la fotografía seleccionada.', 'error');
+    } finally {
+      setComprimiendoFotoHallazgo(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleQuitarFotoNueva = (index) => {
+    const foto = fotosHallazgo[index];
+    if (foto?.preview) URL.revokeObjectURL(foto.preview);
+    setFotosHallazgo(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEliminarFotoExistente = async (fotoId) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar fotografía?',
+      text: 'Se eliminará esta fotografía del hallazgo.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await tallerService.eliminarFotoHallazgo(editingHallazgoId, fotoId);
+      setFotosExistentesHallazgo(prev => prev.filter(f => f.id !== fotoId));
+      fetchOrden();
+      Swal.fire({ icon: 'success', title: 'Foto eliminada', timer: 1200, showConfirmButton: false });
+    } catch (err) {
+      console.error('Error eliminando foto de hallazgo:', err);
+      Swal.fire('Error', 'No se pudo eliminar la fotografía.', 'error');
+    }
+  };
+
+  const handleAddHallazgo = async () => {
+    if (!nuevoHallazgo.trim()) return;
+    try {
+      setSubiendoHallazgo(true);
+      if (fotosHallazgo.length > 0) {
+        const formData = new FormData();
+        formData.append('descripcion', nuevoHallazgo.trim());
+        formData.append('severidad', nuevaSeveridad);
+        if (!editingHallazgoId) {
+          formData.append('orden', id);
+        }
+        fotosHallazgo.forEach(f => {
+          formData.append('fotos', f.file);
+        });
+
+        if (editingHallazgoId) {
+          await tallerService.actualizarHallazgo(editingHallazgoId, formData);
+        } else {
+          await tallerService.crearHallazgo(formData);
+        }
+      } else {
+        if (editingHallazgoId) {
+          await tallerService.actualizarHallazgo(editingHallazgoId, {
+            descripcion: nuevoHallazgo.trim(),
+            severidad: nuevaSeveridad
+          });
+        } else {
+          await tallerService.crearHallazgo({
+            orden: id,
+            descripcion: nuevoHallazgo.trim(),
+            severidad: nuevaSeveridad
+          });
+        }
+      }
+      handleCloseHallazgoModal();
       fetchOrden();
     } catch (err) {
       console.error(err);
       Swal.fire('Error', 'No se pudo guardar el hallazgo.', 'error');
+    } finally {
+      setSubiendoHallazgo(false);
     }
   };
 
@@ -210,6 +358,8 @@ export default function DetalleOrdenPage() {
   const handleConvertirAServicio = (hallazgo) => {
     setHallazgoOrigenId(hallazgo.id);
     setEditingServicioId(null);
+    setOrigenServicio('MANUAL');
+    setPlantillaSeleccionada(null);
     setNuevoServicio({ descripcion: hallazgo.descripcion, precio: 0 });
     setServicioModal(true);
   };
@@ -217,47 +367,66 @@ export default function DetalleOrdenPage() {
   const handleOpenNuevoServicio = () => {
     setHallazgoOrigenId(null);
     setEditingServicioId(null);
+    setOrigenServicio('PLANTILLA');
+    setTipoPlantillaServicio('PREVENTIVO');
+    setPlantillaSeleccionada(null);
     setNuevoServicio({ descripcion: '', precio: 0 });
+    fetchPlantillasServicio();
     setServicioModal(true);
   };
 
   const handleOpenEditarServicio = (servicio) => {
     setHallazgoOrigenId(null);
     setEditingServicioId(servicio.id);
+    setOrigenServicio('MANUAL');
+    setPlantillaSeleccionada(null);
     setNuevoServicio({ descripcion: servicio.descripcion, precio: servicio.precio_estimado });
     setServicioModal(true);
   };
 
   const handleCloseServicioModal = () => {
+    if (guardandoServicio) return;
     setServicioModal(false);
     setHallazgoOrigenId(null);
     setEditingServicioId(null);
+    setPlantillaSeleccionada(null);
     setNuevoServicio({ descripcion: '', precio: 0 });
   };
 
+  const handleSelectPlantilla = (plantilla) => {
+    setPlantillaSeleccionada(plantilla);
+    if (plantilla) {
+      setNuevoServicio({
+        descripcion: plantilla.nombre + (plantilla.descripcion ? ` - ${plantilla.descripcion}` : ''),
+        precio: plantilla.precio_base ? parseFloat(plantilla.precio_base) : 0
+      });
+    }
+  };
+
   const handleAddServicio = async () => {
+    if (!nuevoServicio.descripcion?.trim()) return;
     try {
+      setGuardandoServicio(true);
       if (editingServicioId) {
         await tallerService.actualizarServicio(editingServicioId, {
-          descripcion: nuevoServicio.descripcion,
-          precio_estimado: nuevoServicio.precio,
+          descripcion: nuevoServicio.descripcion.trim(),
+          precio_estimado: parseFloat(nuevoServicio.precio) || 0,
         });
       } else {
         await tallerService.crearServicio({
           orden: id,
-          descripcion: nuevoServicio.descripcion,
-          precio_estimado: nuevoServicio.precio,
+          descripcion: nuevoServicio.descripcion.trim(),
+          precio_estimado: parseFloat(nuevoServicio.precio) || 0,
           hallazgo_origen: hallazgoOrigenId
         });
       }
-      setServicioModal(false);
-      setNuevoServicio({ descripcion: '', precio: 0 });
-      setHallazgoOrigenId(null);
-      setEditingServicioId(null);
+      handleCloseServicioModal();
       fetchOrden();
     } catch (err) {
       console.error(err);
       Swal.fire('Error', 'No se pudo guardar el servicio.', 'error');
+    } finally {
+      setGuardandoServicio(false);
     }
   };
 
@@ -1209,7 +1378,46 @@ export default function DetalleOrdenPage() {
                                 </Box>
                               )}
                             </Box>
-                            <Typography variant="body2" fontWeight="500" mb={1.5}>{h.descripcion}</Typography>
+                            <Typography variant="body2" fontWeight="500" mb={h.fotos && h.fotos.length > 0 ? 1 : 1.5}>
+                              {h.descripcion}
+                            </Typography>
+
+                            {/* Miniaturas de fotos del hallazgo */}
+                            {h.fotos && h.fotos.length > 0 && (
+                              <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+                                {h.fotos.map((foto, fIdx) => (
+                                  <Box
+                                    key={foto.id}
+                                    onClick={() => setModalFotoGrande({
+                                      open: true,
+                                      url: getMediaUrl(foto.imagen),
+                                      titulo: `Hallazgo #${i+1} - Foto ${fIdx + 1}`
+                                    })}
+                                    sx={{
+                                      width: 58,
+                                      height: 58,
+                                      borderRadius: '8px',
+                                      overflow: 'hidden',
+                                      border: `1px solid ${alpha(sev.border, 0.7)}`,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease',
+                                      '&:hover': {
+                                        transform: 'scale(1.05)',
+                                        boxShadow: S.hover
+                                      }
+                                    }}
+                                  >
+                                    <Box
+                                      component="img"
+                                      src={getMediaUrl(foto.imagen)}
+                                      alt={`Foto hallazgo ${fIdx + 1}`}
+                                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                  </Box>
+                                ))}
+                              </Box>
+                            )}
+
                             {esEditable && !yaCotizado && (
                               <Button
                                 size="small"
@@ -1694,7 +1902,7 @@ export default function DetalleOrdenPage() {
       </Dialog>
 
       {/* Modal Hallazgo */}
-      <Dialog open={hallazgoModal} onClose={() => setHallazgoModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
+      <Dialog open={hallazgoModal} onClose={handleCloseHallazgoModal} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
         <DialogTitle><Typography variant="h6" fontWeight="700">{editingHallazgoId ? 'Editar Hallazgo' : 'Registrar Hallazgo'}</Typography></DialogTitle>
         <DialogContent>
           <TextField
@@ -1725,36 +1933,364 @@ export default function DetalleOrdenPage() {
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
+
+          {/* Fotografías del Hallazgo (Opcional - Máx. 2) */}
+          <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${C.border}` }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Typography variant="caption" fontWeight="700" color="text.secondary" display="flex" alignItems="center" gap={1}>
+                <Camera size={15} />
+                Fotografías del Hallazgo (Opcional)
+              </Typography>
+              <Chip
+                label={`${fotosExistentesHallazgo.length + fotosHallazgo.length}/2 fotos`}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: (fotosExistentesHallazgo.length + fotosHallazgo.length) >= 2 ? alpha(C.amber, 0.2) : alpha(C.blue, 0.15),
+                  color: (fotosExistentesHallazgo.length + fotosHallazgo.length) >= 2 ? C.amber : C.blue,
+                }}
+              />
+            </Box>
+
+            {/* Zona interactiva unificada para tomar o adjuntar */}
+            {(fotosExistentesHallazgo.length + fotosHallazgo.length) < 2 && (
+              <Box
+                sx={{
+                  border: '1.5px dashed',
+                  borderColor: alpha(C.border, 0.8),
+                  borderRadius: '12px',
+                  p: 2,
+                  textAlign: 'center',
+                  bgcolor: alpha(C.surface, 0.4),
+                  mb: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1.5
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  Puedes adjuntar hasta 2 fotos para documentar la falla o daño visualmente.
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    component="label"
+                    disabled={comprimiendoFotoHallazgo || subiendoHallazgo}
+                    startIcon={<Camera size={16} />}
+                    sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}
+                  >
+                    Tomar Foto
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleSeleccionarFotosHallazgo}
+                    />
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    component="label"
+                    disabled={comprimiendoFotoHallazgo || subiendoHallazgo}
+                    startIcon={<UploadCloud size={16} />}
+                    sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}
+                  >
+                    Subir de Galería
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      multiple
+                      onChange={handleSeleccionarFotosHallazgo}
+                    />
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {comprimiendoFotoHallazgo && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, color: C.brandLight }}>
+                <CircularProgress size={16} color="inherit" />
+                <Typography variant="caption">Optimizando imagen...</Typography>
+              </Box>
+            )}
+
+            {/* Tira de fotos ya adjuntas / existentes */}
+            {(fotosExistentesHallazgo.length > 0 || fotosHallazgo.length > 0) && (
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                {/* Fotos existentes en el servidor */}
+                {fotosExistentesHallazgo.map((foto) => (
+                  <Box
+                    key={`existente-${foto.id}`}
+                    sx={{
+                      position: 'relative',
+                      width: 90,
+                      height: 90,
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      border: `1px solid ${C.border}`,
+                      boxShadow: S.card
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={getMediaUrl(foto.imagen)}
+                      alt="Foto hallazgo"
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                      onClick={() => setModalFotoGrande({ open: true, url: getMediaUrl(foto.imagen), titulo: 'Foto de Hallazgo' })}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEliminarFotoExistente(foto.id)}
+                      disabled={subiendoHallazgo}
+                      sx={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        bgcolor: 'rgba(0, 0, 0, 0.7)',
+                        color: '#f87171',
+                        p: '3px',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
+                      }}
+                      title="Eliminar foto"
+                    >
+                      <Trash2 size={13} />
+                    </IconButton>
+                  </Box>
+                ))}
+
+                {/* Nuevas fotos locales pendientes de guardar */}
+                {fotosHallazgo.map((foto, idx) => (
+                  <Box
+                    key={`nueva-${idx}`}
+                    sx={{
+                      position: 'relative',
+                      width: 90,
+                      height: 90,
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      border: `2px solid ${C.brandLight}`,
+                      boxShadow: S.card
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={foto.preview}
+                      alt="Nueva foto"
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleQuitarFotoNueva(idx)}
+                      disabled={subiendoHallazgo}
+                      sx={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        bgcolor: 'rgba(0, 0, 0, 0.7)',
+                        color: '#f87171',
+                        p: '3px',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
+                      }}
+                      title="Quitar foto"
+                    >
+                      <X size={13} />
+                    </IconButton>
+                    <Chip
+                      label="Nueva"
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 2,
+                        left: 2,
+                        height: 16,
+                        fontSize: '0.62rem',
+                        fontWeight: 700,
+                        bgcolor: alpha(C.brand, 0.85),
+                        color: 'white'
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={() => setHallazgoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
-          <Button onClick={handleAddHallazgo} variant="contained" disabled={!nuevoHallazgo} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>
-            {editingHallazgoId ? 'Guardar Cambios' : 'Guardar'}
+          <Button onClick={handleCloseHallazgoModal} color="inherit" sx={{ fontWeight: 600 }} disabled={subiendoHallazgo}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleAddHallazgo}
+            variant="contained"
+            disabled={subiendoHallazgo || comprimiendoFotoHallazgo || !nuevoHallazgo.trim()}
+            sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}
+          >
+            {subiendoHallazgo ? <CircularProgress size={20} color="inherit" /> : (editingHallazgoId ? 'Guardar Cambios' : 'Guardar')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Modal Servicio */}
       <Dialog open={servicioModal} onClose={handleCloseServicioModal} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle><Typography variant="h6" fontWeight="700">{editingServicioId ? 'Editar Servicio' : 'Agregar Servicio a Cotizar'}</Typography></DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+        <DialogTitle>
+          <Typography variant="h6" fontWeight="700">
+            {editingServicioId ? 'Editar Servicio' : 'Agregar Servicio a Cotizar'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '22px !important' }}>
           {hallazgoOrigenId && (
-            <Alert severity="info" sx={{ borderRadius: '10px' }}>Este servicio quedará vinculado al hallazgo de inspección.</Alert>
+            <Alert severity="info" sx={{ borderRadius: '10px' }}>
+              Este servicio quedará vinculado al hallazgo de inspección.
+            </Alert>
           )}
+
+          {/* Si es nuevo y no viene de hallazgo, selector de origen (Plantilla vs Manual) */}
+          {!editingServicioId && !hallazgoOrigenId && (
+            <Box>
+              <ToggleButtonGroup
+                value={origenServicio}
+                exclusive
+                onChange={(e, val) => {
+                  if (val) {
+                    setOrigenServicio(val);
+                    if (val === 'PLANTILLA') {
+                      fetchPlantillasServicio();
+                    }
+                  }
+                }}
+                size="small"
+                fullWidth
+                sx={{ mb: 2 }}
+              >
+                <ToggleButton value="PLANTILLA" sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px !important' }}>
+                  Desde Plantilla de Taller
+                </ToggleButton>
+                <ToggleButton value="MANUAL" sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px !important' }}>
+                  Escribir Manualmente
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              {origenServicio === 'PLANTILLA' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2, bgcolor: alpha(C.surface, 0.5), borderRadius: '12px', border: `1px solid ${C.border}` }}>
+                  <Typography variant="caption" fontWeight="700" color="text.secondary">
+                    Categoría de Plantilla:
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={tipoPlantillaServicio}
+                    exclusive
+                    onChange={(e, val) => {
+                      if (val) {
+                        setTipoPlantillaServicio(val);
+                        setPlantillaSeleccionada(null);
+                      }
+                    }}
+                    size="small"
+                    fullWidth
+                  >
+                    <ToggleButton value="PREVENTIVO" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}>
+                      Preventivos ({plantillasPreventivas.length})
+                    </ToggleButton>
+                    <ToggleButton value="CORRECTIVO" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}>
+                      Correctivos ({plantillasCorrectivas.length})
+                    </ToggleButton>
+                    <ToggleButton value="DIAGNOSTICO" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}>
+                      Diagnóstico ({plantillasDiagnostico.length})
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+
+                  <Autocomplete
+                    loading={cargandoPlantillas}
+                    options={
+                      tipoPlantillaServicio === 'PREVENTIVO'
+                        ? plantillasPreventivas
+                        : tipoPlantillaServicio === 'CORRECTIVO'
+                          ? plantillasCorrectivas
+                          : plantillasDiagnostico
+                    }
+                    value={plantillaSeleccionada}
+                    getOptionLabel={(option) => {
+                      if (!option) return '';
+                      const precio = option.precio_base ? ` | S/ ${parseFloat(option.precio_base).toFixed(2)}` : '';
+                      return `${option.nombre}${precio}`;
+                    }}
+                    onChange={(e, val) => handleSelectPlantilla(val)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Seleccionar o Buscar Servicio"
+                        placeholder="Escribe para buscar..."
+                        size="small"
+                      />
+                    )}
+                    noOptionsText={cargandoPlantillas ? 'Cargando plantillas...' : 'No hay plantillas disponibles en esta categoría'}
+                  />
+                  {plantillaSeleccionada && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      * Se han precargado la descripción y el costo estimado sugerido. Puedes modificarlos abajo si es necesario.
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
+          )}
+
           <TextField
-            label="Descripción del Servicio" fullWidth
-            value={nuevoServicio.descripcion} onChange={e => setNuevoServicio({...nuevoServicio, descripcion: e.target.value})}
-            sx={{ mt: 1 }}
+            label="Descripción del Servicio"
+            fullWidth
+            multiline
+            rows={2}
+            value={nuevoServicio.descripcion}
+            onChange={e => setNuevoServicio({ ...nuevoServicio, descripcion: e.target.value })}
+            placeholder="Ej: Cambio de pastillas de freno delanteras..."
+            required
+            sx={{
+              mt: 1,
+              '& .MuiInputLabel-root': {
+                color: 'text.secondary',
+                fontSize: '0.92rem',
+                '&.Mui-focused': {
+                  color: C.brandLight || 'primary.main',
+                  fontWeight: 600,
+                }
+              }
+            }}
           />
           <TextField
-            label="Costo Estimado (S/)" type="number" fullWidth
-            value={nuevoServicio.precio} onChange={e => setNuevoServicio({...nuevoServicio, precio: e.target.value})}
+            label="Costo Estimado (S/)"
+            type="number"
+            fullWidth
+            value={nuevoServicio.precio}
+            onChange={e => setNuevoServicio({ ...nuevoServicio, precio: e.target.value })}
+            inputProps={{ min: 0, step: '0.50' }}
+            sx={{
+              '& .MuiInputLabel-root': {
+                color: 'text.secondary',
+                fontSize: '0.92rem',
+                '&.Mui-focused': {
+                  color: C.brandLight || 'primary.main',
+                  fontWeight: 600,
+                }
+              }
+            }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={handleCloseServicioModal} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
-          <Button onClick={handleAddServicio} variant="contained" disabled={!nuevoServicio.descripcion} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>
-            {editingServicioId ? 'Guardar Cambios' : 'Agregar'}
+          <Button onClick={handleCloseServicioModal} color="inherit" sx={{ fontWeight: 600 }} disabled={guardandoServicio}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleAddServicio}
+            variant="contained"
+            disabled={guardandoServicio || !nuevoServicio.descripcion?.trim()}
+            sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}
+          >
+            {guardandoServicio ? <CircularProgress size={20} color="inherit" /> : (editingServicioId ? 'Guardar Cambios' : 'Agregar')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -3,18 +3,20 @@ import {
   Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControl, FormControlLabel, Grid, IconButton,
   InputAdornment, InputLabel, MenuItem, Paper, Select, Switch, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography
+  TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
+  ToggleButton, ToggleButtonGroup
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
   CheckCircle2, FileText, Pencil, Plus, Printer, RefreshCw, Search, Send,
-  Trash2, Car
+  Trash2, Car, Wrench
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { ventasService } from '../services/ventasApi';
 import { inventarioService } from '../../inventario/services/inventarioService';
 import { clienteService } from '../../clientes/services/clienteService';
+import { tallerService } from '../../taller/services/tallerService';
 import ClientesForm from '../../clientes/components/ClientesForm';
 import VehiculosForm from '../../vehiculos/components/VehiculosForm';
 import { premiumTokens } from '../../../core/theme/theme';
@@ -28,7 +30,26 @@ const hoyISO = () => {
   return d.toISOString().slice(0, 10);
 };
 
-const nuevaLinea = () => ({
+const obtenerAfectacionDeRepuesto = (repuesto) => {
+  if (!repuesto) return { tipo_afectacion: 'EXONERADO', precio_incluye_igv: true };
+  const cod = String(repuesto.tipo_igv_codigo || '').trim();
+  const nom = (repuesto.tipo_igv_nombre || '').toLowerCase();
+  const tasa = parseFloat(repuesto.tipo_igv_tasa ?? (cod === '10' ? 18 : 0));
+
+  // Código SUNAT 10 = Gravado con 18% (solo si explícitamente se configuró como gravado en el catálogo)
+  if (cod === '10' || tasa > 0 || nom.includes('gravad')) {
+    return { tipo_afectacion: 'GRAVADO_18', precio_incluye_igv: true };
+  }
+  // Código SUNAT 30 = Inafecto
+  if (cod === '30' || nom.includes('inafect')) {
+    return { tipo_afectacion: 'INAFECTO', precio_incluye_igv: true };
+  }
+  // Código SUNAT 20 = Exonerado (Ley N° 27037 de la Amazonía / San Martín)
+  // Si en el catálogo no se seleccionó impuesto (en blanco / nulo), por defecto en San Martín es EXONERADO (0% IGV)
+  return { tipo_afectacion: 'EXONERADO', precio_incluye_igv: true };
+};
+
+const nuevaLinea = (incluyeIgvDefault = true) => ({
   tempId: `${Date.now()}-${Math.random()}`,
   tipo: 'REPUESTO',
   repuesto: null,
@@ -36,6 +57,8 @@ const nuevaLinea = () => ({
   cantidad: 1,
   precio_unitario: 0,
   descuento: 0,
+  tipo_afectacion: 'EXONERADO',
+  precio_incluye_igv: incluyeIgvDefault,
 });
 
 const formInicial = () => ({
@@ -49,7 +72,7 @@ const formInicial = () => ({
   valido_hasta: hoyISO(),
   moneda: 'PEN',
   tipo_cambio: 1,
-  detalles: [nuevaLinea()],
+  detalles: [nuevaLinea(true)],
 });
 
 const toArray = (data) => Array.isArray(data) ? data : (data?.results || []);
@@ -80,19 +103,115 @@ const ProformasPage = () => {
   // Ref para no repetir la petición al SUNAT si ya obtuvimos el TC en esta sesión
   const tcObtenidoRef = useRef(false);
 
-  const bruto = useMemo(() => (
-    form.detalles.reduce((sum, item) => {
-      const cantidad = parseFloat(item.cantidad || 0);
-      const precio = parseFloat(item.precio_unitario || 0);
-      return sum + (cantidad * precio);
-    }, 0)
-  ), [form.detalles]);
+  // Plantillas de Servicio de Taller
+  const [plantillasPreventivas, setPlantillasPreventivas] = useState([]);
+  const [plantillasCorrectivas, setPlantillasCorrectivas] = useState([]);
+  const [plantillasDiagnostico, setPlantillasDiagnostico] = useState([]);
+  const [cargandoPlantillas, setCargandoPlantillas] = useState(false);
+  const [openPlantillaModal, setOpenPlantillaModal] = useState(false);
+  const [tipoPlantillaModal, setTipoPlantillaModal] = useState('PREVENTIVO');
+  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+  const [targetTempId, setTargetTempId] = useState(null);
 
-  const descuentoItems = useMemo(() => (
-    form.detalles.reduce((sum, item) => sum + (parseFloat(item.descuento || 0)), 0)
-  ), [form.detalles]);
+  const resumenCalculado = useMemo(() => {
+    let sumaBaseGravada = 0;
+    let sumaBaseExonerada = 0;
+    let sumaBaseInafecta = 0;
+    let sumaIgvLineas = 0;
+    let sumaDescuentosItems = 0;
+    let totalBruto = 0;
 
-  const total = Math.max(0, bruto - descuentoItems - (parseFloat(form.descuento_global || 0)));
+    const detallesCalculados = form.detalles.map(item => {
+      const cant = parseFloat(item.cantidad || 0);
+      const prec = parseFloat(item.precio_unitario || 0);
+      const desc = parseFloat(item.descuento || 0);
+      const tipoAf = item.tipo_afectacion || 'GRAVADO_18';
+      const incIgv = item.precio_incluye_igv !== false;
+
+      totalBruto += (cant * prec);
+      sumaDescuentosItems += desc;
+
+      const importeNetoItem = Math.max(0, (cant * prec) - desc);
+      let baseImponible = 0;
+      let igvLinea = 0;
+      let totalLinea = 0;
+
+      if (tipoAf === 'GRAVADO_18') {
+        if (incIgv) {
+          baseImponible = +(importeNetoItem / (1 + IGV_TASA)).toFixed(2);
+          igvLinea = +(importeNetoItem - baseImponible).toFixed(2);
+          totalLinea = importeNetoItem;
+        } else {
+          baseImponible = +importeNetoItem.toFixed(2);
+          igvLinea = +(baseImponible * IGV_TASA).toFixed(2);
+          totalLinea = +(baseImponible + igvLinea).toFixed(2);
+        }
+        sumaBaseGravada += baseImponible;
+        sumaIgvLineas += igvLinea;
+      } else if (tipoAf === 'EXONERADO') {
+        baseImponible = +importeNetoItem.toFixed(2);
+        igvLinea = 0;
+        totalLinea = baseImponible;
+        sumaBaseExonerada += baseImponible;
+      } else {
+        baseImponible = +importeNetoItem.toFixed(2);
+        igvLinea = 0;
+        totalLinea = baseImponible;
+        sumaBaseInafecta += baseImponible;
+      }
+
+      return {
+        ...item,
+        baseImponible,
+        igvLinea,
+        totalLinea,
+      };
+    });
+
+    const sumaBaseTotal = sumaBaseGravada + sumaBaseExonerada + sumaBaseInafecta;
+    let descGlobal = Math.max(0, parseFloat(form.descuento_global || 0));
+    descGlobal = Math.min(descGlobal, sumaBaseTotal);
+
+    let totalGravado = sumaBaseGravada;
+    let totalExonerado = sumaBaseExonerada;
+    let totalInafecto = sumaBaseInafecta;
+
+    if (descGlobal > 0 && sumaBaseTotal > 0) {
+      const fGrav = sumaBaseGravada / sumaBaseTotal;
+      const fExon = sumaBaseExonerada / sumaBaseTotal;
+      const dGrav = +(descGlobal * fGrav).toFixed(2);
+      const dExon = +(descGlobal * fExon).toFixed(2);
+      const dInaf = +(descGlobal - dGrav - dExon).toFixed(2);
+
+      totalGravado = Math.max(0, sumaBaseGravada - dGrav);
+      totalExonerado = Math.max(0, sumaBaseExonerada - dExon);
+      totalInafecto = Math.max(0, sumaBaseInafecta - dInaf);
+    }
+
+    const igvTotal = descGlobal > 0
+      ? +(totalGravado * IGV_TASA).toFixed(2)
+      : +sumaIgvLineas.toFixed(2);
+
+    const subtotal = +(totalGravado + totalExonerado + totalInafecto).toFixed(2);
+    const totalFinal = +(subtotal + igvTotal).toFixed(2);
+    const totalDescuentos = +(sumaDescuentosItems + descGlobal).toFixed(2);
+
+    return {
+      totalBruto,
+      detallesCalculados,
+      totalGravado,
+      totalExonerado,
+      totalInafecto,
+      subtotal,
+      igvTotal,
+      totalDescuentos,
+      totalFinal,
+    };
+  }, [form.detalles, form.descuento_global]);
+
+  const bruto = resumenCalculado.totalBruto;
+  const descuentoItems = resumenCalculado.totalDescuentos;
+  const total = resumenCalculado.totalFinal;
 
   const cargarProformas = async () => {
     setLoading(true);
@@ -203,7 +322,7 @@ const ProformasPage = () => {
   };
 
   const agregarLinea = () => {
-    setForm(prev => ({ ...prev, detalles: [...prev.detalles, nuevaLinea()] }));
+    setForm(prev => ({ ...prev, detalles: [...prev.detalles, nuevaLinea(true)] }));
   };
 
   const eliminarLinea = (tempId) => {
@@ -212,6 +331,101 @@ const ProformasPage = () => {
       detalles: prev.detalles.length === 1 ? [nuevaLinea()] : prev.detalles.filter(item => item.tempId !== tempId),
     }));
   };
+
+  const fetchPlantillas = async () => {
+    if (plantillasPreventivas.length > 0 || plantillasCorrectivas.length > 0 || plantillasDiagnostico.length > 0) {
+      return;
+    }
+    try {
+      setCargandoPlantillas(true);
+      const [prevRes, corrRes, diagRes] = await Promise.allSettled([
+        tallerService.getPlantillas({ activo: true }),
+        tallerService.getPlantillasCorrectivas({ activo: true }),
+        tallerService.getPlantillasDiagnostico({ activo: true }),
+      ]);
+      const prev = prevRes.status === 'fulfilled' ? (prevRes.value?.results || prevRes.value || []) : [];
+      const corr = corrRes.status === 'fulfilled' ? (corrRes.value?.results || corrRes.value || []) : [];
+      const diag = diagRes.status === 'fulfilled' ? (diagRes.value?.results || diagRes.value || []) : [];
+      setPlantillasPreventivas(Array.isArray(prev) ? prev : []);
+      setPlantillasCorrectivas(Array.isArray(corr) ? corr : []);
+      setPlantillasDiagnostico(Array.isArray(diag) ? diag : []);
+    } catch (err) {
+      console.error('Error al cargar plantillas de taller en proformas:', err);
+    } finally {
+      setCargandoPlantillas(false);
+    }
+  };
+
+  const handleAbrirPlantillaParaFila = (tempId) => {
+    setTargetTempId(tempId);
+    setPlantillaSeleccionada(null);
+    setTipoPlantillaModal('PREVENTIVO');
+    fetchPlantillas();
+    setOpenPlantillaModal(true);
+  };
+
+  const handleAbrirPlantillaNuevoServicio = () => {
+    setTargetTempId(null);
+    setPlantillaSeleccionada(null);
+    setTipoPlantillaModal('PREVENTIVO');
+    fetchPlantillas();
+    setOpenPlantillaModal(true);
+  };
+
+  const handleConfirmarPlantilla = () => {
+    if (!plantillaSeleccionada) return;
+    const desc = plantillaSeleccionada.nombre + (plantillaSeleccionada.descripcion ? ` - ${plantillaSeleccionada.descripcion}` : '');
+    const precio = parseFloat(plantillaSeleccionada.precio_base || 0);
+    const incIgv = plantillaSeleccionada.precio_incluye_igv !== false;
+
+    if (targetTempId) {
+      actualizarLinea(targetTempId, {
+        descripcion: desc,
+        precio_unitario: precio,
+        tipo_afectacion: 'EXONERADO',
+        precio_incluye_igv: incIgv,
+      });
+    } else {
+      const ultima = form.detalles[form.detalles.length - 1];
+      if (form.detalles.length === 1 && !ultima.repuesto && !ultima.descripcion && parseFloat(ultima.precio_unitario || 0) === 0) {
+        actualizarLinea(ultima.tempId, {
+          tipo: 'SERVICIO',
+          repuesto: null,
+          descripcion: desc,
+          precio_unitario: precio,
+          tipo_afectacion: 'EXONERADO',
+          precio_incluye_igv: incIgv,
+        });
+      } else {
+        setForm(prev => ({
+          ...prev,
+          detalles: [
+            ...prev.detalles,
+            {
+              tempId: `${Date.now()}-${Math.random()}`,
+              tipo: 'SERVICIO',
+              repuesto: null,
+              descripcion: desc,
+              cantidad: 1,
+              precio_unitario: precio,
+              descuento: 0,
+              tipo_afectacion: 'EXONERADO',
+              precio_incluye_igv: incIgv,
+            }
+          ]
+        }));
+      }
+    }
+    setOpenPlantillaModal(false);
+    setPlantillaSeleccionada(null);
+    setTargetTempId(null);
+  };
+
+  const plantillasActuales = tipoPlantillaModal === 'PREVENTIVO'
+    ? plantillasPreventivas
+    : tipoPlantillaModal === 'CORRECTIVO'
+      ? plantillasCorrectivas
+      : plantillasDiagnostico;
 
   const stockTotal = (repuesto) => {
     if (!repuesto) return 0;
@@ -260,6 +474,8 @@ const ProformasPage = () => {
         cantidad: parseFloat(item.cantidad || 0),
         precio_unitario: parseFloat(item.precio_unitario || 0),
         descuento: parseFloat(item.descuento || 0),
+        tipo_afectacion: item.tipo_afectacion || 'EXONERADO',
+        precio_incluye_igv: item.precio_incluye_igv !== false,
       })),
     };
 
@@ -306,20 +522,30 @@ const ProformasPage = () => {
       valido_hasta: proforma.valido_hasta || hoyISO(),
       moneda: proforma.moneda || 'PEN',
       tipo_cambio: proforma.tipo_cambio || 1,
-      detalles: (proforma.detalles || []).map(d => ({
-        tempId: `${d.id}-${Date.now()}`,
-        tipo: d.tipo,
-        repuesto: d.repuesto ? {
-          id: d.repuesto,
-          codigo: d.repuesto_codigo,
-          nombre: d.repuesto_nombre,
-          stock_total_disponible: 0,
-        } : null,
-        descripcion: d.descripcion || '',
-        cantidad: d.cantidad,
-        precio_unitario: d.precio_unitario,
-        descuento: d.descuento,
-      })),
+      detalles: (proforma.detalles || []).map(d => {
+        const repEnCatalogo = repuestos.find(r => r.id === d.repuesto);
+        const stockActual = repEnCatalogo
+          ? parseFloat(repEnCatalogo.stock_total_disponible || 0)
+          : parseFloat(d.repuesto_stock || 0);
+
+        return {
+          tempId: `${d.id}-${Date.now()}-${Math.random()}`,
+          tipo: d.tipo,
+          repuesto: d.repuesto ? (repEnCatalogo || {
+            id: d.repuesto,
+            codigo: d.repuesto_codigo,
+            nombre: d.repuesto_nombre,
+            stock_total_disponible: stockActual,
+            tipo_igv_codigo: d.repuesto_tipo_igv_codigo,
+          }) : null,
+          descripcion: d.descripcion || '',
+          cantidad: d.cantidad,
+          precio_unitario: d.precio_unitario,
+          descuento: d.descuento,
+          tipo_afectacion: d.tipo_afectacion || 'EXONERADO',
+          precio_incluye_igv: d.precio_incluye_igv !== false,
+        };
+      }),
     });
     if (proforma.cliente) {
       fetchVehiculos('', proforma.cliente);
@@ -481,7 +707,18 @@ const ProformasPage = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={openForm} onClose={cerrarFormulario} maxWidth="xl" fullWidth>
+      <Dialog
+        open={openForm}
+        onClose={cerrarFormulario}
+        maxWidth="xl"
+        fullWidth
+        PaperProps={{
+          sx: {
+            maxWidth: { xs: '98vw', md: '1440px' },
+            width: '100%',
+          }
+        }}
+      >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <FileText size={22} /> {editingId ? 'Editar proforma' : 'Nueva proforma'}
         </DialogTitle>
@@ -695,121 +932,256 @@ const ProformasPage = () => {
             </Grid>
 
             {/* Observaciones */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField label="Observaciones" size="small" fullWidth multiline minRows={1} value={form.observaciones} onChange={e => setForm(prev => ({ ...prev, observaciones: e.target.value }))} />
-            </Grid>
-            {/* SWITCH IGV */}
             <Grid size={{ xs: 12 }}>
-              <Box sx={{
-                display: 'flex', alignItems: 'center', gap: 1.5,
-                p: 1.5, borderRadius: 1,
-                border: `1px solid ${form.incluye_igv ? '#22c55e44' : '#64748b44'}`,
-                bgcolor: form.incluye_igv ? 'rgba(34,197,94,0.06)' : 'rgba(100,116,139,0.06)',
-                transition: 'all 0.2s',
-              }}>
-                <Tooltip title={form.incluye_igv
-                  ? 'Los precios ingresados YA incluyen IGV (18%). El sistema desglosa el impuesto en el PDF.'
-                  : 'Los precios ingresados NO incluyen IGV. El total final es el precio tal como se ingresa, sin agregar impuesto.'
-                }>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={form.incluye_igv}
-                        onChange={e => setForm(prev => ({ ...prev, incluye_igv: e.target.checked }))}
-                        color="success"
-                        size="small"
-                      />
-                    }
-                    label={
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="body2" fontWeight="bold" sx={{ color: form.incluye_igv ? 'success.main' : 'text.secondary' }}>
-                          {form.incluye_igv ? '✅ Precios incluyen IGV (18%)' : '❌ Precios sin IGV'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {form.incluye_igv
-                            ? 'El IGV se desglosará automáticamente en el PDF'
-                            : 'No se cobrará IGV. El total es el precio ingresado'}
-                        </Typography>
-                      </Box>
-                    }
-                    sx={{ m: 0 }}
-                  />
-                </Tooltip>
-              </Box>
+              <TextField label="Observaciones" size="small" fullWidth multiline minRows={2} value={form.observaciones} onChange={e => setForm(prev => ({ ...prev, observaciones: e.target.value }))} />
             </Grid>
           </Grid>
 
-          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
             <Typography variant="subtitle1" fontWeight="bold">Items</Typography>
-            <Button startIcon={<Plus size={18} />} variant="outlined" onClick={agregarLinea}>Agregar item</Button>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                startIcon={<Wrench size={16} />}
+                variant="outlined"
+                color="inherit"
+                onClick={handleAbrirPlantillaNuevoServicio}
+                sx={{
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  borderColor: alpha(C.border, 0.8),
+                  '&:hover': { borderColor: C.brandLight, bgcolor: alpha(C.brand, 0.08) }
+                }}
+              >
+                + Servicio de Plantilla
+              </Button>
+              <Button
+                startIcon={<Plus size={18} />}
+                variant="outlined"
+                onClick={agregarLinea}
+                sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.85rem' }}
+              >
+                Agregar item
+              </Button>
+            </Box>
           </Box>
 
           <TableContainer sx={{ mt: 1, border: `1px solid ${C.border}`, borderRadius: 1, maxHeight: 420 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>Tipo</TableCell>
-                  <TableCell>Producto / Servicio</TableCell>
-                  <TableCell align="right">Stock</TableCell>
-                  <TableCell align="right">Cant.</TableCell>
-                  <TableCell align="right">P. Unit.</TableCell>
-                  <TableCell align="right">Desc.</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                  <TableCell align="center"></TableCell>
+                  <TableCell sx={{ width: 115 }}>Tipo</TableCell>
+                  <TableCell sx={{ minWidth: 240 }}>Producto / Servicio</TableCell>
+                  <TableCell align="center" sx={{ width: 75 }}>Stock</TableCell>
+                  <TableCell align="center" sx={{ width: 105 }}>Cant.</TableCell>
+                  <TableCell align="center" sx={{ width: 130 }}>P. Unit.</TableCell>
+                  <TableCell align="center" sx={{ width: 165 }}>Tratamiento IGV</TableCell>
+                  <TableCell align="center" sx={{ width: 115 }}>Desc.</TableCell>
+                  <TableCell align="right" sx={{ width: 115 }}>Total</TableCell>
+                  <TableCell align="center" sx={{ width: 45 }}></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {form.detalles.map((item) => {
-                  const lineaTotal = Math.max(0, (parseFloat(item.cantidad || 0) * parseFloat(item.precio_unitario || 0)) - parseFloat(item.descuento || 0));
+                {form.detalles.map((item, idx) => {
+                  const calc = resumenCalculado.detallesCalculados[idx] || {
+                    baseImponible: 0,
+                    igvLinea: 0,
+                    totalLinea: Math.max(0, (parseFloat(item.cantidad || 0) * parseFloat(item.precio_unitario || 0)) - parseFloat(item.descuento || 0)),
+                  };
+                  const lineaTotal = calc.totalLinea;
+                  const valorTratamiento = item.tipo_afectacion === 'GRAVADO_18'
+                    ? (item.precio_incluye_igv !== false ? 'GRAVADO_INC' : 'GRAVADO_NETO')
+                    : (item.tipo_afectacion || 'EXONERADO');
+
                   return (
                     <TableRow key={item.tempId}>
-                      <TableCell sx={{ width: 130 }}>
-                        <Select size="small" fullWidth value={item.tipo} onChange={e => actualizarLinea(item.tempId, { tipo: e.target.value, repuesto: null, descripcion: '', precio_unitario: 0 })}>
+                      <TableCell sx={{ width: 115 }}>
+                        <Select
+                          size="small"
+                          fullWidth
+                          value={item.tipo}
+                          onChange={e => actualizarLinea(item.tempId, {
+                            tipo: e.target.value,
+                            repuesto: null,
+                            descripcion: '',
+                            precio_unitario: 0,
+                            tipo_afectacion: item.tipo_afectacion || 'EXONERADO',
+                            precio_incluye_igv: item.precio_incluye_igv !== false,
+                          })}
+                        >
                           <MenuItem value="REPUESTO">Producto</MenuItem>
                           <MenuItem value="SERVICIO">Servicio</MenuItem>
                         </Select>
                       </TableCell>
-                      <TableCell sx={{ minWidth: 300 }}>
+                      <TableCell sx={{ minWidth: 240 }}>
                         {item.tipo === 'REPUESTO' ? (
                           <Autocomplete
                             options={repuestos}
                             value={item.repuesto}
                             onOpen={() => cargarRepuestos()}
                             onInputChange={(e, val) => cargarRepuestos(val)}
-                            onChange={(e, value) => actualizarLinea(item.tempId, {
-                              repuesto: value,
-                              descripcion: value?.nombre || '',
-                              precio_unitario: parseFloat(value?.precio_lista || value?.precio_cash || 0),
-                            })}
+                            onChange={(e, value) => {
+                              const afec = obtenerAfectacionDeRepuesto(value);
+                              actualizarLinea(item.tempId, {
+                                repuesto: value,
+                                descripcion: value?.nombre || '',
+                                precio_unitario: parseFloat(value?.precio_lista || value?.precio_cash || 0),
+                                tipo_afectacion: afec.tipo_afectacion,
+                                precio_incluye_igv: afec.precio_incluye_igv,
+                              });
+                            }}
                             getOptionLabel={(option) => option ? `${option.codigo || ''} ${option.codigo_barra || ''} - ${option.nombre || ''}`.trim() : ''}
                             isOptionEqualToValue={(option, value) => option.id === value.id}
                             renderOption={(props, option) => (
                               <li {...props} key={option.id}>
-                                <Box>
-                                  <Typography variant="body2">{option.codigo} - {option.nombre}</Typography>
+                                <Box sx={{ width: '100%' }}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2">{option.codigo} - {option.nombre}</Typography>
+                                    {option.tipo_igv_codigo && option.tipo_igv_codigo !== '10' && (
+                                      <Chip
+                                        size="small"
+                                        label={option.tipo_igv_codigo === '20' ? 'Exonerado' : 'Inafecto'}
+                                        sx={{ height: 18, fontSize: '0.65rem', ml: 1, fontWeight: 600 }}
+                                      />
+                                    )}
+                                  </Box>
                                   <Typography variant="caption" color="text.secondary">
-                                    Barras: {option.codigo_barra || '-'} | Stock: {stockTotal(option)}
+                                    Barras: {option.codigo_barra || '-'} | Stock: {stockTotal(option)} | P. Lista: S/ {parseFloat(option.precio_lista || 0).toFixed(2)}
                                   </Typography>
                                 </Box>
                               </li>
                             )}
-                            renderInput={(params) => <TextField {...params} placeholder="Buscar por codigo, barras o nombre..." size="small" />}
+                            renderInput={(params) => <TextField {...params} placeholder="Buscar por código, barras o nombre..." size="small" />}
                           />
                         ) : (
-                          <TextField size="small" fullWidth placeholder="Descripcion del servicio" value={item.descripcion} onChange={e => actualizarLinea(item.tempId, { descripcion: e.target.value })} />
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <TextField
+                              size="small"
+                              fullWidth
+                              placeholder="Descripción del servicio (o elija una plantilla)"
+                              value={item.descripcion}
+                              onChange={e => actualizarLinea(item.tempId, { descripcion: e.target.value })}
+                            />
+                            <Tooltip title="Cargar desde plantilla de taller">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="inherit"
+                                onClick={() => handleAbrirPlantillaParaFila(item.tempId)}
+                                sx={{
+                                  minWidth: 36,
+                                  px: 1,
+                                  height: 36,
+                                  borderRadius: '8px',
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  fontSize: '0.75rem',
+                                  flexShrink: 0,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  borderColor: alpha(C.border, 0.8),
+                                  '&:hover': { borderColor: C.brandLight, bgcolor: alpha(C.brand, 0.08) }
+                                }}
+                              >
+                                <Wrench size={14} color={C.brandLight} />
+                                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Plantilla</Box>
+                              </Button>
+                            </Tooltip>
+                          </Box>
                         )}
                       </TableCell>
-                      <TableCell align="right">{item.tipo === 'REPUESTO' ? stockTotal(item.repuesto) : '-'}</TableCell>
-                      <TableCell align="right" sx={{ width: 95 }}>
-                        <TextField size="small" type="number" value={item.cantidad} onChange={e => actualizarLinea(item.tempId, { cantidad: e.target.value })} inputProps={{ min: 0, step: '0.01', style: { textAlign: 'right' } }} />
+                      <TableCell align="center" sx={{ width: 75, fontWeight: 700, color: stockTotal(item.repuesto) <= 0 ? 'text.secondary' : 'success.main' }}>
+                        {item.tipo === 'REPUESTO' ? stockTotal(item.repuesto) : '-'}
                       </TableCell>
-                      <TableCell align="right" sx={{ width: 120 }}>
-                        <TextField size="small" type="number" value={item.precio_unitario} onChange={e => actualizarLinea(item.tempId, { precio_unitario: e.target.value })} inputProps={{ min: 0, step: '0.01', style: { textAlign: 'right' } }} />
+                      <TableCell align="center" sx={{ width: 105 }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={item.cantidad}
+                          onChange={e => actualizarLinea(item.tempId, { cantidad: e.target.value })}
+                          inputProps={{
+                            min: 0,
+                            step: '0.01',
+                            style: { textAlign: 'right', padding: '6px 8px', fontSize: '0.875rem' }
+                          }}
+                          sx={{
+                            width: '100%',
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                            '& input[type=number]': { MozAppearance: 'textfield' }
+                          }}
+                        />
                       </TableCell>
-                      <TableCell align="right" sx={{ width: 105 }}>
-                        <TextField size="small" type="number" value={item.descuento} onChange={e => actualizarLinea(item.tempId, { descuento: e.target.value })} inputProps={{ min: 0, step: '0.01', style: { textAlign: 'right' } }} />
+                      <TableCell align="center" sx={{ width: 130 }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={item.precio_unitario}
+                          onChange={e => actualizarLinea(item.tempId, { precio_unitario: e.target.value })}
+                          inputProps={{
+                            min: 0,
+                            step: '0.01',
+                            style: { textAlign: 'right', padding: '6px 8px', fontSize: '0.875rem' }
+                          }}
+                          sx={{
+                            width: '100%',
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                            '& input[type=number]': { MozAppearance: 'textfield' }
+                          }}
+                        />
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 800 }}>{money(lineaTotal)}</TableCell>
+                      <TableCell align="center" sx={{ width: 165 }}>
+                        <Select
+                          size="small"
+                          fullWidth
+                          value={valorTratamiento}
+                          onChange={e => {
+                            const val = e.target.value;
+                            if (val === 'GRAVADO_INC') {
+                              actualizarLinea(item.tempId, { tipo_afectacion: 'GRAVADO_18', precio_incluye_igv: true });
+                            } else if (val === 'GRAVADO_NETO') {
+                              actualizarLinea(item.tempId, { tipo_afectacion: 'GRAVADO_18', precio_incluye_igv: false });
+                            } else if (val === 'EXONERADO') {
+                              actualizarLinea(item.tempId, { tipo_afectacion: 'EXONERADO', precio_incluye_igv: true });
+                            } else if (val === 'INAFECTO') {
+                              actualizarLinea(item.tempId, { tipo_afectacion: 'INAFECTO', precio_incluye_igv: true });
+                            }
+                          }}
+                          sx={{ fontSize: '0.8rem' }}
+                        >
+                          <MenuItem value="GRAVADO_INC" sx={{ fontSize: '0.8rem' }}>🟢 Gravado (Inc. 18%)</MenuItem>
+                          <MenuItem value="GRAVADO_NETO" sx={{ fontSize: '0.8rem' }}>🟡 Gravado (+18% IGV)</MenuItem>
+                          <MenuItem value="EXONERADO" sx={{ fontSize: '0.8rem' }}>⚪ Exonerado (0%)</MenuItem>
+                          <MenuItem value="INAFECTO" sx={{ fontSize: '0.8rem' }}>⚪ Inafecto (0%)</MenuItem>
+                        </Select>
+                      </TableCell>
+                      <TableCell align="center" sx={{ width: 115 }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={item.descuento}
+                          onChange={e => actualizarLinea(item.tempId, { descuento: e.target.value })}
+                          inputProps={{
+                            min: 0,
+                            step: '0.01',
+                            style: { textAlign: 'right', padding: '6px 8px', fontSize: '0.875rem' }
+                          }}
+                          sx={{
+                            width: '100%',
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                            '& input[type=number]': { MozAppearance: 'textfield' }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800 }}>
+                        {money(lineaTotal, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}
+                        {calc.igvLinea > 0 && (
+                          <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.7rem', fontWeight: 'normal' }}>
+                            IGV: {money(calc.igvLinea, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}
+                          </Typography>
+                        )}
+                      </TableCell>
                       <TableCell align="center">
                         <IconButton color="error" onClick={() => eliminarLinea(item.tempId)}><Trash2 size={18} /></IconButton>
                       </TableCell>
@@ -821,35 +1193,57 @@ const ProformasPage = () => {
           </TableContainer>
 
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-            <Box sx={{ minWidth: 300, p: 2, border: `1px solid ${C.border}`, borderRadius: 1, bgcolor: alpha(C.blue, 0.05) }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">Subtotal items</Typography>
-                <Typography variant="body2">{money(bruto)}</Typography>
+            <Box sx={{ minWidth: 340, p: 2.5, border: `1px solid ${C.border}`, borderRadius: 2, bgcolor: alpha(C.blue, 0.04) }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1.5, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                Resumen de Liquidación (SUNAT)
+              </Typography>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                <Typography variant="body2" color="text.secondary">Op. Gravadas (Base)</Typography>
+                <Typography variant="body2" fontWeight="600">{money(resumenCalculado.totalGravado, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}</Typography>
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">Descuentos</Typography>
-                <Typography variant="body2">{money(descuentoItems + parseFloat(form.descuento_global || 0))}</Typography>
-              </Box>
-              {form.incluye_igv && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    IGV incluido (18%)
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ≈ {money(total - total / (1 + IGV_TASA))}
+
+              {resumenCalculado.totalExonerado > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography variant="body2" color="text.secondary">Op. Exoneradas</Typography>
+                  <Typography variant="body2" fontWeight="600">{money(resumenCalculado.totalExonerado, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}</Typography>
+                </Box>
+              )}
+
+              {resumenCalculado.totalInafecto > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography variant="body2" color="text.secondary">Op. Inafectas</Typography>
+                  <Typography variant="body2" fontWeight="600">{money(resumenCalculado.totalInafecto, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}</Typography>
+                </Box>
+              )}
+
+              {resumenCalculado.totalDescuentos > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                  <Typography variant="body2" color="error.main">Descuentos Totales</Typography>
+                  <Typography variant="body2" fontWeight="600" color="error.main">
+                    - {money(resumenCalculado.totalDescuentos, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}
                   </Typography>
                 </Box>
               )}
-              <Divider sx={{ my: 1 }} />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography fontWeight="bold">Total</Typography>
-                <Typography variant="h6" color="primary" fontWeight="bold">{money(total)}</Typography>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                <Typography variant="body2" color="text.secondary">Subtotal (Valor Venta)</Typography>
+                <Typography variant="body2" fontWeight="600">{money(resumenCalculado.subtotal, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}</Typography>
               </Box>
-              {form.incluye_igv && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
-                  El IGV está incluido en el precio
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">IGV (18%)</Typography>
+                <Typography variant="body2" fontWeight="600">{money(resumenCalculado.igvTotal, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}</Typography>
+              </Box>
+
+              <Divider sx={{ my: 1.5 }} />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight="bold">Total General</Typography>
+                <Typography variant="h6" color="primary" fontWeight="bold">
+                  {money(resumenCalculado.totalFinal, form.moneda === 'PEN' ? 'S/' : form.moneda === 'USD' ? '$' : '€')}
                 </Typography>
-              )}
+              </Box>
             </Box>
           </Box>
         </DialogContent>
@@ -857,6 +1251,126 @@ const ProformasPage = () => {
           <Button onClick={cerrarFormulario} color="inherit">Cancelar</Button>
           <Button variant="contained" startIcon={saving ? <CircularProgress color="inherit" size={18} /> : <CheckCircle2 size={18} />} onClick={guardar} disabled={saving}>
             {editingId ? 'Actualizar proforma' : 'Grabar proforma'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal Selector de Plantillas de Servicio */}
+      <Dialog
+        open={openPlantillaModal}
+        onClose={() => setOpenPlantillaModal(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '16px' } }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight="700" display="flex" alignItems="center" gap={1}>
+            <Wrench size={20} color={C.brandLight} />
+            Seleccionar Servicio desde Plantilla
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {targetTempId ? 'El servicio seleccionado se aplicará a la fila actual.' : 'El servicio se agregará a los items de la proforma.'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '16px !important' }}>
+          {/* Categorías */}
+          <Box>
+            <Typography variant="caption" fontWeight="700" color="text.secondary" display="block" mb={1}>
+              Categoría de Plantilla:
+            </Typography>
+            <ToggleButtonGroup
+              value={tipoPlantillaModal}
+              exclusive
+              onChange={(e, val) => {
+                if (val) {
+                  setTipoPlantillaModal(val);
+                  setPlantillaSeleccionada(null);
+                }
+              }}
+              size="small"
+              fullWidth
+            >
+              <ToggleButton value="PREVENTIVO" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}>
+                Preventivos ({plantillasPreventivas.length})
+              </ToggleButton>
+              <ToggleButton value="CORRECTIVO" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}>
+                Correctivos ({plantillasCorrectivas.length})
+              </ToggleButton>
+              <ToggleButton value="DIAGNOSTICO" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}>
+                Diagnóstico ({plantillasDiagnostico.length})
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          {/* Autocomplete de Plantillas */}
+          <Autocomplete
+            loading={cargandoPlantillas}
+            options={plantillasActuales}
+            value={plantillaSeleccionada}
+            getOptionLabel={(option) => {
+              if (!option) return '';
+              const precio = option.precio_base ? ` | S/ ${parseFloat(option.precio_base).toFixed(2)}` : '';
+              return `${option.nombre}${precio}`;
+            }}
+            onChange={(e, val) => setPlantillaSeleccionada(val)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Seleccionar o Buscar Servicio"
+                placeholder="Escribe para buscar..."
+                size="small"
+              />
+            )}
+            noOptionsText={cargandoPlantillas ? 'Cargando plantillas...' : 'No hay plantillas disponibles en esta categoría'}
+          />
+
+          {/* Tarjeta de previsualización del servicio seleccionado */}
+          {plantillaSeleccionada && (
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: '12px',
+                border: `1px solid ${alpha(C.brand, 0.4)}`,
+                bgcolor: alpha(C.surface, 0.6),
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight="700" color={C.text}>
+                {plantillaSeleccionada.nombre}
+              </Typography>
+              {plantillaSeleccionada.descripcion && (
+                <Typography variant="body2" color="text.secondary">
+                  {plantillaSeleccionada.descripcion}
+                </Typography>
+              )}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5, pt: 1, borderTop: `1px solid ${C.border}` }}>
+                {plantillaSeleccionada.tiempo_estimado_minutos ? (
+                  <Chip
+                    label={`~${plantillaSeleccionada.tiempo_estimado_minutos} min`}
+                    size="small"
+                    sx={{ height: 22, fontSize: '0.72rem', fontWeight: 600 }}
+                  />
+                ) : <span />}
+                <Typography variant="body2" fontWeight="700" sx={{ color: C.brandLight }}>
+                  Precio Sugerido: S/ {parseFloat(plantillaSeleccionada.precio_base || 0).toFixed(2)}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setOpenPlantillaModal(false)} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!plantillaSeleccionada}
+            onClick={handleConfirmarPlantilla}
+            startIcon={<CheckCircle2 size={18} />}
+          >
+            Aplicar a Proforma
           </Button>
         </DialogActions>
       </Dialog>

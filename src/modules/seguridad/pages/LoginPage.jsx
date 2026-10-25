@@ -17,6 +17,7 @@ import {
   Lock,
   ArrowRight,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -95,205 +96,231 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={styles.root}>
+    <div className="min-h-screen min-h-[100dvh] w-full flex flex-col lg:flex-row bg-[#0f1117] font-['Inter',system-ui,sans-serif] text-slate-100 overflow-x-hidden overflow-y-auto">
       {/* ══════════════════════════════════════
-          PANEL IZQUIERDO — imagen + features
+          PANEL IZQUIERDO — Solo Desktop (≥ lg)
       ══════════════════════════════════════ */}
-      <div style={styles.leftPanel}>
-        {/* Overlay oscuro con gradiente */}
-        <div style={styles.overlay} />
+      <div
+        className="hidden lg:flex relative flex-1 min-h-[100dvh] bg-cover bg-center items-stretch overflow-hidden"
+        style={{ backgroundImage: 'url(/bg-taller.jpg)' }}
+      >
+        {/* Overlay oscuro con gradiente esmeralda */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#05190f]/90 via-[#0a1e14]/80 to-[#0f1117]/95 z-10 pointer-events-none" />
 
         {/* Contenido sobre la imagen */}
-        <div style={styles.leftContent}>
+        <div className="relative z-20 flex flex-col justify-between p-10 xl:p-14 w-full">
           {/* Logo + marca */}
-          <div style={styles.brand}>
+          <div className="flex items-center gap-3.5">
             <img
               src="/logo-taller.jpg"
               alt="Logo Taller 360"
-              style={styles.logoImg}
+              className="w-12 h-12 object-contain rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-500/30"
             />
             <div>
-              <p style={styles.brandName}>TALLER 360°</p>
-              <p style={styles.brandSub}>SISTEMA DE GESTIÓN</p>
+              <p className="m-0 text-lg font-extrabold text-white tracking-wider">TALLER 360°</p>
+              <p className="m-0 text-[10px] font-semibold text-emerald-400 tracking-[0.2em]">SISTEMA DE GESTIÓN</p>
             </div>
           </div>
 
-          {/* Título principal */}
-          <div style={styles.heroText}>
-            <h1 style={styles.heroTitle}>
-              Soluciones inteligentes<br />
-              para{' '}
-              <span style={styles.heroAccent}>tu taller</span>
-            </h1>
-            <p style={styles.heroSub}>
-              Controla cada detalle de tu negocio<br />
-              y ofrece el mejor servicio.
-            </p>
+          {/* Título principal + features */}
+          <div className="my-auto py-8 flex flex-col gap-8">
+            <div className="flex flex-col gap-3">
+              <h1 className="m-0 text-3xl xl:text-4xl 2xl:text-5xl font-extrabold text-white leading-tight">
+                Soluciones inteligentes<br />
+                para <span className="text-emerald-400">tu taller</span>
+              </h1>
+              <p className="m-0 text-sm xl:text-base text-slate-300/80 leading-relaxed max-w-md">
+                Controla cada detalle de tu negocio, optimiza tus tiempos y ofrece el mejor servicio a tus clientes.
+              </p>
+            </div>
+
+            {/* Lista de características */}
+            <ul className="list-none m-0 p-0 flex flex-col gap-3.5">
+              {features.map(({ icon: Icon, label }) => (
+                <li key={label} className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-lg border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <Icon size={18} className="text-emerald-400" />
+                  </div>
+                  <span className="text-sm text-slate-200 font-medium">{label}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Lista de características */}
-          <ul style={styles.featureList}>
-            {features.map(({ icon: Icon, label }) => (
-              <li key={label} style={styles.featureItem}>
-                <div style={styles.featureIconWrap}>
-                  <Icon size={18} color="#10b981" />
-                </div>
-                <span style={styles.featureLabel}>{label}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Dots decorativos */}
-          <div style={styles.dotsGrid}>
+          {/* Dots decorativos inferiores */}
+          <div className="grid grid-cols-10 gap-1.5 opacity-25 w-fit">
             {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} style={styles.dot} />
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             ))}
           </div>
         </div>
       </div>
 
       {/* ══════════════════════════════════════
-          PANEL DERECHO — formulario
+          PANEL DERECHO — Responsive Form (Mobile & Desktop)
       ══════════════════════════════════════ */}
-      <div style={styles.rightPanel}>
-        <div style={styles.formCard}>
-          {/* Avatar */}
-          <div style={styles.avatarWrap}>
+      <div className="w-full lg:w-[460px] xl:w-[500px] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 min-h-screen min-h-[100dvh]">
+        {/* Cabecera de marca en móvil (Solo visible en pantallas < lg) */}
+        <div className="flex lg:hidden items-center gap-3 mb-6">
+          <img
+            src="/logo-taller.jpg"
+            alt="Logo Taller 360"
+            className="w-11 h-11 object-contain rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.5)] border border-emerald-500/30"
+          />
+          <div className="text-left">
+            <p className="m-0 text-base font-extrabold text-white tracking-wider">TALLER 360°</p>
+            <p className="m-0 text-[10px] font-semibold text-emerald-400 tracking-[0.2em]">SISTEMA DE GESTIÓN</p>
+          </div>
+        </div>
+
+        {/* Tarjeta del formulario */}
+        <div className="w-full max-w-[420px] bg-[#11151c] border border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-9 shadow-2xl shadow-black/60 flex flex-col items-center">
+          {/* Avatar circular */}
+          <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full border-2 border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
             <svg
-              width="36" height="36" viewBox="0 0 24 24"
-              fill="none" stroke="#10b981" strokeWidth="1.6"
-              strokeLinecap="round" strokeLinejoin="round"
+              className="w-8 h-8 sm:w-9 sm:h-9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
             </svg>
           </div>
 
-          <h2 style={styles.formTitle}>¡Bienvenido!</h2>
-          <p style={styles.formSub}>Inicia sesión para continuar</p>
+          <h2 className="m-0 text-2xl sm:text-3xl font-bold text-white text-center">¡Bienvenido!</h2>
+          <p className="m-0 mt-1 mb-5 sm:mb-6 text-xs sm:text-sm text-slate-400 text-center">
+            Inicia sesión para continuar
+          </p>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate style={styles.form}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="w-full flex flex-col gap-4">
             {/* ── Error global ── */}
             {errorMsg && (
-              <div style={styles.errorBanner}>
-                <AlertCircle size={16} color="#f87171" />
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs sm:text-sm leading-snug animate-shake">
+                <AlertCircle size={17} className="shrink-0 text-red-400" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {/* ── Campo: correo / usuario ── */}
-            <div style={styles.fieldWrap}>
-              <label style={styles.label} htmlFor="login-username">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="login-username" className="text-xs sm:text-sm font-medium text-slate-300">
                 Correo electrónico
               </label>
-              <div style={styles.inputWrap}>
-                <Mail size={16} color="#6b7280" style={styles.inputIcon} />
+              <div className="relative flex items-center">
+                <Mail size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
                 <input
                   id="login-username"
                   type="text"
                   placeholder="tu@correo.com"
                   autoComplete="username"
                   disabled={isSubmitting}
-                  style={{
-                    ...styles.input,
-                    ...(errors.username ? styles.inputError : {}),
-                  }}
+                  className={`w-full h-11 sm:h-12 bg-white/[0.04] border rounded-xl pl-10 pr-3.5 text-base sm:text-sm text-white placeholder-slate-500 outline-none transition-all focus:ring-2 focus:ring-emerald-500/20 ${
+                    errors.username
+                      ? 'border-red-500/60 focus:border-red-500'
+                      : 'border-white/10 focus:border-emerald-500 hover:border-white/20'
+                  }`}
                   {...register('username')}
                 />
               </div>
               {errors.username && (
-                <p style={styles.fieldError}>{errors.username.message}</p>
+                <p className="m-0 text-xs text-red-400">{errors.username.message}</p>
               )}
             </div>
 
             {/* ── Campo: contraseña ── */}
-            <div style={styles.fieldWrap}>
-              <label style={styles.label} htmlFor="login-password">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="login-password" className="text-xs sm:text-sm font-medium text-slate-300">
                 Contraseña
               </label>
-              <div style={styles.inputWrap}>
-                <Lock size={16} color="#6b7280" style={styles.inputIcon} />
+              <div className="relative flex items-center">
+                <Lock size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Ingresa tu contraseña"
                   autoComplete="current-password"
                   disabled={isSubmitting}
-                  style={{
-                    ...styles.input,
-                    paddingRight: '44px',
-                    ...(errors.password ? styles.inputError : {}),
-                  }}
+                  className={`w-full h-11 sm:h-12 bg-white/[0.04] border rounded-xl pl-10 pr-11 text-base sm:text-sm text-white placeholder-slate-500 outline-none transition-all focus:ring-2 focus:ring-emerald-500/20 ${
+                    errors.password
+                      ? 'border-red-500/60 focus:border-red-500'
+                      : 'border-white/10 focus:border-emerald-500 hover:border-white/20'
+                  }`}
                   {...register('password')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  style={styles.eyeBtn}
+                  className="absolute right-1 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer rounded-lg"
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {showPassword
-                    ? <EyeOff size={18} color="#6b7280" />
-                    : <Eye    size={18} color="#6b7280" />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && (
-                <p style={styles.fieldError}>{errors.password.message}</p>
+                <p className="m-0 text-xs text-red-400">{errors.password.message}</p>
               )}
             </div>
 
             {/* ── Recordarme + olvidé contraseña ── */}
-            <div style={styles.rowBetween}>
-              <label style={styles.checkLabel}>
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <label htmlFor="login-remember" className="flex items-center gap-2 text-xs sm:text-sm text-slate-300/80 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   id="login-remember"
-                  style={styles.checkbox}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 accent-emerald-500 cursor-pointer"
                   {...register('remember', {
                     onChange: (event) => {
                       if (!event.target.checked) rememberedUsername.clear();
                     },
                   })}
                 />
-                Recordar mi usuario
+                <span>Recordar mi usuario</span>
               </label>
-              <button type="button" style={styles.forgotBtn}>
+              <button
+                type="button"
+                className="text-xs sm:text-sm text-emerald-400 hover:text-emerald-300 font-medium bg-transparent border-0 p-0 cursor-pointer transition-colors"
+              >
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
 
-            {/* ── Botón principal ── */}
+            {/* ── Botón principal de login ── */}
             <button
               id="login-submit"
               type="submit"
               disabled={isSubmitting}
-              style={{
-                ...styles.submitBtn,
-                ...(isSubmitting ? styles.submitBtnDisabled : {}),
-              }}
+              className="w-full h-11 sm:h-12 mt-1 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
             >
               {isSubmitting ? (
-                <span style={styles.spinner} />
+                <Loader2 size={19} className="animate-spin text-white" />
               ) : (
                 <>
-                  Iniciar sesión
-                  <ArrowRight size={18} style={{ marginLeft: '8px' }} />
+                  <span>Iniciar sesión</span>
+                  <ArrowRight size={18} />
                 </>
               )}
             </button>
 
             {/* ── Divisor ── */}
-            <div style={styles.divider}>
-              <span style={styles.dividerLine} />
-              <span style={styles.dividerText}>o continúa con</span>
-              <span style={styles.dividerLine} />
+            <div className="flex items-center gap-3 my-0.5">
+              <span className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-slate-500 whitespace-nowrap">o continúa con</span>
+              <span className="flex-1 h-px bg-white/10" />
             </div>
 
             {/* ── Botones sociales ── */}
-            <div style={styles.socialRow}>
+            <div className="grid grid-cols-2 gap-3">
               {/* Google */}
-              <button type="button" style={styles.socialBtn} id="login-google">
-                <svg width="18" height="18" viewBox="0 0 48 48">
+              <button
+                type="button"
+                id="login-google"
+                className="h-10 sm:h-11 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-slate-300 text-xs sm:text-sm font-medium transition-all cursor-pointer"
+              >
+                <svg width="17" height="17" viewBox="0 0 48 48">
                   <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
                   <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
                   <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
@@ -303,8 +330,12 @@ export default function LoginPage() {
               </button>
 
               {/* Microsoft */}
-              <button type="button" style={styles.socialBtn} id="login-microsoft">
-                <svg width="18" height="18" viewBox="0 0 21 21">
+              <button
+                type="button"
+                id="login-microsoft"
+                className="h-10 sm:h-11 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-slate-300 text-xs sm:text-sm font-medium transition-all cursor-pointer"
+              >
+                <svg width="17" height="17" viewBox="0 0 21 21">
                   <rect x="1"  y="1"  width="9" height="9" fill="#F25022"/>
                   <rect x="11" y="1"  width="9" height="9" fill="#7FBA00"/>
                   <rect x="1"  y="11" width="9" height="9" fill="#00A4EF"/>
@@ -319,359 +350,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-/* ─────────────────────────────────────────────
-   Estilos inline (sin dependencia de Tailwind)
-   Paleta: fondo oscuro #0f1117 / verde #10b981
-───────────────────────────────────────────── */
-const styles = {
-  /* ── Layout raíz ── */
-  root: {
-    display: 'flex',
-    minHeight: '100vh',
-    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-    backgroundColor: '#0f1117',
-    overflow: 'hidden',
-  },
-
-  /* ── Panel izquierdo ── */
-  leftPanel: {
-    position: 'relative',
-    flex: 1,
-    minHeight: '100vh',
-    backgroundImage: 'url(/bg-taller.jpg)',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    display: 'flex',
-    alignItems: 'stretch',
-    // Ocultar en pantallas muy pequeñas se maneja con media queries, pero
-    // para este contexto lo dejamos siempre visible.
-  },
-  overlay: {
-    position: 'absolute',
-    inset: 0,
-    background:
-      'linear-gradient(135deg, rgba(5,25,15,0.88) 0%, rgba(10,30,20,0.75) 60%, rgba(15,17,23,0.92) 100%)',
-    zIndex: 1,
-  },
-  leftContent: {
-    position: 'relative',
-    zIndex: 2,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    padding: '48px 56px',
-    gap: '36px',
-    width: '100%',
-  },
-
-  /* Brand */
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-  },
-  logoImg: {
-    width: '48px',
-    height: '48px',
-    objectFit: 'contain',
-    borderRadius: '10px',
-    filter: 'drop-shadow(0 0 8px rgba(16,185,129,0.6))',
-  },
-  brandName: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 800,
-    color: '#ffffff',
-    letterSpacing: '0.08em',
-  },
-  brandSub: {
-    margin: 0,
-    fontSize: '10px',
-    fontWeight: 500,
-    color: '#10b981',
-    letterSpacing: '0.2em',
-  },
-
-  /* Hero */
-  heroText: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  heroTitle: {
-    margin: 0,
-    fontSize: 'clamp(26px, 3vw, 40px)',
-    fontWeight: 800,
-    color: '#ffffff',
-    lineHeight: 1.2,
-  },
-  heroAccent: { color: '#10b981' },
-  heroSub: {
-    margin: 0,
-    fontSize: '14px',
-    color: 'rgba(255,255,255,0.6)',
-    lineHeight: 1.6,
-  },
-
-  /* Features */
-  featureList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
-  },
-  featureItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    animation: 'fadeInLeft 0.5s ease both',
-  },
-  featureIconWrap: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '8px',
-    border: '1px solid rgba(16,185,129,0.3)',
-    background: 'rgba(16,185,129,0.1)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  featureLabel: {
-    fontSize: '14px',
-    color: 'rgba(255,255,255,0.82)',
-    fontWeight: 500,
-  },
-
-  /* Dots decorativos */
-  dotsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(10, 8px)',
-    gap: '6px',
-    opacity: 0.25,
-  },
-  dot: {
-    width: '5px',
-    height: '5px',
-    borderRadius: '50%',
-    backgroundColor: '#10b981',
-  },
-
-  /* ── Panel derecho ── */
-  rightPanel: {
-    width: 'clamp(340px, 38%, 480px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px 32px',
-  },
-  formCard: {
-    width: '100%',
-    maxWidth: '400px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '8px',
-    /* ── Contorno añadido (estilo tarjeta) ── */
-    padding: '40px 32px',
-    backgroundColor: '#11151c',
-    borderRadius: '24px',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-  },
-
-  /* Avatar círculo */
-  avatarWrap: {
-    width: '72px',
-    height: '72px',
-    borderRadius: '50%',
-    border: '2px solid rgba(16,185,129,0.4)',
-    background: 'rgba(16,185,129,0.08)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '8px',
-  },
-  formTitle: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: 700,
-    color: '#ffffff',
-  },
-  formSub: {
-    margin: '0 0 16px',
-    fontSize: '13px',
-    color: 'rgba(255,255,255,0.5)',
-  },
-
-  /* Form */
-  form: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-
-  /* Error banner */
-  errorBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 14px',
-    borderRadius: '8px',
-    background: 'rgba(248,113,113,0.1)',
-    border: '1px solid rgba(248,113,113,0.25)',
-    fontSize: '13px',
-    color: '#f87171',
-  },
-
-  /* Field */
-  fieldWrap: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  label: {
-    fontSize: '13px',
-    fontWeight: 500,
-    color: 'rgba(255,255,255,0.75)',
-  },
-  inputWrap: { position: 'relative', display: 'flex', alignItems: 'center' },
-  inputIcon: {
-    position: 'absolute',
-    left: '12px',
-    pointerEvents: 'none',
-  },
-  input: {
-    width: '100%',
-    padding: '11px 12px 11px 38px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.05)',
-    color: '#ffffff',
-    fontSize: '14px',
-    outline: 'none',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-    boxSizing: 'border-box',
-  },
-  inputError: {
-    borderColor: 'rgba(248,113,113,0.5)',
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: '10px',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '4px',
-    display: 'flex',
-    alignItems: 'center',
-    borderRadius: '4px',
-  },
-  fieldError: {
-    margin: 0,
-    fontSize: '12px',
-    color: '#f87171',
-  },
-
-  /* Recordarme row */
-  rowBetween: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  checkLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '13px',
-    color: 'rgba(255,255,255,0.65)',
-    cursor: 'pointer',
-  },
-  checkbox: {
-    accentColor: '#10b981',
-    width: '15px',
-    height: '15px',
-    cursor: 'pointer',
-  },
-  forgotBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '13px',
-    color: '#10b981',
-    cursor: 'pointer',
-    padding: 0,
-    fontFamily: 'inherit',
-    textDecoration: 'none',
-    transition: 'opacity 0.2s',
-  },
-
-  /* Botón principal */
-  submitBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    padding: '13px 24px',
-    borderRadius: '9px',
-    border: 'none',
-    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    color: '#ffffff',
-    fontSize: '15px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'transform 0.15s, box-shadow 0.15s, opacity 0.15s',
-    boxShadow: '0 4px 20px rgba(16,185,129,0.35)',
-    fontFamily: 'inherit',
-  },
-  submitBtnDisabled: {
-    opacity: 0.6,
-    cursor: 'not-allowed',
-  },
-
-  /* Spinner */
-  spinner: {
-    display: 'inline-block',
-    width: '20px',
-    height: '20px',
-    border: '2px solid rgba(255,255,255,0.3)',
-    borderTopColor: '#ffffff',
-    borderRadius: '50%',
-    animation: 'spin 0.7s linear infinite',
-  },
-
-  /* Divisor */
-  divider: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  dividerLine: {
-    flex: 1,
-    height: '1px',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  dividerText: {
-    fontSize: '12px',
-    color: 'rgba(255,255,255,0.35)',
-    whiteSpace: 'nowrap',
-  },
-
-  /* Botones sociales */
-  socialRow: {
-    display: 'flex',
-    gap: '12px',
-  },
-  socialBtn: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    padding: '10px 16px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(255,255,255,0.04)',
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    transition: 'background 0.2s, border-color 0.2s',
-    fontFamily: 'inherit',
-  },
-};

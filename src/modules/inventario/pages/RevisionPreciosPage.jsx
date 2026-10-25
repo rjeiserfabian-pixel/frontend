@@ -100,8 +100,11 @@ const RevisionPreciosPage = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                repuestos.map((repuesto, index) => {
-                   const margen = ((repuesto.precio_lista - repuesto.precio_compra) / repuesto.precio_lista) * 100;
+              repuestos.map((repuesto, index) => {
+                   const costo = parseFloat(repuesto.precio_compra || 0);
+                   const precioLista = parseFloat(repuesto.precio_lista || 0);
+                   const valorVentaNeto = precioLista > 0 ? (precioLista / 1.18) : 0;
+                   const margen = valorVentaNeto > 0 ? (((valorVentaNeto - costo) / valorVentaNeto) * 100) : 0;
                    return (
                   <TableRow key={repuesto.id} hover>
                     <TableCell>{repuesto.codigo}</TableCell>
@@ -110,11 +113,14 @@ const RevisionPreciosPage = () => {
                       <Typography variant="caption" color="text.secondary">{repuesto.categoria_nombre}</Typography>
                     </TableCell>
                     <TableCell align="center">
-                       <Typography fontWeight="bold" color="error">S/ {repuesto.precio_compra}</Typography>
+                       <Typography fontWeight="bold" color="error">S/ {costo.toFixed(2)}</Typography>
+                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                         V. Neto: S/ {valorVentaNeto.toFixed(2)}
+                       </Typography>
                        {margen < 0 ? (
-                         <Chip label={`Perdiendo ${Math.abs(margen).toFixed(1)}%`} color="error" size="small" sx={{ mt: 1 }} />
+                         <Chip label={`Pérdida ${Math.abs(margen).toFixed(1)}%`} color="error" size="small" sx={{ mt: 0.5 }} />
                        ) : (
-                         <Chip label={`Margen: ${margen.toFixed(1)}%`} color="warning" size="small" sx={{ mt: 1 }} />
+                         <Chip label={`Margen: ${margen.toFixed(1)}%`} color={margen < 15 ? "warning" : "success"} size="small" sx={{ mt: 0.5 }} />
                        )}
                     </TableCell>
                     

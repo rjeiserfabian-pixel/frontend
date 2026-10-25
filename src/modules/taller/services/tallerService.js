@@ -132,12 +132,23 @@ export const tallerService = {
 
   // Hallazgos
   crearHallazgo: async (data) => {
-    const response = await api.post('taller/hallazgos/', data);
+    const isFormData = data instanceof FormData;
+    const response = await api.post('taller/hallazgos/', data, isFormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : undefined);
     return response.data;
   },
 
   actualizarHallazgo: async (id, data) => {
-    const response = await api.patch(`taller/hallazgos/${id}/`, data);
+    const isFormData = data instanceof FormData;
+    const response = await api.patch(`taller/hallazgos/${id}/`, data, isFormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : undefined);
+    return response.data;
+  },
+
+  eliminarFotoHallazgo: async (hallazgoId, fotoId) => {
+    const response = await api.delete(`taller/hallazgos/${hallazgoId}/fotos/${fotoId}/`);
     return response.data;
   },
 

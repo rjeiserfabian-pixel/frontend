@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  AppBar, Toolbar, IconButton, Typography, Drawer, 
+  AppBar, Toolbar, IconButton, Typography, Drawer, Button,
   List, ListItem, ListItemButton, ListItemIcon, ListItemText, 
   Avatar, Menu, MenuItem, Box, Divider, useTheme, useMediaQuery, Collapse, CircularProgress,
   Tooltip
@@ -325,7 +325,7 @@ export default function DashboardLayout() {
           }),
         }}
       >
-        <Toolbar sx={{ minHeight: '64px !important', gap: 1, px: { xs: 1, sm: 3 } }}>
+        <Toolbar sx={{ minHeight: '64px !important', gap: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 3 } }}>
           {/* Botón para expandir el sidebar - siempre visible en barra superior */}
           <IconButton
             color="inherit"
@@ -333,7 +333,7 @@ export default function DashboardLayout() {
             onClick={() => setOpen(true)}
             edge="start"
             sx={{
-              mr: 1,
+              mr: { xs: 0.5, sm: 1 },
               color: C.textMuted,
               bgcolor: alpha('#ffffff', 0.04),
               border: `1px solid ${C.border}`,
@@ -344,7 +344,8 @@ export default function DashboardLayout() {
             <MenuIcon />
           </IconButton>
           
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          {/* Título de la página (visible solo a partir de sm para no saturar móviles) */}
+          <Box sx={{ flexGrow: 1, minWidth: 0, display: { xs: 'none', sm: 'block' } }}>
             <Typography
               variant="h6"
               noWrap
@@ -354,6 +355,8 @@ export default function DashboardLayout() {
               {getCurrentTitle()}
             </Typography>
           </Box>
+          {/* Espaciador flexible en móviles para mantener alineación a la derecha */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'block', sm: 'none' } }} />
 
           {/* Selector de Sucursal */}
           {!loadingContext && (
@@ -361,24 +364,25 @@ export default function DashboardLayout() {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                mr: { xs: 0.5, md: 2 },
+                mr: { xs: 0.25, md: 2 },
                 bgcolor: alpha('#ffffff', 0.045),
                 border: `1px solid ${C.border}`,
-                px: { xs: 1, md: 1.5 },
+                px: { xs: 0.75, sm: 1, md: 1.5 },
                 py: 0.5,
                 borderRadius: '999px',
                 boxShadow: `inset 0 1px 0 ${alpha('#ffffff', 0.06)}`,
+                flexShrink: 0,
               }}
             >
-              <MapPin size={18} color={C.brandLight} style={{ marginRight: '8px' }} />
-              <FormControl variant="standard" sx={{ minWidth: { xs: 70, sm: 120 }, maxWidth: { xs: 110, sm: 'none' } }}>
+              <MapPin size={16} color={C.brandLight} style={{ marginRight: '6px' }} />
+              <FormControl variant="standard" sx={{ minWidth: { xs: 60, sm: 120 }, maxWidth: { xs: 90, sm: 'none' } }}>
                 <Select
                   value={activeSucursalId || ''}
                   onChange={(e) => changeSucursal(e.target.value)}
                   disableUnderline
                   displayEmpty
                   sx={{ 
-                    fontSize: '0.875rem', 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }, 
                     fontWeight: 600, 
                     color: C.text,
                     '& .MuiSelect-select': { py: 0.5 },
@@ -434,8 +438,8 @@ export default function DashboardLayout() {
             />
           )}
 
-          {/* User Profile Menu */}
-          <div>
+          {/* User Profile Menu (Solo visible en PC/Laptops para evitar duplicidad en móviles) */}
+          <Box sx={{ flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
             <IconButton
               size="large"
               aria-label="cuenta actual del usuario"
@@ -455,8 +459,8 @@ export default function DashboardLayout() {
                 src={getMediaUrl(user?.avatar_url)}
                 sx={{
                   bgcolor: C.brand,
-                  width: 36,
-                  height: 36,
+                  width: { xs: 32, sm: 36 },
+                  height: { xs: 32, sm: 36 },
                   border: `2px solid ${alpha('#ffffff', 0.18)}`,
                   boxShadow: `0 0 0 3px ${alpha(C.brand, 0.16)}`,
                 }}
@@ -501,7 +505,7 @@ export default function DashboardLayout() {
                 Cerrar Sesión
               </MenuItem>
             </Menu>
-          </div>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -521,7 +525,8 @@ export default function DashboardLayout() {
             // En celular el panel ocupa el ancho del menú (sin pasarse de la pantalla).
             width: esMovil ? DRAWER_WIDTH : drawerWidth,
             maxWidth: '86vw',
-            height: '100vh',
+            height: esMovil ? '100dvh' : '100vh',
+            maxHeight: esMovil ? '100dvh' : '100vh',
             transition: theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
               duration: open
@@ -547,6 +552,7 @@ export default function DashboardLayout() {
         {/* Encabezado del Sidebar: Logo + Nombre de empresa dinámicos */}
         <Box
           sx={{
+            flexShrink: 0,
             position: 'relative',
             zIndex: 2,
             display: 'flex',
@@ -662,20 +668,18 @@ export default function DashboardLayout() {
           )}
         </Box>
 
-        <Divider sx={{ borderColor: C.border, position: 'relative', zIndex: 2 }} />
+        <Divider sx={{ borderColor: C.border, position: 'relative', zIndex: 2, flexShrink: 0 }} />
         
         <List
           sx={{
             flex: '1 1 auto',
-            height: 0,
             minHeight: 0,
-            maxHeight: 'calc(100vh - 65px)',
             overflowY: 'auto',
             overflowX: 'hidden',
             overscrollBehavior: 'contain',
             px: open ? 1.5 : 1,
-            pt: 2.5,
-            pb: open ? 23 : 2.5,
+            pt: 2,
+            pb: !esMovil && open ? 24 : 1.5,
             position: 'relative',
             zIndex: 2,
             transition: 'padding 300ms ease',
@@ -841,115 +845,261 @@ export default function DashboardLayout() {
           })}
         </List>
 
-        <Box
-          sx={{
-            display: open ? 'block' : 'none',
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 230,
-            overflow: 'hidden',
-            pointerEvents: 'none',
-            zIndex: 1,
-            borderTop: 'none',
-            backgroundImage: `
-              linear-gradient(180deg, ${C.bg} 0%, ${alpha(C.bg, 0.62)} 18%, ${alpha(C.bg, 0.08)} 58%, ${alpha(C.bg, 0.86)} 100%),
-              linear-gradient(90deg, ${alpha(C.bg, 0.86)} 0%, transparent 42%, ${alpha(C.bg, 0.12)} 100%),
-              url('/sidebar-car-premium.jpg')
-            `,
-            backgroundSize: '118% auto',
-            backgroundPosition: 'center bottom',
-            boxShadow: 'none',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              inset: '44px 0 auto',
-              height: 76,
-              background: `
-                linear-gradient(110deg, transparent 8%, ${alpha(C.brandLight, 0.16)} 44%, transparent 66%),
-                linear-gradient(110deg, transparent 18%, ${alpha(C.brand, 0.28)} 48%, transparent 62%)
-              `,
-              filter: 'blur(2px)',
-              transform: 'skewY(-8deg)',
-              opacity: 0.78,
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              inset: 0,
-              background: `
-                radial-gradient(circle at 72% 66%, ${alpha(C.brandLight, 0.22)} 0, transparent 34%),
-                linear-gradient(180deg, ${alpha(C.bg, 0.42)} 0%, transparent 24%, ${alpha(C.bg, 0.58)} 100%)
-              `,
-            },
-          }}
-        >
+        {/* Decoración inferior de escritorio con sucursal */}
+        {!esMovil && (
           <Box
             sx={{
+              display: open ? 'block' : 'none',
               position: 'absolute',
-              left: 16,
-              right: 16,
-              bottom: 14,
+              left: 0,
+              right: 0,
+              bottom: 64,
+              height: 190,
+              overflow: 'hidden',
+              pointerEvents: 'none',
               zIndex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 1.25,
-              py: 1,
-              borderRadius: '8px',
-              border: `1px solid ${alpha(C.brandLight, 0.22)}`,
-              bgcolor: alpha(C.bgElevated, 0.72),
-              backdropFilter: 'blur(10px)',
-              boxShadow: `0 12px 28px ${alpha('#000000', 0.34)}, inset 0 1px 0 ${alpha('#ffffff', 0.06)}`,
+              borderTop: 'none',
+              backgroundImage: `
+                linear-gradient(180deg, ${C.bg} 0%, ${alpha(C.bg, 0.62)} 18%, ${alpha(C.bg, 0.08)} 58%, ${alpha(C.bg, 0.86)} 100%),
+                linear-gradient(90deg, ${alpha(C.bg, 0.86)} 0%, transparent 42%, ${alpha(C.bg, 0.12)} 100%),
+                url('/sidebar-car-premium.jpg')
+              `,
+              backgroundSize: '118% auto',
+              backgroundPosition: 'center bottom',
+              boxShadow: 'none',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                inset: '44px 0 auto',
+                height: 76,
+                background: `
+                  linear-gradient(110deg, transparent 8%, ${alpha(C.brandLight, 0.16)} 44%, transparent 66%),
+                  linear-gradient(110deg, transparent 18%, ${alpha(C.brand, 0.28)} 48%, transparent 62%)
+                `,
+                filter: 'blur(2px)',
+                transform: 'skewY(-8deg)',
+                opacity: 0.78,
+              },
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                background: `
+                  radial-gradient(circle at 72% 66%, ${alpha(C.brandLight, 0.22)} 0, transparent 34%),
+                  linear-gradient(180deg, ${alpha(C.bg, 0.42)} 0%, transparent 24%, ${alpha(C.bg, 0.58)} 100%)
+                `,
+              },
             }}
           >
             <Box
               sx={{
-                width: 30,
-                height: 30,
-                borderRadius: '8px',
+                position: 'absolute',
+                left: 16,
+                right: 16,
+                bottom: 14,
+                zIndex: 1,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: alpha(C.brand, 0.92),
-                color: '#ffffff',
-                flexShrink: 0,
+                gap: 1,
+                px: 1.25,
+                py: 1,
+                borderRadius: '8px',
+                border: `1px solid ${alpha(C.brandLight, 0.22)}`,
+                bgcolor: alpha(C.bgElevated, 0.72),
+                backdropFilter: 'blur(10px)',
+                boxShadow: `0 12px 28px ${alpha('#000000', 0.34)}, inset 0 1px 0 ${alpha('#ffffff', 0.06)}`,
               }}
             >
-              <MapPin size={16} />
-            </Box>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography
-                variant="caption"
+              <Box
                 sx={{
-                  display: 'block',
-                  color: C.text,
-                  fontWeight: 800,
-                  lineHeight: 1.1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  width: 30,
+                  height: 30,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: alpha(C.brand, 0.92),
+                  color: '#ffffff',
+                  flexShrink: 0,
                 }}
               >
-                {activeSucursal?.nombre || 'Sucursal Principal'}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  color: C.textMuted,
-                  fontSize: '0.68rem',
-                  lineHeight: 1.15,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Taller 360 | San Martin
-              </Typography>
+                <MapPin size={16} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    color: C.text,
+                    fontWeight: 800,
+                    lineHeight: 1.1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {activeSucursal?.nombre || 'Sucursal Principal'}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    color: C.textMuted,
+                    fontSize: '0.68rem',
+                    lineHeight: 1.15,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Taller 360 | San Martin
+                </Typography>
+              </Box>
             </Box>
           </Box>
+        )}
+
+        {/* Footer de Usuario y Cerrar Sesión en el Sidebar: solo visible en móvil (en desktop se usa el menú superior) */}
+        <Box
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            flexShrink: 0,
+            borderTop: `1px solid ${C.border}`,
+            bgcolor: alpha(C.bgElevated, 0.98),
+            backdropFilter: 'blur(16px)',
+            p: 1.5,
+            flexDirection: 'column',
+            gap: 1,
+            zIndex: 10,
+            position: 'relative',
+            boxShadow: `0 -4px 20px ${alpha('#000000', 0.45)}`,
+          }}
+        >
+          {open ? (
+            <>
+              {/* Tarjeta de información del usuario */}
+              <Box
+                onClick={() => irA('/seguridad/perfil')}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.25,
+                  minWidth: 0,
+                  cursor: 'pointer',
+                  p: 0.5,
+                  borderRadius: '8px',
+                  transition: 'background 0.2s',
+                  '&:hover': { bgcolor: alpha('#ffffff', 0.05) },
+                }}
+              >
+                <Avatar
+                  src={getMediaUrl(user?.avatar_url)}
+                  sx={{
+                    bgcolor: C.brand,
+                    width: 36,
+                    height: 36,
+                    border: `2px solid ${alpha(C.brandLight, 0.4)}`,
+                    fontSize: '0.875rem',
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {!user?.avatar_url && (user?.nombre?.charAt(0) || 'U')}
+                </Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight="700"
+                    sx={{
+                      color: C.text,
+                      lineHeight: 1.2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {user?.nombre ? `${user.nombre} ${user?.apellidos || ''}`.trim() : 'Mi Cuenta'}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: C.textMuted,
+                      fontSize: '0.72rem',
+                      display: 'block',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {user?.email || 'Ver mi perfil'}
+                  </Typography>
+                </Box>
+                <Tooltip title="Mi Perfil">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      irA('/seguridad/perfil');
+                    }}
+                    sx={{
+                      color: C.textMuted,
+                      p: 0.5,
+                      '&:hover': { color: C.text },
+                    }}
+                  >
+                    <Settings size={18} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
+              {/* Botón claro y directo de Cerrar Sesión (Opción A) */}
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => handleLogout()}
+                startIcon={<LogOut size={17} />}
+                sx={{
+                  color: C.brandLight,
+                  borderColor: alpha(C.brandLight, 0.35),
+                  bgcolor: alpha(C.brand, 0.1),
+                  fontWeight: 700,
+                  fontSize: '0.825rem',
+                  py: 0.85,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  letterSpacing: '0.02em',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: C.brand,
+                    borderColor: C.brand,
+                    color: '#ffffff',
+                  },
+                }}
+              >
+                Cerrar Sesión
+              </Button>
+            </>
+          ) : (
+            <Tooltip title="Cerrar Sesión" placement="right">
+              <IconButton
+                onClick={() => handleLogout()}
+                sx={{
+                  color: C.brandLight,
+                  bgcolor: alpha(C.brand, 0.12),
+                  border: `1px solid ${alpha(C.brandLight, 0.28)}`,
+                  p: 1,
+                  borderRadius: '8px',
+                  mx: 'auto',
+                  '&:hover': {
+                    bgcolor: C.brand,
+                    color: '#ffffff',
+                  },
+                }}
+              >
+                <LogOut size={20} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Drawer>
 
