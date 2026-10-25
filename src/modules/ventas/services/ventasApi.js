@@ -89,6 +89,11 @@ export const ventasService = {
     return response.data;
   },
 
+  convertirProformaAOt: async (id) => {
+    const response = await apiClient.post(`/proformas/${id}/convertir-a-ot/`);
+    return response.data;
+  },
+
   descargarProformaPdf: async (id) => {
     const response = await apiClient.get(`/proformas/${id}/pdf/`, { responseType: 'blob' });
     return response.data;

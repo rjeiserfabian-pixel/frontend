@@ -570,7 +570,7 @@ const ProformasPage = () => {
   const convertir = async (proforma) => {
     const result = await Swal.fire({
       title: 'Convertir a POS',
-      text: `Se creara una pre-venta para ${proforma.numero}.`,
+      text: `Se creará una pre-venta para ${proforma.numero}.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Convertir',
@@ -590,8 +590,72 @@ const ProformasPage = () => {
     }
   };
 
+  const convertirAOrden = async (proforma) => {
+    if (!proforma.vehiculo) {
+      Swal.fire({
+        title: 'Vehículo requerido',
+        text: 'Esta proforma no tiene un vehículo asignado. Para crear una Orden de Trabajo en taller, primero edita la proforma y selecciona el vehículo del cliente.',
+        icon: 'warning',
+        confirmButtonColor: '#0f172a',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Convertir a Orden de Trabajo',
+      html: `
+        <div style="text-align: left; font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          <p>¿Deseas generar una Orden de Trabajo en taller para la proforma <b>${proforma.numero}</b>?</p>
+          <div style="margin-top: 8px; padding: 10px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;">
+            <div>🚗 <b>Vehículo:</b> ${proforma.vehiculo_placa || 'Placa asignada'}</div>
+            <div>📋 <b>Estado inicial:</b> <span style="color: #818cf8; font-weight: bold;">RECEPCIONADO</span></div>
+            <div style="margin-top: 4px; font-size: 0.8rem; color: #94a3b8;">
+              Se transferirán los repuestos y servicios ya aprobados para iniciar la recepción física.
+            </div>
+          </div>
+          <p style="margin-top: 10px; font-size: 0.8rem; color: #f59e0b;">
+            ⚠️ <b>Aviso:</b> Al generar la OT, la opción de convertir a Venta/POS quedará deshabilitada para evitar duplicidades.
+          </p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, generar OT',
+      confirmButtonColor: '#6366f1',
+      cancelButtonText: 'Cancelar',
+      cancelButtonColor: '#64748b',
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      const orden = await ventasService.convertirProformaAOt(proforma.id);
+      Swal.fire({
+        title: '¡Orden de Trabajo Generada!',
+        html: `
+          <p style="margin-bottom: 6px;">Se generó la <b>OT-${orden.numero || orden.id}</b> correctamente en estado <b>RECEPCIONADO</b>.</p>
+          <p style="font-size: 0.85rem; color: #94a3b8;">Puedes acceder a ella para registrar el inventario de accesorios y fotos de ingreso.</p>
+        `,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Ir a la Orden',
+        confirmButtonColor: '#6366f1',
+        cancelButtonText: 'Quedarme aquí',
+        cancelButtonColor: '#64748b',
+      }).then((res) => {
+        if (res.isConfirmed) {
+          navigate(`/taller/ordenes/${orden.id}`);
+        }
+      });
+      cargarProformas();
+    } catch (err) {
+      const msg = err.response?.data?.error || err.response?.data?.detail || 'No se pudo convertir la proforma a orden de trabajo.';
+      Swal.fire('Error', msg, 'error');
+    }
+  };
+
   const estadoColor = (estado) => {
     if (estado === 'CONVERTIDA') return 'success';
+    if (estado === 'CONVERTIDA_OT') return 'secondary';
     if (estado === 'ANULADA' || estado === 'VENCIDA') return 'error';
     if (estado === 'BORRADOR') return 'default';
     return 'primary';
@@ -689,17 +753,78 @@ const ProformasPage = () => {
                 <TableCell>{p.forma_pago}</TableCell>
                 <TableCell>{p.valido_hasta ? new Date(`${p.valido_hasta}T00:00:00`).toLocaleDateString('es-PE') : '-'}</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800 }}>{money(p.total)}</TableCell>
-                <TableCell><Chip size="small" color={estadoColor(p.estado)} label={p.estado} /></TableCell>
+                <TableCell>
+                  {p.estado === 'CONVERTIDA_OT' ? (
+                    <Tooltip title={p.orden_trabajo_id ? "Clic para ver la Orden de Trabajo" : "Convertida a Orden de Trabajo"}>
+                      <Chip
+                        size="small"
+                        icon={<Wrench size={13} style={{ marginLeft: 6 }} />}
+                        label={p.orden_trabajo_numero ? `OT-${p.orden_trabajo_numero}` : 'Convertida a OT'}
+                        onClick={p.orden_trabajo_id ? () => navigate(`/taller/ordenes/${p.orden_trabajo_id}`) : undefined}
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: alpha('#6366f1', 0.16),
+                          color: '#818cf8',
+                          border: '1px solid rgba(99, 102, 241, 0.4)',
+                          cursor: p.orden_trabajo_id ? 'pointer' : 'default',
+                          '& .MuiChip-icon': { color: '#818cf8' },
+                          '&:hover': p.orden_trabajo_id ? { bgcolor: alpha('#6366f1', 0.28) } : {},
+                        }}
+                      />
+                    </Tooltip>
+                  ) : (
+                    <Chip size="small" color={estadoColor(p.estado)} label={p.estado} />
+                  )}
+                </TableCell>
                 <TableCell align="center">
-                  <IconButton title="Editar" onClick={() => editar(p)} disabled={p.estado === 'CONVERTIDA'} size="small" sx={{ mr: 0.75 }}>
-                    <Pencil size={18} />
-                  </IconButton>
-                  <IconButton title="PDF" color="primary" onClick={() => imprimir(p.id)} size="small" sx={{ mr: 0.75 }}>
-                    <Printer size={18} />
-                  </IconButton>
-                  <IconButton title="Convertir a POS" color="success" onClick={() => convertir(p)} disabled={p.estado === 'CONVERTIDA'} size="small">
-                    <Send size={18} />
-                  </IconButton>
+                  <Tooltip title={p.estado === 'CONVERTIDA' || p.estado === 'CONVERTIDA_OT' ? "Proforma convertida (no editable)" : "Editar"}>
+                    <span>
+                      <IconButton
+                        title="Editar"
+                        onClick={() => editar(p)}
+                        disabled={p.estado === 'CONVERTIDA' || p.estado === 'CONVERTIDA_OT' || p.estado === 'ANULADA'}
+                        size="small"
+                        sx={{ mr: 0.5 }}
+                      >
+                        <Pencil size={18} />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title="Imprimir PDF">
+                    <IconButton title="PDF" color="primary" onClick={() => imprimir(p.id)} size="small" sx={{ mr: 0.5 }}>
+                      <Printer size={18} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={p.estado === 'CONVERTIDA_OT' ? "Ya convertida a Orden de Trabajo" : (p.estado === 'CONVERTIDA' ? "Ya convertida a POS" : "Convertir a Orden de Trabajo")}>
+                    <span>
+                      <IconButton
+                        title="Convertir a Orden de Trabajo"
+                        onClick={() => convertirAOrden(p)}
+                        disabled={p.estado === 'CONVERTIDA' || p.estado === 'CONVERTIDA_OT' || p.estado === 'ANULADA'}
+                        size="small"
+                        sx={{
+                          mr: 0.5,
+                          color: (p.estado === 'CONVERTIDA' || p.estado === 'CONVERTIDA_OT' || p.estado === 'ANULADA') ? undefined : '#818cf8',
+                          '&:hover': { bgcolor: alpha('#6366f1', 0.12) }
+                        }}
+                      >
+                        <Wrench size={18} />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={p.estado === 'CONVERTIDA_OT' ? "Ya convertida a Orden de Trabajo" : (p.estado === 'CONVERTIDA' ? "Ya convertida a POS" : "Convertir a POS")}>
+                    <span>
+                      <IconButton
+                        title="Convertir a POS"
+                        color="success"
+                        onClick={() => convertir(p)}
+                        disabled={p.estado === 'CONVERTIDA' || p.estado === 'CONVERTIDA_OT' || p.estado === 'ANULADA'}
+                        size="small"
+                      >
+                        <Send size={18} />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

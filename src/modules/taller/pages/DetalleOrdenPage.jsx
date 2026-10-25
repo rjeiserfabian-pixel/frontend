@@ -7,7 +7,7 @@ import {
   LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck, FileText } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
@@ -45,6 +45,7 @@ export default function DetalleOrdenPage() {
   const puedeCobrarPos = tienePermiso('VENTAS.POS.CREAR');
   const puedeCambiarEstado = tienePermiso('ORDENES_TRABAJO.CAMBIAR_ESTADO');
   const puedeEditar = tienePermiso('ORDENES_TRABAJO.EDITAR');
+  const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
   const puedeExtenderVencimiento = tienePermiso('ORDENES_TRABAJO.EXTENDER_VENCIMIENTO');
   const puedePrometerEntrega = tienePermiso('ORDENES_TRABAJO.PROMETER_ENTREGA');
   const [orden, setOrden] = useState(null);
@@ -92,6 +93,13 @@ export default function DetalleOrdenPage() {
   // Evidencias / Fotos de Ingreso del Vehículo
   const [modalFotoGrande, setModalFotoGrande] = useState({ open: false, url: '', titulo: '' });
   const [subiendoEvidencia, setSubiendoEvidencia] = useState(false);
+
+  // Accesorios y Pertenencias en Custodia
+  const [accesoriosModalOpen, setAccesoriosModalOpen] = useState(false);
+  const [accesoriosCatalogo, setAccesoriosCatalogo] = useState([]);
+  const [accesoriosSeleccionados, setAccesoriosSeleccionados] = useState({});
+  const [guardandoAccesorios, setGuardandoAccesorios] = useState(false);
+  const [cargandoAccesoriosCatalogo, setCargandoAccesoriosCatalogo] = useState(false);
 
   useEffect(() => {
     fetchOrden();
@@ -145,11 +153,11 @@ export default function DetalleOrdenPage() {
 
   const getStockDisponibleRepuesto = (repuesto) => parseFloat(repuesto?.stock_total_disponible || 0);
 
-  const repuestosDisponiblesInventario = repuestosInventario.filter((repuesto) => getStockDisponibleRepuesto(repuesto) > 0);
+  const repuestosDisponiblesInventario = repuestosInventario;
 
   const cantidadNuevoRepuesto = parseFloat(nuevoRepuesto.cantidad || 0);
   const stockNuevoRepuesto = getStockDisponibleRepuesto(nuevoRepuesto.repuesto);
-  const cantidadRepuestoInvalida = !nuevoRepuesto.repuesto || cantidadNuevoRepuesto <= 0 || cantidadNuevoRepuesto > stockNuevoRepuesto;
+  const cantidadRepuestoInvalida = !nuevoRepuesto.repuesto || cantidadNuevoRepuesto <= 0;
 
   const handleAsignarMecanico = async () => {
     if (!selectedMecanico) return;
@@ -664,6 +672,14 @@ export default function DetalleOrdenPage() {
       fetchOrden();
     } catch (err) {
       console.error(err);
+      const msg = err.response?.data?.error || err.response?.data?.detail || 'No se pudo actualizar la instalación.';
+      Swal.fire({
+        icon: 'warning',
+        title: 'Stock no disponible',
+        text: msg,
+        confirmButtonColor: '#f59e0b',
+        confirmButtonText: 'Entendido'
+      });
     }
   };
 
@@ -750,6 +766,7 @@ export default function DetalleOrdenPage() {
   const puedeAgregarHallazgo = esEditable && hayMecanicoAsignado && puedeEditar;
   const puedeEditarSubrecursos = esEditable && puedeEditar;
   const puedeEliminarSubrecursos = esEditable && tienePermiso('ORDENES_TRABAJO.ELIMINAR');
+  const puedeGestionarAccesorios = esEditable && (tienePermiso('ORDENES_TRABAJO.GESTIONAR_ACCESORIOS') || puedeCrear);
   const isExpirada = orden.fecha_vencimiento_cotizacion && new Date() > new Date(orden.fecha_vencimiento_cotizacion);
   const historialCancelacion = estaCancelada
     ? [...(orden.historial_estados || [])].reverse().find(h => h.estado === 'CANCELADO')
@@ -826,6 +843,97 @@ export default function DetalleOrdenPage() {
     }
   };
 
+  const fetchAccesoriosCatalogo = async () => {
+    try {
+      setCargandoAccesoriosCatalogo(true);
+      const res = await tallerService.getAccesorios({ activo: true, sin_paginar: true });
+      const data = res.results || (Array.isArray(res) ? res : []);
+      setAccesoriosCatalogo(data);
+    } catch (err) {
+      console.error('Error cargando catálogo de accesorios:', err);
+    } finally {
+      setCargandoAccesoriosCatalogo(false);
+    }
+  };
+
+  const handleOpenAccesoriosModal = () => {
+    fetchAccesoriosCatalogo();
+    const actual = {};
+    (orden.accesorios_pertenencias || []).forEach(item => {
+      const accId = item.accesorio || item.accesorio_id || (item.accesorio_detalle && item.accesorio_detalle.id);
+      if (accId) {
+        actual[accId] = {
+          checked: true,
+          cantidad: item.cantidad || 1,
+          estado_conservacion: item.estado_conservacion || 'BUENO',
+          observaciones: item.observaciones || ''
+        };
+      }
+    });
+    setAccesoriosSeleccionados(actual);
+    setAccesoriosModalOpen(true);
+  };
+
+  const handleToggleAccesorioModal = (accesorioId) => {
+    setAccesoriosSeleccionados(prev => {
+      const actual = prev[accesorioId];
+      if (actual && actual.checked) {
+        const copy = { ...prev };
+        delete copy[accesorioId];
+        return copy;
+      }
+      return {
+        ...prev,
+        [accesorioId]: {
+          checked: true,
+          cantidad: 1,
+          estado_conservacion: 'BUENO',
+          observaciones: ''
+        }
+      };
+    });
+  };
+
+  const handleAccesorioItemChange = (accesorioId, campo, valor) => {
+    setAccesoriosSeleccionados(prev => ({
+      ...prev,
+      [accesorioId]: {
+        ...(prev[accesorioId] || { checked: true, cantidad: 1, estado_conservacion: 'BUENO', observaciones: '' }),
+        [campo]: valor
+      }
+    }));
+  };
+
+  const handleGuardarAccesorios = async () => {
+    const payload = Object.entries(accesoriosSeleccionados)
+      .filter(([_, item]) => item && item.checked)
+      .map(([id, item]) => ({
+        accesorio_id: parseInt(id, 10),
+        cantidad: Math.max(1, parseInt(item.cantidad, 10) || 1),
+        estado_conservacion: item.estado_conservacion || 'BUENO',
+        observaciones: (item.observaciones || '').trim()
+      }));
+
+    try {
+      setGuardandoAccesorios(true);
+      await tallerService.guardarAccesoriosOrden(id, payload);
+      setAccesoriosModalOpen(false);
+      fetchOrden();
+      Swal.fire({
+        icon: 'success',
+        title: 'Accesorios en custodia actualizados',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      console.error('Error al guardar accesorios:', err);
+      const msg = err.response?.data?.error || err.response?.data?.detail || 'No se pudieron guardar los accesorios en custodia.';
+      Swal.fire('Error', msg, 'error');
+    } finally {
+      setGuardandoAccesorios(false);
+    }
+  };
+
   return (
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
       
@@ -837,10 +945,26 @@ export default function DetalleOrdenPage() {
               <ArrowLeft size={20} />
             </IconButton>
             <Box>
-              <Typography variant="h4" fontWeight="800" color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Settings size={28} className="text-sky-300" />
-                OT-{orden.numero}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Typography variant="h4" fontWeight="800" color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Settings size={28} className="text-sky-300" />
+                  OT-{orden.numero}
+                </Typography>
+                {orden.proforma_origen_numero && (
+                  <Chip
+                    icon={<FileText size={14} style={{ marginLeft: 6 }} />}
+                    label={`Origen: ${orden.proforma_origen_numero}`}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: alpha(C.blue, 0.12),
+                      color: C.blue,
+                      border: `1px solid ${alpha(C.blue, 0.3)}`,
+                      '& .MuiChip-icon': { color: 'inherit' }
+                    }}
+                  />
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary" fontWeight="500">
                 Creado el {orden.fecha_ingreso ? new Date(orden.fecha_ingreso).toLocaleDateString() : 'Fecha no registrada'}
               </Typography>
@@ -1254,25 +1378,33 @@ export default function DetalleOrdenPage() {
                       />
                     )}
                     <Box display="flex" flexDirection="column" gap={2}>
-                      {orden.repuestos.filter(r => r.aprobado_cliente).map(r => (
-                        <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#ffffff', 0.035) }}>
-                          <Box>
-                            <Typography variant="body2" fontWeight="600">{r.repuesto_detalle?.nombre}</Typography>
-                            <Typography variant="caption" color="text.secondary">Cant: {parseFloat(r.cantidad)}</Typography>
-                          </Box>
-                          <Button 
-                            variant={r.instalado ? "contained" : "outlined"}
-                            color={r.instalado ? "success" : "warning"}
-                            size="small"
-                            onClick={() => handleToggleInstalado(r.id)}
-                            disabled={!puedeEditar}
-                            startIcon={r.instalado ? <CheckCircle size={16}/> : <Clock size={16}/>}
-                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
-                          >
-                            {r.instalado ? 'Instalado' : 'Pendiente'}
-                          </Button>
-                        </Paper>
-                      ))}
+                      {orden.repuestos.filter(r => r.aprobado_cliente).map(r => {
+                        const tieneStock = r.instalado || r.tiene_stock_suficiente || (parseFloat(r.repuesto_detalle?.stock_total_disponible || 0) >= parseFloat(r.cantidad || 0));
+                        return (
+                          <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#ffffff', 0.035) }}>
+                            <Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="body2" fontWeight="600">{r.repuesto_detalle?.nombre}</Typography>
+                                {!r.instalado && !tieneStock && (
+                                  <Chip label="⚠️ Requiere Compra" size="small" color="warning" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                                )}
+                              </Box>
+                              <Typography variant="caption" color="text.secondary">Cant: {parseFloat(r.cantidad)}</Typography>
+                            </Box>
+                            <Button 
+                              variant={r.instalado ? "contained" : "outlined"}
+                              color={r.instalado ? "success" : tieneStock ? "warning" : "warning"}
+                              size="small"
+                              onClick={() => handleToggleInstalado(r.id)}
+                              disabled={!puedeEditar}
+                              startIcon={r.instalado ? <CheckCircle size={16}/> : <Clock size={16}/>}
+                              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+                            >
+                              {r.instalado ? 'Instalado' : (tieneStock ? 'Pendiente' : 'Sin Stock')}
+                            </Button>
+                          </Paper>
+                        );
+                      })}
                       {orden.repuestos.filter(r => r.aprobado_cliente).length === 0 && (
                         <Typography variant="body2" color="text.secondary">No hay repuestos aprobados.</Typography>
                       )}
@@ -1557,18 +1689,29 @@ export default function DetalleOrdenPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    orden.repuestos.map(r => (
-                      <TableRow key={r.id} hover>
-                        <TableCell sx={{ fontWeight: 500 }}>
-                          {r.repuesto_detalle?.nombre || 'Repuesto'}
-                          {r.repuesto_detalle?.codigo_fabricante && <Typography variant="caption" display="block" color="text.secondary">{r.repuesto_detalle.codigo_fabricante}</Typography>}
-                        </TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 600 }}>{parseFloat(r.cantidad).toString()}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>S/ {parseFloat(r.precio_unitario).toFixed(2)}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          S/ {(parseFloat(r.cantidad) * parseFloat(r.precio_unitario)).toFixed(2)}
-                        </TableCell>
-                        <TableCell align="center">
+                    orden.repuestos.map(r => {
+                      const tieneStock = r.instalado || r.tiene_stock_suficiente || (parseFloat(r.repuesto_detalle?.stock_total_disponible || 0) >= parseFloat(r.cantidad || 0));
+                      return (
+                        <TableRow key={r.id} hover>
+                          <TableCell sx={{ fontWeight: 500 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                              <span>{r.repuesto_detalle?.nombre || 'Repuesto'}</span>
+                              {r.instalado ? (
+                                <Chip label="Instalado" size="small" color="success" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                              ) : tieneStock ? (
+                                <Chip label="En stock" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }} />
+                              ) : (
+                                <Chip label="⚠️ Sin stock (Por comprar)" size="small" color="warning" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                              )}
+                            </Box>
+                            {r.repuesto_detalle?.codigo_fabricante && <Typography variant="caption" display="block" color="text.secondary">{r.repuesto_detalle.codigo_fabricante}</Typography>}
+                          </TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 600 }}>{parseFloat(r.cantidad).toString()}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>S/ {parseFloat(r.precio_unitario).toFixed(2)}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                            S/ {(parseFloat(r.cantidad) * parseFloat(r.precio_unitario)).toFixed(2)}
+                          </TableCell>
+                          <TableCell align="center">
                           {(puedeEditarSubrecursos || puedeEliminarSubrecursos) && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.25 }}>
                               {puedeEditarSubrecursos && (
@@ -1585,8 +1728,9 @@ export default function DetalleOrdenPage() {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
+                    );
+                  })
+                )}
                 </TableBody>
                 {orden.repuestos.length > 0 && (
                   <TableBody>
@@ -1774,6 +1918,28 @@ export default function DetalleOrdenPage() {
                     Inventario de herramientas, extintor, repuesto y objetos del cliente recibidos al momento del ingreso.
                   </Typography>
                 </Box>
+                {puedeGestionarAccesorios && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={(orden.accesorios_pertenencias || []).length > 0 ? <Pencil size={15} /> : <Plus size={15} />}
+                    onClick={handleOpenAccesoriosModal}
+                    sx={{
+                      borderRadius: '8px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.82rem',
+                      color: '#f43f5e',
+                      borderColor: 'rgba(244, 63, 94, 0.4)',
+                      '&:hover': {
+                        borderColor: '#f43f5e',
+                        bgcolor: 'rgba(244, 63, 94, 0.08)'
+                      }
+                    }}
+                  >
+                    {(orden.accesorios_pertenencias || []).length > 0 ? 'Modificar Custodia' : 'Registrar Custodia'}
+                  </Button>
+                )}
               </Box>
 
               <Box sx={{ p: 3 }}>
@@ -2301,22 +2467,32 @@ export default function DetalleOrdenPage() {
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <Autocomplete
             options={repuestosDisponiblesInventario}
-            getOptionLabel={(option) => `${option.nombre} ${option.codigo_fabricante ? `(${option.codigo_fabricante})` : ''} | Stock: ${getStockDisponibleRepuesto(option)}`}
+            getOptionLabel={(option) => {
+              const stock = getStockDisponibleRepuesto(option);
+              const stockTxt = stock > 0 ? `Stock: ${stock}` : '⚠️ Sin stock (Requiere compra)';
+              return `${option.nombre} ${option.codigo_fabricante ? `(${option.codigo_fabricante})` : ''} | ${stockTxt}`;
+            }}
             onChange={(e, val) => setNuevoRepuesto({...nuevoRepuesto, repuesto: val, precio_unitario: val?.precio_lista || 0})}
-            renderInput={(params) => <TextField {...params} label="Buscar Repuesto en Inventario" fullWidth />}
-            noOptionsText="No hay repuestos con stock disponible"
+            renderInput={(params) => <TextField {...params} label="Buscar Repuesto en Catálogo" fullWidth />}
+            noOptionsText="No se encontraron repuestos en el catálogo"
           />
           {nuevoRepuesto.repuesto && (
-            <Alert severity={cantidadRepuestoInvalida ? 'warning' : 'info'} sx={{ borderRadius: '10px' }}>
-              Stock disponible: <strong>{stockNuevoRepuesto}</strong>
-            </Alert>
+            stockNuevoRepuesto > 0 ? (
+              <Alert severity="info" sx={{ borderRadius: '10px' }}>
+                Stock disponible en almacén: <strong>{stockNuevoRepuesto}</strong>
+              </Alert>
+            ) : (
+              <Alert severity="warning" sx={{ borderRadius: '10px' }}>
+                ⚠️ <strong>Sin stock en almacén:</strong> Este repuesto se agregará a la cotización como <em>Pendiente de compra</em>. Deberá registrar su compra en el módulo de Compras antes de que el mecánico pueda instalarlo.
+              </Alert>
+            )
           )}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField 
               label="Cantidad" type="number" fullWidth 
               value={nuevoRepuesto.cantidad} onChange={e => setNuevoRepuesto({...nuevoRepuesto, cantidad: e.target.value})}
               error={!!nuevoRepuesto.repuesto && cantidadRepuestoInvalida}
-              helperText={nuevoRepuesto.repuesto && cantidadRepuestoInvalida ? `Debe ser mayor a 0 y no superar ${stockNuevoRepuesto}` : ''}
+              helperText={nuevoRepuesto.repuesto && cantidadRepuestoInvalida ? 'La cantidad debe ser mayor a 0' : ''}
             />
             <TextField 
               label="Precio Unitario (S/)" type="number" fullWidth 
@@ -2412,6 +2588,211 @@ export default function DetalleOrdenPage() {
             />
           )}
         </DialogContent>
+      </Dialog>
+
+      {/* Modal Accesorios y Pertenencias en Custodia */}
+      <Dialog
+        open={accesoriosModalOpen}
+        onClose={() => !guardandoAccesorios && setAccesoriosModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            bgcolor: C.surface,
+            border: `1px solid ${C.border}`
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, borderBottom: `1px solid ${C.border}` }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <ShieldCheck size={24} className="text-rose-500" />
+            <Box>
+              <Typography variant="h6" fontWeight="700">
+                Accesorios y Pertenencias en Custodia
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Vehículo {orden.vehiculo_detalle?.placa || ''} — OT-{orden.numero}
+              </Typography>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, mt: 1 }}>
+            Marque los accesorios y pertenencias que el cliente deja dentro del vehículo e indique su cantidad, estado de conservación y observaciones.
+          </Typography>
+
+          {cargandoAccesoriosCatalogo ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : accesoriosCatalogo.length === 0 ? (
+            <Alert severity="info" sx={{ borderRadius: '10px' }}>
+              No hay accesorios configurados en el catálogo. Puedes configurarlos en Taller &gt; Accesorios y Pertenencias.
+            </Alert>
+          ) : (
+            <Grid container spacing={2}>
+              {accesoriosCatalogo.map((acc) => {
+                const sel = accesoriosSeleccionados[acc.id];
+                const isChecked = !!sel?.checked;
+
+                return (
+                  <Grid size={{ xs: 12, sm: 6 }} key={acc.id}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: '12px',
+                        border: `1px solid ${isChecked ? 'rgba(244, 63, 94, 0.6)' : C.border}`,
+                        bgcolor: isChecked ? 'rgba(244, 63, 94, 0.05)' : alpha(C.surface, 0.5),
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={isChecked}
+                              onChange={() => handleToggleAccesorioModal(acc.id)}
+                              sx={{
+                                color: 'text.secondary',
+                                '&.Mui-checked': { color: '#f43f5e' }
+                              }}
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="subtitle2" fontWeight="700" color={isChecked ? 'text.primary' : 'text.secondary'}>
+                                {acc.nombre}
+                              </Typography>
+                              {acc.descripcion && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {acc.descripcion}
+                                </Typography>
+                              )}
+                            </Box>
+                          }
+                          sx={{ m: 0, flex: 1, alignItems: 'flex-start' }}
+                        />
+                        {isChecked && (
+                          <Chip
+                            label="En custodia"
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              bgcolor: 'rgba(244, 63, 94, 0.15)',
+                              color: '#f43f5e',
+                              border: '1px solid rgba(244, 63, 94, 0.3)'
+                            }}
+                          />
+                        )}
+                      </Box>
+
+                      {isChecked && (
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${alpha(C.border, 0.6)}`, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <TextField
+                              label="Cant."
+                              type="number"
+                              size="small"
+                              value={sel.cantidad || 1}
+                              onChange={(e) => handleAccesorioItemChange(acc.id, 'cantidad', e.target.value)}
+                              inputProps={{ min: 1, max: 99 }}
+                              sx={{ width: 80 }}
+                            />
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="caption" fontWeight="600" color="text.secondary" display="block" mb={0.5}>
+                                Estado
+                              </Typography>
+                              <ToggleButtonGroup
+                                value={sel.estado_conservacion || 'BUENO'}
+                                exclusive
+                                size="small"
+                                onChange={(e, val) => val && handleAccesorioItemChange(acc.id, 'estado_conservacion', val)}
+                                fullWidth
+                              >
+                                <ToggleButton
+                                  value="BUENO"
+                                  sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    fontSize: '0.72rem',
+                                    py: 0.3,
+                                    '&.Mui-selected': { bgcolor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }
+                                  }}
+                                >
+                                  Bueno
+                                </ToggleButton>
+                                <ToggleButton
+                                  value="REGULAR"
+                                  sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    fontSize: '0.72rem',
+                                    py: 0.3,
+                                    '&.Mui-selected': { bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }
+                                  }}
+                                >
+                                  Regular
+                                </ToggleButton>
+                                <ToggleButton
+                                  value="MALO"
+                                  sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    fontSize: '0.72rem',
+                                    py: 0.3,
+                                    '&.Mui-selected': { bgcolor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }
+                                  }}
+                                >
+                                  Malo
+                                </ToggleButton>
+                              </ToggleButtonGroup>
+                            </Box>
+                          </Box>
+                          <TextField
+                            label="Observaciones (opcional)"
+                            size="small"
+                            placeholder="Detalle o estado específico..."
+                            value={sel.observaciones || ''}
+                            onChange={(e) => handleAccesorioItemChange(acc.id, 'observaciones', e.target.value)}
+                            fullWidth
+                          />
+                        </Box>
+                      )}
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, borderTop: `1px solid ${C.border}` }}>
+          <Button
+            onClick={() => setAccesoriosModalOpen(false)}
+            color="inherit"
+            disabled={guardandoAccesorios}
+            sx={{ fontWeight: 600 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleGuardarAccesorios}
+            disabled={guardandoAccesorios}
+            sx={{
+              borderRadius: '10px',
+              fontWeight: 600,
+              bgcolor: '#f43f5e',
+              '&:hover': { bgcolor: '#e11d48' },
+              boxShadow: 'none'
+            }}
+          >
+            {guardandoAccesorios ? <CircularProgress size={20} color="inherit" /> : 'Guardar Pertenencias'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
     </Box>

@@ -49,6 +49,7 @@ const ETIQUETA_ACCION = {
   VER_MENU: 'Ver en menú',
   EXTENDER_VENCIMIENTO: 'Extender vencimiento',
   PROMETER_ENTREGA: 'Prometer entrega',
+  GESTIONAR_ACCESORIOS: 'Pertenencias en custodia',
 };
 
 export default function RolPermisosPage() {
