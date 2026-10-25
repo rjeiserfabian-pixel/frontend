@@ -4,10 +4,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, IconButton,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions, Chip,
   Stepper, Step, StepLabel, Autocomplete, Checkbox, FormControlLabel, FormGroup, Alert,
-  LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
+  LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip,
+  Menu, MenuItem, ListItemIcon, ListItemText
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck, FileText, Building2 } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck, FileText, Building2, ChevronDown } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
@@ -57,6 +58,7 @@ export default function DetalleOrdenPage() {
   const [repuestoModal, setRepuestoModal] = useState(false);
   const [mecanicoModal, setMecanicoModal] = useState(false);
   const [aprobacionModal, setAprobacionModal] = useState(false);
+  const [menuImprimirAnchor, setMenuImprimirAnchor] = useState(null);
   
   const [serviciosSeleccionados, setServiciosSeleccionados] = useState([]);
   const [repuestosSeleccionados, setRepuestosSeleccionados] = useState([]);
@@ -546,7 +548,8 @@ export default function DetalleOrdenPage() {
     }
   };
 
-  const handleImprimirPDF = async () => {
+  const handleImprimirCotizacion = async () => {
+    setMenuImprimirAnchor(null);
     try {
       const res = await api.get(`taller/ordenes/${id}/generar_pdf/`, {
         responseType: 'blob',
@@ -556,8 +559,31 @@ export default function DetalleOrdenPage() {
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');
     } catch (err) {
-      console.error("Error al generar PDF", err);
-      alert("Error al generar el PDF de la cotización.");
+      console.error("Error al generar PDF de cotización", err);
+      Swal.fire('Error', 'No se pudo generar el PDF de la cotización.', 'error');
+    }
+  };
+
+  const handleImprimirActaEntrega = async () => {
+    setMenuImprimirAnchor(null);
+    try {
+      const res = await api.get(`taller/ordenes/${id}/acta-entrega-pdf/`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error("Error al generar Acta de Entrega", err);
+      Swal.fire('Error', 'No se pudo generar el PDF del Acta de Entrega.', 'error');
+    }
+  };
+
+  const handleBotonImprimirClick = (e) => {
+    if (['FINALIZADO', 'FACTURADO'].includes(orden?.estado)) {
+      setMenuImprimirAnchor(e.currentTarget);
+    } else {
+      handleImprimirCotizacion();
     }
   };
 
@@ -591,12 +617,91 @@ export default function DetalleOrdenPage() {
   };
 
   const handleFinalizarOrden = async () => {
+    const kmActual = orden?.vehiculo_detalle?.kilometraje_actual || orden?.kilometraje_ingreso || '';
+    const kmIngreso = orden?.kilometraje_ingreso || 0;
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Finalizar y Entregar Vehículo',
+      html: `
+        <div style="text-align: left; font-size: 13.5px; font-family: inherit;">
+          <p style="margin-bottom: 12px; color: #475569; line-height: 1.45;">
+            Al confirmar, la Orden de Trabajo pasará al estado <b>Finalizado</b> y se generará automáticamente el <b>Acta de Entrega y Liquidación Técnica</b> oficial.
+          </p>
+          <div style="margin-bottom: 14px;">
+            <label style="display: block; font-weight: 700; color: #0f172a; margin-bottom: 5px; font-size: 13px;">
+              Kilometraje de Entrega (Km):
+            </label>
+            <input id="swal-km-salida" type="number" min="${kmIngreso}" value="${kmActual}" class="swal2-input" style="width: 100%; margin: 0; box-sizing: border-box; font-size: 14px;" placeholder="Ej. ${kmIngreso ? kmIngreso + 5 : '15000'}" />
+            <span style="font-size: 11.5px; color: #64748b; margin-top: 4px; display: block;">
+              Kilometraje inicial al ingresar al taller: <b>${kmIngreso ? kmIngreso + ' km' : 'Sin registro'}</b>.
+            </span>
+          </div>
+          <div>
+            <label style="display: block; font-weight: 700; color: #0f172a; margin-bottom: 5px; font-size: 13px;">
+              Observaciones / Recomendaciones Técnicas al Cliente (opcional):
+            </label>
+            <textarea id="swal-obs-entrega" class="swal2-textarea" style="width: 100%; margin: 0; box-sizing: border-box; height: 80px; font-size: 13px;" placeholder="Ej. Vehículo probado en ruta. Se recomienda revisión de frenos en 5,000 km."></textarea>
+          </div>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, Finalizar y Generar Acta',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#0f172a',
+      cancelButtonColor: '#64748b',
+      focusConfirm: false,
+      preConfirm: () => {
+        const kmSalidaInput = document.getElementById('swal-km-salida').value.trim();
+        const obsInput = document.getElementById('swal-obs-entrega').value.trim();
+
+        if (kmSalidaInput !== '') {
+          const num = parseInt(kmSalidaInput, 10);
+          if (isNaN(num) || num < 0) {
+            Swal.showValidationMessage('El kilometraje debe ser un número entero válido.');
+            return false;
+          }
+          if (kmIngreso > 0 && num < kmIngreso) {
+            Swal.showValidationMessage(`El kilometraje de entrega (${num} km) no puede ser menor al de ingreso (${kmIngreso} km).`);
+            return false;
+          }
+        }
+        return {
+          kilometraje_salida: kmSalidaInput ? parseInt(kmSalidaInput, 10) : null,
+          observaciones_entrega: obsInput
+        };
+      }
+    });
+
+    if (!formValues) return;
+
     try {
-      await tallerService.finalizarOrden(id);
-      fetchOrden();
+      Swal.fire({
+        title: 'Finalizando orden...',
+        text: 'Generando Acta de Entrega y Liquidación',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      await tallerService.finalizarOrden(id, formValues);
+      await fetchOrden();
+
+      Swal.fire({
+        icon: 'success',
+        title: '¡Orden Finalizada!',
+        text: 'La orden ha sido finalizada con éxito y el Acta de Entrega está lista.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Abrir automáticamente el Acta de Entrega en una nueva pestaña
+      handleImprimirActaEntrega();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Error al finalizar la orden");
+      const msg = err.response?.data?.error || err.response?.data?.detail || "Error al finalizar la orden";
+      Swal.fire('Error', msg, 'error');
     }
   };
 
@@ -991,9 +1096,61 @@ export default function DetalleOrdenPage() {
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <Button variant="outlined" color="inherit" onClick={handleImprimirPDF} startIcon={<Printer size={18} />} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={handleBotonImprimirClick}
+              startIcon={<Printer size={18} />}
+              endIcon={['FINALIZADO', 'FACTURADO'].includes(orden?.estado) ? <ChevronDown size={14} /> : undefined}
+              sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+            >
               Imprimir
             </Button>
+            {['FINALIZADO', 'FACTURADO'].includes(orden?.estado) && (
+              <Menu
+                anchorEl={menuImprimirAnchor}
+                open={Boolean(menuImprimirAnchor)}
+                onClose={() => setMenuImprimirAnchor(null)}
+                PaperProps={{
+                  sx: {
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)',
+                    minWidth: 270,
+                    mt: 1,
+                    p: 0.5
+                  }
+                }}
+              >
+                <MenuItem
+                  onClick={handleImprimirCotizacion}
+                  sx={{ borderRadius: '8px', py: 1.2, gap: 1.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 'auto', color: 'primary.main' }}>
+                    <FileText size={18} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Imprimir Cotización Inicial"
+                    secondary="Proforma y presupuesto inicial"
+                    primaryTypographyProps={{ fontSize: '13px', fontWeight: 600 }}
+                    secondaryTypographyProps={{ fontSize: '11px', color: 'text.secondary' }}
+                  />
+                </MenuItem>
+                <MenuItem
+                  onClick={handleImprimirActaEntrega}
+                  sx={{ borderRadius: '8px', py: 1.2, gap: 1.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 'auto', color: '#16a34a' }}>
+                    <CheckCircle size={18} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Imprimir Acta de Entrega / Liquidación"
+                    secondary="Liquidación final, trabajos y firmas"
+                    primaryTypographyProps={{ fontSize: '13px', fontWeight: 600, color: '#16a34a' }}
+                    secondaryTypographyProps={{ fontSize: '11px', color: 'text.secondary' }}
+                  />
+                </MenuItem>
+              </Menu>
+            )}
             <Button
               variant="contained"
               color="success"
@@ -1499,18 +1656,37 @@ export default function DetalleOrdenPage() {
             <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: alpha(C.blue, 0.14), border: `1px solid ${alpha(C.blue, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight="700" color="#1e3a8a" mb={0.5}>Orden de Trabajo Finalizada</Typography>
-                <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja.</Typography>
+                <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja o consultar el Acta de Entrega.</Typography>
               </Box>
-              {puedeCobrarPos && (
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                 <Button
-                  variant="contained"
+                  variant="outlined"
                   size="large"
-                  sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none' }}
-                  onClick={handleEnviarAPos}
+                  startIcon={<Printer size={18} />}
+                  onClick={handleImprimirActaEntrega}
+                  sx={{
+                    borderColor: '#1e40af',
+                    color: '#1e3a8a',
+                    '&:hover': { bgcolor: alpha(C.blue, 0.1) },
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    px: 3,
+                    textTransform: 'none'
+                  }}
                 >
-                  Cobrar en Punto de Venta
+                  Ver Acta de Entrega
                 </Button>
-              )}
+                {puedeCobrarPos && (
+                  <Button
+                    variant="contained"
+                    size="large"
+                    sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, borderRadius: '12px', fontWeight: 600, px: 4, boxShadow: 'none', textTransform: 'none' }}
+                    onClick={handleEnviarAPos}
+                  >
+                    Cobrar en Punto de Venta
+                  </Button>
+                )}
+              </Box>
             </Paper>
           )}
 

@@ -114,8 +114,8 @@ export const tallerService = {
     return response.data;
   },
 
-  finalizarOrden: async (id) => {
-    const response = await api.post(`taller/ordenes/${id}/finalizar_orden/`);
+  finalizarOrden: async (id, data = {}) => {
+    const response = await api.post(`taller/ordenes/${id}/finalizar_orden/`, data);
     return response.data;
   },
 
