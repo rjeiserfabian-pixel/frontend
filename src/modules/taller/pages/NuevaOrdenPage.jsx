@@ -13,6 +13,7 @@ import api from '../../../core/api/axios';
 import VehiculosForm from '../../vehiculos/components/VehiculosForm';
 import ClientesForm from '../../clientes/components/ClientesForm';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
+import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { premiumTokens } from '../../../core/theme/theme';
 import { compressImage } from '../../../utils/imageCompressor';
 
@@ -21,6 +22,7 @@ const S = premiumTokens.shadow;
 
 export default function NuevaOrdenPage() {
   const navigate = useNavigate();
+  const { activeSucursalId } = useSucursal();
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
   const puedeCrearTipoServicio = tienePermiso('TIPOS_SERVICIO.CREAR');
@@ -284,6 +286,7 @@ export default function NuevaOrdenPage() {
       setLoading(true);
       
       const payload = {
+        sucursal: activeSucursalId,
         cliente: formData.cliente_id,
         vehiculo: formData.vehiculo_id,
         tipo_servicio: formData.tipo_servicio_id,

@@ -7,7 +7,7 @@ import {
   LinearProgress, ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, MessageSquare, Wrench, Settings, ClipboardList, Package, User, CheckCircle, Clock, Ban, Calendar, Coins, AlertTriangle, Pencil, X, Camera, UploadCloud, Trash2, Image as ImageIcon, ShieldCheck, FileText, Building2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tallerService } from '../services/tallerService';
@@ -672,7 +672,13 @@ export default function DetalleOrdenPage() {
       fetchOrden();
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.error || err.response?.data?.detail || 'No se pudo actualizar la instalación.';
+      const data = err.response?.data;
+      const msg = (Array.isArray(data) ? data[0] : null) ||
+                  data?.error || 
+                  data?.detail || 
+                  (data?.non_field_errors && data.non_field_errors[0]) ||
+                  (typeof data === 'string' ? data : null) ||
+                  'No se pudo actualizar la instalación.';
       Swal.fire({
         icon: 'warning',
         title: 'Stock no disponible',
@@ -960,6 +966,20 @@ export default function DetalleOrdenPage() {
                       bgcolor: alpha(C.blue, 0.12),
                       color: C.blue,
                       border: `1px solid ${alpha(C.blue, 0.3)}`,
+                      '& .MuiChip-icon': { color: 'inherit' }
+                    }}
+                  />
+                )}
+                {orden.sucursal_nombre && (
+                  <Chip
+                    icon={<Building2 size={14} style={{ marginLeft: 6 }} />}
+                    label={orden.sucursal_nombre}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: alpha(C.emerald, 0.12),
+                      color: C.emerald,
+                      border: `1px solid ${alpha(C.emerald, 0.3)}`,
                       '& .MuiChip-icon': { color: 'inherit' }
                     }}
                   />
@@ -1333,8 +1353,25 @@ export default function DetalleOrdenPage() {
                     )}
                     <Box display="flex" flexDirection="column" gap={2}>
                       {orden.servicios.filter(s => s.aprobado_cliente).map(s => (
-                        <Paper key={s.id} elevation={0} sx={{ p: 2, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#ffffff', 0.035) }}>
-                          <Typography variant="body2" fontWeight="600">{s.descripcion}</Typography>
+                        <Paper 
+                          key={s.id} 
+                          elevation={0} 
+                          sx={{ 
+                            p: 2, 
+                            borderRadius: '8px', 
+                            border: `1px solid ${C.border}`, 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            gap: 2,
+                            bgcolor: alpha('#ffffff', 0.035) 
+                          }}
+                        >
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight="600" sx={{ wordBreak: 'break-word', lineHeight: 1.4 }}>
+                              {s.descripcion}
+                            </Typography>
+                          </Box>
                           <Button 
                             variant={s.completado ? "contained" : "outlined"}
                             color={s.completado ? "success" : "warning"}
@@ -1342,7 +1379,15 @@ export default function DetalleOrdenPage() {
                             onClick={() => handleToggleCompletado(s.id)}
                             disabled={!puedeEditar}
                             startIcon={s.completado ? <CheckCircle size={16}/> : <Clock size={16}/>}
-                            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+                            sx={{ 
+                              flexShrink: 0, 
+                              minWidth: 125, 
+                              borderRadius: '8px', 
+                              textTransform: 'none', 
+                              fontWeight: 600, 
+                              boxShadow: 'none',
+                              whiteSpace: 'nowrap'
+                            }}
                           >
                             {s.completado ? 'Terminado' : 'Pendiente'}
                           </Button>
@@ -1379,14 +1424,39 @@ export default function DetalleOrdenPage() {
                     )}
                     <Box display="flex" flexDirection="column" gap={2}>
                       {orden.repuestos.filter(r => r.aprobado_cliente).map(r => {
-                        const tieneStock = r.instalado || r.tiene_stock_suficiente || (parseFloat(r.repuesto_detalle?.stock_total_disponible || 0) >= parseFloat(r.cantidad || 0));
+                        const tieneStock = r.instalado || r.tiene_stock_suficiente || (parseFloat(r.stock_disponible || 0) >= parseFloat(r.cantidad || 0));
+                        const hayEnOtraSucursal = !tieneStock && (parseFloat(r.stock_otras_sucursales || 0) >= parseFloat(r.cantidad || 0));
                         return (
-                          <Paper key={r.id} elevation={0} sx={{ p: 2, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#ffffff', 0.035) }}>
-                            <Box>
+                          <Paper 
+                            key={r.id} 
+                            elevation={0} 
+                            sx={{ 
+                              p: 2, 
+                              borderRadius: '8px', 
+                              border: `1px solid ${C.border}`, 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center', 
+                              gap: 2,
+                              bgcolor: alpha('#ffffff', 0.035) 
+                            }}
+                          >
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                <Typography variant="body2" fontWeight="600">{r.repuesto_detalle?.nombre}</Typography>
+                                <Typography variant="body2" fontWeight="600" sx={{ wordBreak: 'break-word', lineHeight: 1.4 }}>
+                                  {r.repuesto_detalle?.nombre}
+                                </Typography>
                                 {!r.instalado && !tieneStock && (
-                                  <Chip label="⚠️ Requiere Compra" size="small" color="warning" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                                  hayEnOtraSucursal ? (
+                                    <Chip 
+                                      label={`⚠️ Requiere Traslado (${parseFloat(r.stock_otras_sucursales)} en otra sede)`} 
+                                      size="small" 
+                                      color="info" 
+                                      sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} 
+                                    />
+                                  ) : (
+                                    <Chip label="⚠️ Requiere Compra" size="small" color="warning" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                                  )
                                 )}
                               </Box>
                               <Typography variant="caption" color="text.secondary">Cant: {parseFloat(r.cantidad)}</Typography>
@@ -1398,9 +1468,17 @@ export default function DetalleOrdenPage() {
                               onClick={() => handleToggleInstalado(r.id)}
                               disabled={!puedeEditar}
                               startIcon={r.instalado ? <CheckCircle size={16}/> : <Clock size={16}/>}
-                              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+                              sx={{ 
+                                flexShrink: 0, 
+                                minWidth: 125, 
+                                borderRadius: '8px', 
+                                textTransform: 'none', 
+                                fontWeight: 600, 
+                                boxShadow: 'none',
+                                whiteSpace: 'nowrap'
+                              }}
                             >
-                              {r.instalado ? 'Instalado' : (tieneStock ? 'Pendiente' : 'Sin Stock')}
+                              {r.instalado ? 'Instalado' : (tieneStock ? 'Pendiente' : (hayEnOtraSucursal ? 'Traslado Req.' : 'Sin Stock'))}
                             </Button>
                           </Paper>
                         );
@@ -1690,7 +1768,8 @@ export default function DetalleOrdenPage() {
                     </TableRow>
                   ) : (
                     orden.repuestos.map(r => {
-                      const tieneStock = r.instalado || r.tiene_stock_suficiente || (parseFloat(r.repuesto_detalle?.stock_total_disponible || 0) >= parseFloat(r.cantidad || 0));
+                      const tieneStock = r.instalado || r.tiene_stock_suficiente || (parseFloat(r.stock_disponible || 0) >= parseFloat(r.cantidad || 0));
+                      const hayEnOtraSucursal = !tieneStock && (parseFloat(r.stock_otras_sucursales || 0) >= parseFloat(r.cantidad || 0));
                       return (
                         <TableRow key={r.id} hover>
                           <TableCell sx={{ fontWeight: 500 }}>
@@ -1700,6 +1779,8 @@ export default function DetalleOrdenPage() {
                                 <Chip label="Instalado" size="small" color="success" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
                               ) : tieneStock ? (
                                 <Chip label="En stock" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }} />
+                              ) : hayEnOtraSucursal ? (
+                                <Chip label={`⚠️ En otra sede (${parseFloat(r.stock_otras_sucursales)} disp.)`} size="small" color="info" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
                               ) : (
                                 <Chip label="⚠️ Sin stock (Por comprar)" size="small" color="warning" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
                               )}
