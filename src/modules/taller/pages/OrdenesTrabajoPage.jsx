@@ -11,6 +11,8 @@ import { tallerService } from '../services/tallerService';
 import api from '../../../core/api/axios';
 import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
+import { useResponsive } from '../../../shared/hooks/useResponsive';
+import { OrdenesMobileList } from '../components/OrdenesMobileList';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -25,6 +27,7 @@ const SERVER_BATCH_SIZE = 25;
 export default function OrdenesTrabajoPage() {
   const { tienePermiso } = usePermisos();
   const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
+  const { isCompact, isMobile } = useResponsive();
 
   const [ordenes, setOrdenes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -129,26 +132,34 @@ export default function OrdenesTrabajoPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: isCompact ? 'stretch' : 'center',
+        flexDirection: isCompact ? 'column' : 'row',
+        gap: isCompact ? 2 : 0,
+        mb: 3
+      }}>
         <Typography variant="h5" fontWeight="600">Órdenes de Trabajo</Typography>
         {puedeCrear && (
           <Button
             variant="contained"
             startIcon={<Plus size={18} />}
             onClick={() => navigate('/taller/ordenes/nueva')}
+            sx={{ minHeight: isCompact ? 44 : 36, fontWeight: 600 }}
           >
             Nueva Orden
           </Button>
         )}
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(135deg, ${alpha(C.brand, 0.06)}, transparent 42%)` }}>
+      <Paper sx={{ p: isCompact ? 2 : 2.5, mb: 3, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(135deg, ${alpha(C.brand, 0.06)}, transparent 42%)` }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
           <TextField
             select
             size="small"
             label="Estado"
-            sx={{ width: 180 }}
+            sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 180 } }}
             value={filtroEstado}
             onChange={(e) => cambiarFiltro(setFiltroEstado)(e.target.value)}
           >
@@ -159,7 +170,7 @@ export default function OrdenesTrabajoPage() {
           </TextField>
           <Autocomplete
             size="small"
-            sx={{ width: 220 }}
+            sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 220 } }}
             options={mecanicos}
             getOptionLabel={(option) => `${option.nombres} ${option.apellidos}`}
             value={filtroMecanico}
@@ -169,7 +180,7 @@ export default function OrdenesTrabajoPage() {
           <TextField
             size="small"
             label="Placa"
-            sx={{ width: 140 }}
+            sx={{ width: { xs: '100%', sm: 'calc(33.33% - 11px)', md: 140 } }}
             value={filtroPlaca}
             onChange={(e) => cambiarFiltro(setFiltroPlaca)(e.target.value)}
           />
@@ -179,7 +190,7 @@ export default function OrdenesTrabajoPage() {
             label="Desde"
             InputLabelProps={{ shrink: true }}
             inputProps={{ style: { colorScheme: 'dark' } }}
-            sx={{ width: 160 }}
+            sx={{ width: { xs: 'calc(50% - 8px)', sm: 'calc(33.33% - 11px)', md: 160 } }}
             value={filtroFechaDesde}
             onChange={(e) => cambiarFiltro(setFiltroFechaDesde)(e.target.value)}
           />
@@ -189,12 +200,21 @@ export default function OrdenesTrabajoPage() {
             label="Hasta"
             InputLabelProps={{ shrink: true }}
             inputProps={{ style: { colorScheme: 'dark' } }}
-            sx={{ width: 160 }}
+            sx={{ width: { xs: 'calc(50% - 8px)', sm: 'calc(33.33% - 11px)', md: 160 } }}
             value={filtroFechaHasta}
             onChange={(e) => cambiarFiltro(setFiltroFechaHasta)(e.target.value)}
           />
           {hayFiltrosActivos && (
-            <Button size="small" onClick={limpiarFiltros} sx={{ textTransform: 'none' }}>
+            <Button
+              size="small"
+              onClick={limpiarFiltros}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                width: { xs: '100%', sm: 'auto' },
+                minHeight: { xs: 40, sm: 'auto' }
+              }}
+            >
               Limpiar filtros
             </Button>
           )}
@@ -202,60 +222,69 @@ export default function OrdenesTrabajoPage() {
       </Paper>
 
       <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, backgroundImage: `linear-gradient(180deg, ${alpha('#ffffff', 0.045)}, transparent 32%)` }}>
-        <TableContainer sx={{ maxHeight: 'calc(100vh - 320px)' }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
-                <TableCell>Nro Orden</TableCell>
-                <TableCell>Fecha Ingreso</TableCell>
-                <TableCell>Placa</TableCell>
-                <TableCell>Cliente</TableCell>
-                <TableCell>Mecánico</TableCell>
-                <TableCell>Estado</TableCell>
-                <TableCell align="center">Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                    <CircularProgress size={30} />
-                  </TableCell>
+        {isCompact ? (
+          <OrdenesMobileList
+            ordenes={ordenes}
+            loading={loading}
+            getStatusColor={getStatusColor}
+            onSelectOrden={(ordenId) => navigate(`/taller/ordenes/${ordenId}`)}
+          />
+        ) : (
+          <TableContainer sx={{ maxHeight: 'calc(100vh - 320px)' }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow sx={{ bgcolor: alpha(C.surfaceSoft, 0.92) }}>
+                  <TableCell>Nro Orden</TableCell>
+                  <TableCell>Fecha Ingreso</TableCell>
+                  <TableCell>Placa</TableCell>
+                  <TableCell>Cliente</TableCell>
+                  <TableCell>Mecánico</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell align="center">Acciones</TableCell>
                 </TableRow>
-              ) : ordenes.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                    No hay órdenes registradas.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                ordenes.map((orden) => (
-                  <TableRow key={orden.id} hover>
-                    <TableCell sx={{ fontWeight: 700, color: '#bae6fd' }}>OT-{orden.numero}</TableCell>
-                    <TableCell>{new Date(orden.fecha_ingreso).toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Chip label={orden.vehiculo_placa} size="small" variant="outlined" />
-                    </TableCell>
-                    <TableCell>{orden.cliente_nombre}</TableCell>
-                    <TableCell>{orden.mecanico_nombre || 'Sin Asignar'}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={orden.estado.replace('_', ' ')}
-                        color={getStatusColor(orden.estado)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton onClick={() => navigate(`/taller/ordenes/${orden.id}`)} color="primary" sx={{ bgcolor: alpha(C.blue, 0.09), border: `1px solid ${alpha(C.blue, 0.2)}` }}>
-                        <Eye size={20} />
-                      </IconButton>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                      <CircularProgress size={30} />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : ordenes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                      No hay órdenes registradas.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  ordenes.map((orden) => (
+                    <TableRow key={orden.id} hover>
+                      <TableCell sx={{ fontWeight: 700, color: '#bae6fd' }}>OT-{orden.numero}</TableCell>
+                      <TableCell>{new Date(orden.fecha_ingreso).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Chip label={orden.vehiculo_placa} size="small" variant="outlined" />
+                      </TableCell>
+                      <TableCell>{orden.cliente_nombre}</TableCell>
+                      <TableCell>{orden.mecanico_nombre || 'Sin Asignar'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={orden.estado.replace('_', ' ')}
+                          color={getStatusColor(orden.estado)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton onClick={() => navigate(`/taller/ordenes/${orden.id}`)} color="primary" sx={{ bgcolor: alpha(C.blue, 0.09), border: `1px solid ${alpha(C.blue, 0.2)}` }}>
+                          <Eye size={20} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
         <TablePagination
           rowsPerPageOptions={[10, 25, 50]}
           component="div"
@@ -267,7 +296,7 @@ export default function OrdenesTrabajoPage() {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          labelRowsPerPage="Filas por página:"
+          labelRowsPerPage={isMobile ? "Filas:" : "Filas por página:"}
         />
       </Paper>
     </Box>

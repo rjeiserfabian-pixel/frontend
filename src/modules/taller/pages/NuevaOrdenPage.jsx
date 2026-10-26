@@ -16,6 +16,7 @@ import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { useSucursal } from '../../../shared/contexts/SucursalContext';
 import { premiumTokens } from '../../../core/theme/theme';
 import { compressImage } from '../../../utils/imageCompressor';
+import { useResponsive } from '../../../shared/hooks/useResponsive';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -24,6 +25,7 @@ export default function NuevaOrdenPage() {
   const navigate = useNavigate();
   const { activeSucursalId } = useSucursal();
   const { tienePermiso } = usePermisos();
+  const { isCompact, isMobile } = useResponsive();
   const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
   const puedeCrearTipoServicio = tienePermiso('TIPOS_SERVICIO.CREAR');
   const puedeCrearAccesorio = tienePermiso('ACCESORIOS_TALLER.CREAR');
@@ -504,7 +506,7 @@ export default function NuevaOrdenPage() {
                 <Button 
                   variant="contained" 
                   onClick={() => setClientModalOpen(true)}
-                  sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
+                  sx={{ minWidth: isMobile ? '46px' : '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
                 >
                   <Plus size={24} />
                 </Button>
@@ -566,7 +568,7 @@ export default function NuevaOrdenPage() {
                   variant="contained" 
                   onClick={() => setVehicleModalOpen(true)}
                   title="Registrar nuevo vehículo"
-                  sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
+                  sx={{ minWidth: isMobile ? '46px' : '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
                 >
                   <Plus size={24} />
                 </Button>
@@ -577,6 +579,7 @@ export default function NuevaOrdenPage() {
                   fullWidth
                   label="Kilometraje Actual"
                   type="number"
+                  inputProps={{ inputMode: 'numeric', min: 0 }}
                   value={formData.kilometraje}
                   onChange={(e) => setFormData({ ...formData, kilometraje: e.target.value })}
                   InputProps={{ sx: { borderRadius: '12px' } }}
@@ -601,7 +604,7 @@ export default function NuevaOrdenPage() {
                     variant="contained"
                     onClick={() => setTipoServicioModalOpen(true)}
                     title="Nuevo tipo de servicio"
-                    sx={{ minWidth: '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
+                    sx={{ minWidth: isMobile ? '46px' : '56px', px: 0, borderRadius: '12px', bgcolor: 'slate.900', '&:hover': { bgcolor: 'slate.800' }, boxShadow: 'none' }}
                   >
                     <Plus size={24} />
                   </Button>
@@ -942,6 +945,8 @@ export default function NuevaOrdenPage() {
                   disabled={comprimiendoFotos}
                   startIcon={<Camera size={20} />}
                   sx={{
+                    minHeight: isMobile ? 44 : 36,
+                    width: isMobile ? '100%' : 'auto',
                     borderRadius: '10px',
                     bgcolor: '#e11d48',
                     color: '#ffffff',
@@ -968,6 +973,8 @@ export default function NuevaOrdenPage() {
                   disabled={comprimiendoFotos}
                   startIcon={<UploadCloud size={20} />}
                   sx={{
+                    minHeight: isMobile ? 44 : 36,
+                    width: isMobile ? '100%' : 'auto',
                     borderRadius: '10px',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     color: '#e2e8f0',
@@ -1066,7 +1073,18 @@ export default function NuevaOrdenPage() {
               disabled={loading || !puedeCrear}
               title={!puedeCrear ? 'No tienes permiso para crear órdenes de trabajo' : undefined}
               startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save size={20} />}
-              sx={{ borderRadius: '12px', bgcolor: 'slate.900', px: 4, py: 1.5, boxShadow: 'none', textTransform: 'none', fontSize: '1rem', '&:hover': { bgcolor: 'slate.800', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' } }}
+              sx={{
+                width: isMobile ? '100%' : 'auto',
+                minHeight: 48,
+                borderRadius: '12px',
+                bgcolor: 'slate.900',
+                px: 4,
+                py: 1.5,
+                boxShadow: 'none',
+                textTransform: 'none',
+                fontSize: '1rem',
+                '&:hover': { bgcolor: 'slate.800', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }
+              }}
             >
               Registrar Orden
             </Button>
@@ -1117,11 +1135,25 @@ export default function NuevaOrdenPage() {
       )}
 
       {/* Modal para registro rápido de Tipo de Servicio */}
-      <Dialog open={tipoServicioModalOpen} onClose={() => setTipoServicioModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Nuevo Tipo de Servicio</DialogTitle>
+      <Dialog
+        open={tipoServicioModalOpen}
+        onClose={() => setTipoServicioModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight="700">Nuevo Tipo de Servicio</Typography>
+          {isMobile && (
+            <IconButton onClick={() => setTipoServicioModalOpen(false)} size="small" aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
+        </DialogTitle>
         <DialogContent dividers>
           <TextField
-            autoFocus
+            autoFocus={!isMobile}
             margin="dense"
             label="Nombre"
             fullWidth
@@ -1150,7 +1182,7 @@ export default function NuevaOrdenPage() {
             />
           </div>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ p: 2, ...(isMobile && { flexDirection: 'column-reverse', gap: 1, '& > button': { width: '100%', minHeight: 44 } }) }}>
           <Button onClick={() => setTipoServicioModalOpen(false)} sx={{ color: 'slate.500' }}>Cancelar</Button>
           <Button 
             onClick={handleSaveTipoServicio} 
@@ -1169,20 +1201,28 @@ export default function NuevaOrdenPage() {
         onClose={() => setAccesorioModalOpen(false)}
         maxWidth="xs"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
             backgroundColor: C.surface,
             backgroundImage: 'none',
-            border: `1px solid ${C.border}`,
-            borderRadius: '16px',
+            border: isMobile ? 'none' : `1px solid ${C.border}`,
+            borderRadius: isMobile ? 0 : '16px',
             boxShadow: S.card
           }
         }}
       >
-        <DialogTitle sx={{ color: C.text, fontWeight: 700 }}>Nuevo Accesorio o Pertenencia</DialogTitle>
+        <DialogTitle sx={{ color: C.text, fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Nuevo Accesorio o Pertenencia</span>
+          {isMobile && (
+            <IconButton onClick={() => setAccesorioModalOpen(false)} size="small" aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
+        </DialogTitle>
         <DialogContent className="flex flex-col gap-3 mt-2">
           <TextField
-            autoFocus
+            autoFocus={!isMobile}
             label="Nombre del accesorio *"
             placeholder="Ej. Silla de bebé, Cargador rápido..."
             fullWidth
@@ -1206,7 +1246,7 @@ export default function NuevaOrdenPage() {
             InputProps={{ sx: { borderRadius: '12px' } }}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 2.5, borderTop: `1px solid ${C.border}` }}>
+        <DialogActions sx={{ p: 2.5, borderTop: `1px solid ${C.border}`, ...(isMobile && { flexDirection: 'column-reverse', gap: 1, '& > button': { width: '100%', minHeight: 44 } }) }}>
           <Button onClick={() => setAccesorioModalOpen(false)} sx={{ color: C.textMuted, textTransform: 'none' }}>
             Cancelar
           </Button>

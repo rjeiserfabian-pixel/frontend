@@ -18,6 +18,8 @@ import { usePermisos } from '../../../shared/contexts/PermisosContext';
 import { premiumTokens } from '../../../core/theme/theme';
 import { compressImage } from '../../../utils/imageCompressor';
 import { getMediaUrl } from '../../../core/utils/mediaUrl';
+import { useResponsive } from '../../../shared/hooks/useResponsive';
+import { FaseOrdenMobile, ServiciosMobileList, RepuestosMobileList } from '../components/OrdenDetalleMobile';
 
 const C = premiumTokens.colors;
 const S = premiumTokens.shadow;
@@ -49,6 +51,8 @@ export default function DetalleOrdenPage() {
   const puedeCrear = tienePermiso('ORDENES_TRABAJO.CREAR');
   const puedeExtenderVencimiento = tienePermiso('ORDENES_TRABAJO.EXTENDER_VENCIMIENTO');
   const puedePrometerEntrega = tienePermiso('ORDENES_TRABAJO.PROMETER_ENTREGA');
+  // Celular / tableta vertical (< 900 px): tarjetas táctiles. En escritorio no cambia nada.
+  const { isCompact, isMobile } = useResponsive();
   const [orden, setOrden] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -872,6 +876,18 @@ export default function DetalleOrdenPage() {
 
   const estaCancelada = orden.estado === 'CANCELADO';
   const activeStep = orden.estado === 'FACTURADO' ? PASOS_ORDEN.length : PASOS_ORDEN.indexOf(orden.estado);
+  // Ajustes solo para celular/tableta vertical; en escritorio se usan los valores originales.
+  const bannerPad = isCompact ? 2.5 : 4;
+  const seccionPad = isCompact ? 2 : 3;
+  const accionesCompactasSx = isCompact
+    ? { flexWrap: 'wrap', width: '100%', '& > .MuiButton-root': { flex: '1 1 auto' } }
+    : {};
+  const dialogActionsMobileSx = isMobile
+    ? { p: 2.5, flexDirection: 'column-reverse', gap: 1, '& > button': { width: '100%', minHeight: 44 } }
+    : { p: 3, pt: 0 };
+  const dialogActionsCustodiaSx = isMobile
+    ? { p: 2, borderTop: `1px solid ${C.border}`, flexDirection: 'column-reverse', gap: 1, '& > button': { width: '100%', minHeight: 44 } }
+    : { p: 2.5, borderTop: `1px solid ${C.border}` };
   const esEditable = orden.estado === 'RECEPCIONADO' || orden.estado === 'INSPECCION';
   const hayMecanicoAsignado = !!orden.mecanico_asignado;
   const puedeAgregarHallazgo = esEditable && hayMecanicoAsignado && puedeEditar;
@@ -1049,15 +1065,15 @@ export default function DetalleOrdenPage() {
     <Box sx={{ maxWidth: '1400px', mx: 'auto', pb: 8 }}>
       
       {/* Header & Stepper */}
-      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, background: `linear-gradient(135deg, ${alpha(C.brand, 0.08)}, transparent 44%), ${C.surface}` }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+      <Paper elevation={0} sx={{ p: isCompact ? 2 : 3, mb: isCompact ? 2.5 : 4, borderRadius: '8px', border: `1px solid ${C.border}`, boxShadow: S.card, background: `linear-gradient(135deg, ${alpha(C.brand, 0.08)}, transparent 44%), ${C.surface}` }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isCompact ? 2.5 : 4, ...(isCompact && { flexWrap: 'wrap', gap: 2 }) }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton onClick={() => navigate('/taller/ordenes')} sx={{ bgcolor: alpha('#ffffff', 0.05), border: `1px solid ${C.border}`, '&:hover': { bgcolor: alpha(C.blue, 0.1) } }}>
               <ArrowLeft size={20} />
             </IconButton>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                <Typography variant="h4" fontWeight="800" color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="h4" fontWeight="800" color="text.primary" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ...(isCompact && { fontSize: '1.6rem' }) }}>
                   <Settings size={28} className="text-sky-300" />
                   OT-{orden.numero}
                 </Typography>
@@ -1095,7 +1111,7 @@ export default function DetalleOrdenPage() {
               </Typography>
             </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, ...accionesCompactasSx }}>
             <Button
               variant="outlined"
               color="inherit"
@@ -1176,7 +1192,7 @@ export default function DetalleOrdenPage() {
           </Box>
         </Box>
 
-        <Box sx={{ width: '100%', px: 2 }}>
+        <Box sx={{ width: '100%', px: isCompact ? 0 : 2 }}>
           {estaCancelada ? (
             <Alert severity="error" sx={{ borderRadius: '12px' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
@@ -1189,6 +1205,8 @@ export default function DetalleOrdenPage() {
                 {motivoCancelacion || 'Sin motivo registrado.'}
               </Typography>
             </Alert>
+          ) : isCompact ? (
+            <FaseOrdenMobile orden={orden} pasos={PASOS_ORDEN} />
           ) : (
           <Stepper activeStep={activeStep} alternativeLabel>
             {PASOS_ORDEN.map((label, index) => {
@@ -1238,10 +1256,10 @@ export default function DetalleOrdenPage() {
       </Paper>
 
       {/* Main Content */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: isCompact ? 2.5 : 4 }}>
         
         {/* Top Row: Info Cards */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 3 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: isCompact ? 2 : 3 }}>
           
           {/* Vehiculo Card */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: '1px solid', borderColor: 'divider', height: '100%' }}>
@@ -1391,12 +1409,12 @@ export default function DetalleOrdenPage() {
           
           {/* Actions Banner based on status */}
           {orden.estado === 'RECEPCIONADO' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: alpha(C.brand, 0.13), border: `1px solid ${alpha(C.brandLight, 0.34)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: bannerPad, mb: 3, borderRadius: '8px', bgcolor: alpha(C.brand, 0.13), border: `1px solid ${alpha(C.brandLight, 0.34)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight="700" color="#be123c" mb={0.5}>El vehículo está en recepción</Typography>
                 <Typography variant="body2" color="#e11d48">Asigna un mecánico para iniciar la inspección técnica o genera la cotización directamente si ya hay servicios.</Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, ...accionesCompactasSx }}>
                 {(orden.servicios.length > 0 || orden.repuestos.length > 0) && puedeAprobar && (
                   <Button
                     variant="outlined"
@@ -1422,7 +1440,7 @@ export default function DetalleOrdenPage() {
           )}
 
           {orden.estado === 'ESPERANDO_APROBACION' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: isExpirada ? alpha(C.brand, 0.14) : alpha(C.emerald, 0.14), border: `1px solid ${isExpirada ? alpha(C.brandLight, 0.38) : alpha(C.emerald, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: bannerPad, mb: 3, borderRadius: '8px', bgcolor: isExpirada ? alpha(C.brand, 0.14) : alpha(C.emerald, 0.14), border: `1px solid ${isExpirada ? alpha(C.brandLight, 0.38) : alpha(C.emerald, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight="700" color={isExpirada ? '#fda4af' : '#6ee7b7'} mb={0.5} display="flex" alignItems="center" gap={1.5}>
                   {isExpirada ? "Cotización Expirada" : "Esperando Aprobación del Cliente"}
@@ -1434,7 +1452,7 @@ export default function DetalleOrdenPage() {
                     : `La cotización ha sido generada (Vence: ${orden.fecha_vencimiento_cotizacion ? new Date(orden.fecha_vencimiento_cotizacion).toLocaleDateString() : 'N/A'}). Registra la confirmación del cliente para comenzar los trabajos.`}
                 </Typography>
               </Box>
-              <Box display="flex" gap={2}>
+              <Box sx={{ display: 'flex', gap: 2, ...accionesCompactasSx }}>
                 {puedeExtenderVencimiento && (
                   <Button
                     variant="outlined"
@@ -1462,8 +1480,8 @@ export default function DetalleOrdenPage() {
 
           {orden.estado === 'APROBADO' && (
             <Box mb={4}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" fontWeight="800" color="primary.main" display="flex" alignItems="center" gap={1.5}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, ...(isCompact && { flexWrap: 'wrap', gap: 2 }) }}>
+                <Typography variant="h6" fontWeight="800" color="primary.main" display="flex" alignItems="center" gap={1.5} sx={isCompact ? { flexWrap: 'wrap' } : undefined}>
                   <CheckCircle size={24} /> Panel de Ejecución
                   <Chip label={`Total Aprobado: S/ ${totalAprobado.toFixed(2)}`} size="small" color="primary" sx={{ fontWeight: 700 }} />
                 </Typography>
@@ -1471,6 +1489,7 @@ export default function DetalleOrdenPage() {
                 {puedeFinalizar && (
                   <Button
                     variant="contained"
+                    fullWidth={isCompact}
                     onClick={handleFinalizarOrden}
                     disabled={
                       !(orden.servicios.filter(s => s.aprobado_cliente).length > 0 || orden.repuestos.filter(r => r.aprobado_cliente).length > 0) ||
@@ -1495,7 +1514,7 @@ export default function DetalleOrdenPage() {
                     const pct = aprobados.length ? (completados / aprobados.length) * 100 : 0;
                     const completo = aprobados.length > 0 && pct === 100;
                     return (
-                  <Paper elevation={0} sx={{ p: 3, borderRadius: '8px', border: `1px solid ${completo ? alpha(C.emerald, 0.42) : C.border}`, borderLeft: '4px solid', borderLeftColor: completo ? C.emerald : C.amber, bgcolor: alpha('#ffffff', 0.025), height: '100%' }}>
+                  <Paper elevation={0} sx={{ p: seccionPad, borderRadius: '8px', border: `1px solid ${completo ? alpha(C.emerald, 0.42) : C.border}`, borderLeft: '4px solid', borderLeftColor: completo ? C.emerald : C.amber, bgcolor: alpha('#ffffff', 0.025), height: '100%' }}>
                     <Typography variant="subtitle1" fontWeight="700" mb={1} display="flex" justifyContent="space-between">
                       Servicios Aprobados
                       <Chip label={`${completados}/${aprobados.length}`} size="small" color={completo ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
@@ -1653,12 +1672,12 @@ export default function DetalleOrdenPage() {
           )}
 
           {orden.estado === 'FINALIZADO' && (
-            <Paper elevation={0} sx={{ p: 4, mb: 3, borderRadius: '8px', bgcolor: alpha(C.blue, 0.14), border: `1px solid ${alpha(C.blue, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Paper elevation={0} sx={{ p: bannerPad, mb: 3, borderRadius: '8px', bgcolor: alpha(C.blue, 0.14), border: `1px solid ${alpha(C.blue, 0.38)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight="700" color="#1e3a8a" mb={0.5}>Orden de Trabajo Finalizada</Typography>
                 <Typography variant="body2" color="#1e40af">Todos los servicios y repuestos han sido completados. Ya puedes proceder con el cobro en caja o consultar el Acta de Entrega.</Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', ...accionesCompactasSx }}>
                 <Button
                   variant="outlined"
                   size="large"
@@ -1693,7 +1712,7 @@ export default function DetalleOrdenPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 3 }}>
             {/* Inspección */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ p: seccionPad, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...(isCompact && { flexWrap: 'wrap', gap: 1.5 }) }}>
                 <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                   <ClipboardList size={20} className="text-slate-500" />
                   1. Inspección y Hallazgos
@@ -1722,7 +1741,7 @@ export default function DetalleOrdenPage() {
                 </Box>
               )}
 
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: seccionPad }}>
                 {orden.hallazgos.length === 0 ? (
                   <Box py={4} textAlign="center">
                     <Typography variant="body2" color="text.secondary">No se han registrado hallazgos durante la inspección.</Typography>
@@ -1826,7 +1845,7 @@ export default function DetalleOrdenPage() {
 
             {/* Servicios */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ p: seccionPad, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...(isCompact && { flexWrap: 'wrap', gap: 1.5 }) }}>
                 <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                   <Wrench size={20} className="text-slate-500" />
                   2. Servicios y Mano de Obra a Cotizar
@@ -1843,6 +1862,17 @@ export default function DetalleOrdenPage() {
                 </Button>
               </Box>
 
+              {isCompact ? (
+                <Box sx={{ p: 2 }}>
+                  <ServiciosMobileList
+                    servicios={orden.servicios}
+                    puedeEditar={puedeEditarSubrecursos}
+                    puedeEliminar={puedeEliminarSubrecursos}
+                    onEditar={handleOpenEditarServicio}
+                    onEliminar={handleDeleteServicio}
+                  />
+                </Box>
+              ) : (
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'transparent' }}>
@@ -1904,11 +1934,12 @@ export default function DetalleOrdenPage() {
                   </TableBody>
                 )}
               </Table>
+              )}
             </Paper>
 
             {/* Repuestos */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ p: seccionPad, bgcolor: alpha(C.blue, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...(isCompact && { flexWrap: 'wrap', gap: 1.5 }) }}>
                 <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                   <Package size={20} className="text-slate-500" />
                   3. Repuestos y Materiales
@@ -1925,6 +1956,17 @@ export default function DetalleOrdenPage() {
                 </Button>
               </Box>
 
+              {isCompact ? (
+                <Box sx={{ p: 2 }}>
+                  <RepuestosMobileList
+                    repuestos={orden.repuestos}
+                    puedeEditar={puedeEditarSubrecursos}
+                    puedeEliminar={puedeEliminarSubrecursos}
+                    onEditarCantidad={handleEditarCantidadRepuesto}
+                    onEliminar={handleDeleteRepuesto}
+                  />
+                </Box>
+              ) : (
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'transparent' }}>
@@ -2001,11 +2043,12 @@ export default function DetalleOrdenPage() {
                   </TableBody>
                 )}
               </Table>
+              )}
             </Paper>
 
             {/* 4. Fotos y Evidencias de Ingreso */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: alpha(C.brand, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ p: seccionPad, bgcolor: alpha(C.brand, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                 <Box>
                   <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                     <Camera size={20} className="text-rose-400" />
@@ -2018,7 +2061,7 @@ export default function DetalleOrdenPage() {
                 </Box>
 
                 {puedeEditar && (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1, ...accionesCompactasSx }}>
                     <Button
                       size="small"
                       variant="outlined"
@@ -2057,7 +2100,7 @@ export default function DetalleOrdenPage() {
                 )}
               </Box>
 
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: seccionPad }}>
                 {subiendoEvidencia && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, color: C.brandLight }}>
                     <CircularProgress size={20} color="inherit" />
@@ -2075,7 +2118,7 @@ export default function DetalleOrdenPage() {
                 ) : (
                   <Grid container spacing={2}>
                     {orden.evidencias_ingreso.map((ev, i) => (
-                      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={ev.id}>
+                      <Grid size={{ xs: 6, sm: 6, md: 4, lg: 3 }} key={ev.id}>
                         <Paper
                           elevation={0}
                           sx={{
@@ -2160,7 +2203,7 @@ export default function DetalleOrdenPage() {
 
             {/* 5. Accesorios y Pertenencias en Custodia */}
             <Paper elevation={0} sx={{ p: 0, borderRadius: '20px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-              <Box sx={{ p: 3, bgcolor: alpha(C.brand, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ p: seccionPad, bgcolor: alpha(C.brand, 0.1), borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                 <Box>
                   <Typography variant="subtitle1" fontWeight="700" display="flex" alignItems="center" gap={1.5}>
                     <ShieldCheck size={20} className="text-rose-400" />
@@ -2199,7 +2242,7 @@ export default function DetalleOrdenPage() {
                 )}
               </Box>
 
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: seccionPad }}>
                 {(!orden.accesorios_pertenencias || orden.accesorios_pertenencias.length === 0) ? (
                   <Box py={4} textAlign="center">
                     <ShieldCheck size={36} className="text-slate-500 opacity-40" style={{ margin: '0 auto 8px auto' }} />
@@ -2296,10 +2339,24 @@ export default function DetalleOrdenPage() {
       {/* --- MODALS --- */}
       
       {/* Modal Asignar Mecanico */}
-      <Dialog open={mecanicoModal} onClose={() => setMecanicoModal(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" fontWeight="700">Asignar Mecánico</Typography>
-          <Typography variant="body2" color="text.secondary">Selecciona el mecánico responsable de la inspección.</Typography>
+      <Dialog
+        open={mecanicoModal}
+        onClose={() => setMecanicoModal(false)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px' } }}
+      >
+        <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="h6" fontWeight="700">Asignar Mecánico</Typography>
+            <Typography variant="body2" color="text.secondary">Selecciona el mecánico responsable de la inspección.</Typography>
+          </Box>
+          {isMobile && (
+            <IconButton onClick={() => setMecanicoModal(false)} size="small" aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
@@ -2311,7 +2368,7 @@ export default function DetalleOrdenPage() {
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions sx={dialogActionsMobileSx}>
           <Button onClick={() => setMecanicoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
           <Button 
             onClick={handleAsignarMecanico} 
@@ -2325,11 +2382,25 @@ export default function DetalleOrdenPage() {
       </Dialog>
 
       {/* Modal Hallazgo */}
-      <Dialog open={hallazgoModal} onClose={handleCloseHallazgoModal} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle><Typography variant="h6" fontWeight="700">{editingHallazgoId ? 'Editar Hallazgo' : 'Registrar Hallazgo'}</Typography></DialogTitle>
+      <Dialog
+        open={hallazgoModal}
+        onClose={handleCloseHallazgoModal}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight="700">{editingHallazgoId ? 'Editar Hallazgo' : 'Registrar Hallazgo'}</Typography>
+          {isMobile && (
+            <IconButton onClick={handleCloseHallazgoModal} size="small" disabled={subiendoHallazgo} aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
+        </DialogTitle>
         <DialogContent>
           <TextField
-            autoFocus margin="dense" label="Descripción detallada" fullWidth multiline rows={3}
+            autoFocus={!isMobile} margin="dense" label="Descripción detallada" fullWidth multiline rows={3}
             value={nuevoHallazgo} onChange={e => setNuevoHallazgo(e.target.value)}
             sx={{ mt: 1, mb: 2 }}
           />
@@ -2348,7 +2419,7 @@ export default function DetalleOrdenPage() {
                 key={key}
                 value={key}
                 sx={{
-                  textTransform: 'none', fontWeight: 700, borderRadius: '8px !important',
+                  textTransform: 'none', fontWeight: 700, borderRadius: '8px !important', minHeight: isMobile ? 44 : 36,
                   '&.Mui-selected': { bgcolor: cfg.color, color: 'white', '&:hover': { bgcolor: cfg.color } },
                 }}
               >
@@ -2397,14 +2468,14 @@ export default function DetalleOrdenPage() {
                 <Typography variant="caption" color="text.secondary">
                   Puedes adjuntar hasta 2 fotos para documentar la falla o daño visualmente.
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
                   <Button
                     size="small"
                     variant="outlined"
                     component="label"
                     disabled={comprimiendoFotoHallazgo || subiendoHallazgo}
                     startIcon={<Camera size={16} />}
-                    sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}
+                    sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem', minHeight: isMobile ? 44 : 36, flex: isMobile ? '1 1 100%' : 'initial' }}
                   >
                     Tomar Foto
                     <input
@@ -2421,7 +2492,7 @@ export default function DetalleOrdenPage() {
                     component="label"
                     disabled={comprimiendoFotoHallazgo || subiendoHallazgo}
                     startIcon={<UploadCloud size={16} />}
-                    sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem' }}
+                    sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, fontSize: '0.8rem', minHeight: isMobile ? 44 : 36, flex: isMobile ? '1 1 100%' : 'initial' }}
                   >
                     Subir de Galería
                     <input
@@ -2544,7 +2615,7 @@ export default function DetalleOrdenPage() {
             )}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions sx={dialogActionsMobileSx}>
           <Button onClick={handleCloseHallazgoModal} color="inherit" sx={{ fontWeight: 600 }} disabled={subiendoHallazgo}>
             Cancelar
           </Button>
@@ -2560,11 +2631,23 @@ export default function DetalleOrdenPage() {
       </Dialog>
 
       {/* Modal Servicio */}
-      <Dialog open={servicioModal} onClose={handleCloseServicioModal} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle>
+      <Dialog
+        open={servicioModal}
+        onClose={handleCloseServicioModal}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" fontWeight="700">
             {editingServicioId ? 'Editar Servicio' : 'Agregar Servicio a Cotizar'}
           </Typography>
+          {isMobile && (
+            <IconButton onClick={handleCloseServicioModal} size="small" disabled={guardandoServicio} aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
         </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '22px !important' }}>
           {hallazgoOrigenId && (
@@ -2690,7 +2773,7 @@ export default function DetalleOrdenPage() {
             fullWidth
             value={nuevoServicio.precio}
             onChange={e => setNuevoServicio({ ...nuevoServicio, precio: e.target.value })}
-            inputProps={{ min: 0, step: '0.50' }}
+            inputProps={{ min: 0, step: '0.50', inputMode: 'decimal' }}
             sx={{
               '& .MuiInputLabel-root': {
                 color: 'text.secondary',
@@ -2703,7 +2786,7 @@ export default function DetalleOrdenPage() {
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions sx={dialogActionsMobileSx}>
           <Button onClick={handleCloseServicioModal} color="inherit" sx={{ fontWeight: 600 }} disabled={guardandoServicio}>
             Cancelar
           </Button>
@@ -2719,8 +2802,22 @@ export default function DetalleOrdenPage() {
       </Dialog>
       
       {/* Modal Repuesto */}
-      <Dialog open={repuestoModal} onClose={() => setRepuestoModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle><Typography variant="h6" fontWeight="700">Agregar Repuesto a Cotizar</Typography></DialogTitle>
+      <Dialog
+        open={repuestoModal}
+        onClose={() => setRepuestoModal(false)}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight="700">Agregar Repuesto a Cotizar</Typography>
+          {isMobile && (
+            <IconButton onClick={() => setRepuestoModal(false)} size="small" aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
+        </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <Autocomplete
             options={repuestosDisponiblesInventario}
@@ -2744,30 +2841,46 @@ export default function DetalleOrdenPage() {
               </Alert>
             )
           )}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: isMobile ? 'column' : 'row' }}>
             <TextField 
               label="Cantidad" type="number" fullWidth 
               value={nuevoRepuesto.cantidad} onChange={e => setNuevoRepuesto({...nuevoRepuesto, cantidad: e.target.value})}
               error={!!nuevoRepuesto.repuesto && cantidadRepuestoInvalida}
               helperText={nuevoRepuesto.repuesto && cantidadRepuestoInvalida ? 'La cantidad debe ser mayor a 0' : ''}
+              inputProps={{ min: 0.01, step: '1', inputMode: 'decimal' }}
             />
             <TextField 
               label="Precio Unitario (S/)" type="number" fullWidth 
               value={nuevoRepuesto.precio_unitario} onChange={e => setNuevoRepuesto({...nuevoRepuesto, precio_unitario: e.target.value})}
+              inputProps={{ min: 0, step: '0.10', inputMode: 'decimal' }}
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions sx={dialogActionsMobileSx}>
           <Button onClick={() => setRepuestoModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
           <Button onClick={handleAddRepuesto} variant="contained" disabled={cantidadRepuestoInvalida} sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Agregar</Button>
         </DialogActions>
       </Dialog>
       
       {/* Modal Aprobacion Cotizacion */}
-      <Dialog open={aprobacionModal} onClose={() => setAprobacionModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '16px' } }}>
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" fontWeight="700">Aprobar Cotización</Typography>
-          <Typography variant="body2" color="text.secondary">Selecciona los servicios y repuestos que el cliente ha aprobado realizar.</Typography>
+      <Dialog
+        open={aprobacionModal}
+        onClose={() => setAprobacionModal(false)}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : '16px' } }}
+      >
+        <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="h6" fontWeight="700">Aprobar Cotización</Typography>
+            <Typography variant="body2" color="text.secondary">Selecciona los servicios y repuestos que el cliente ha aprobado realizar.</Typography>
+          </Box>
+          {isMobile && (
+            <IconButton onClick={() => setAprobacionModal(false)} size="small" aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
         </DialogTitle>
         <DialogContent dividers>
           <Typography variant="subtitle2" fontWeight="700" color="primary.main" mb={1}>Servicios</Typography>
@@ -2800,7 +2913,7 @@ export default function DetalleOrdenPage() {
             {orden?.repuestos.length === 0 && <Typography variant="body2" color="text.secondary">No hay repuestos cotizados.</Typography>}
           </FormGroup>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions sx={dialogActionsMobileSx}>
           <Button onClick={() => setAprobacionModal(false)} color="inherit" sx={{ fontWeight: 600 }}>Cancelar</Button>
           <Button onClick={handleAprobarCotizacion} variant="contained" color="success" sx={{ borderRadius: '10px', fontWeight: 600, boxShadow: 'none' }}>Confirmar Aprobación</Button>
         </DialogActions>
@@ -2811,11 +2924,12 @@ export default function DetalleOrdenPage() {
         open={modalFotoGrande.open}
         onClose={() => setModalFotoGrande({ open: false, url: '', titulo: '' })}
         maxWidth="md"
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
             backgroundColor: '#0f172a',
-            border: `1px solid ${C.border}`,
-            borderRadius: '12px',
+            border: isMobile ? 'none' : `1px solid ${C.border}`,
+            borderRadius: isMobile ? 0 : '12px',
             overflow: 'hidden'
           }
         }}
@@ -2853,15 +2967,16 @@ export default function DetalleOrdenPage() {
         onClose={() => !guardandoAccesorios && setAccesoriosModalOpen(false)}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: '16px',
+            borderRadius: isMobile ? 0 : '16px',
             bgcolor: C.surface,
-            border: `1px solid ${C.border}`
+            border: isMobile ? 'none' : `1px solid ${C.border}`
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1, borderBottom: `1px solid ${C.border}` }}>
+        <DialogTitle sx={{ pb: 1, borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <ShieldCheck size={24} className="text-rose-500" />
             <Box>
@@ -2873,6 +2988,11 @@ export default function DetalleOrdenPage() {
               </Typography>
             </Box>
           </Box>
+          {isMobile && (
+            <IconButton onClick={() => !guardandoAccesorios && setAccesoriosModalOpen(false)} size="small" disabled={guardandoAccesorios} aria-label="Cerrar">
+              <X size={20} />
+            </IconButton>
+          )}
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, mt: 1 }}>
@@ -2956,7 +3076,7 @@ export default function DetalleOrdenPage() {
                               size="small"
                               value={sel.cantidad || 1}
                               onChange={(e) => handleAccesorioItemChange(acc.id, 'cantidad', e.target.value)}
-                              inputProps={{ min: 1, max: 99 }}
+                              inputProps={{ min: 1, max: 99, inputMode: 'numeric' }}
                               sx={{ width: 80 }}
                             />
                             <Box sx={{ flex: 1 }}>
@@ -3026,7 +3146,7 @@ export default function DetalleOrdenPage() {
             </Grid>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2.5, borderTop: `1px solid ${C.border}` }}>
+        <DialogActions sx={dialogActionsCustodiaSx}>
           <Button
             onClick={() => setAccesoriosModalOpen(false)}
             color="inherit"

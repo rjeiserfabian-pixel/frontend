@@ -10,6 +10,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useClientes } from '../hooks/useClientes';
+import { useResponsive } from '../../../shared/hooks/useResponsive';
 
 // Regla 4.3: Validación doble con Zod
 // apellidos es opcional porque en clientes con RUC (empresas) no aplica.
@@ -24,6 +25,7 @@ const schema = z.object({
 });
 
 const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
+  const { isMobile } = useResponsive();
   const { guardarCliente, consultarDni, consultarRuc } = useClientes();
   const [isSearchingDni, setIsSearchingDni] = useState(false);
 
@@ -110,7 +112,7 @@ const ClientesForm = ({ open, onClose, onSuccess, clienteEdit }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>
         {clienteEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
         <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>

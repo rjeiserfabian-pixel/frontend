@@ -25,7 +25,18 @@ export const premiumTokens = {
     floating: '0 24px 70px rgba(0, 0, 0, 0.42)',
     glow: '0 0 0 1px rgba(225, 29, 46, 0.22), 0 18px 45px rgba(225, 29, 46, 0.12)',
   },
+  // Medidas para pantallas táctiles (mecánicos usando el celular en el taller).
+  touch: {
+    minTarget: 44,      // zona mínima de toque recomendada (px)
+    minTargetSmall: 40, // botones size="small"
+    inputFontSize: 16,  // < 16 px hace que iOS haga zoom al enfocar un campo
+  },
 };
+
+// Solo pantallas táctiles menores a 900 px (celular / tableta vertical).
+// En laptop/PC (puntero fino) estas reglas nunca aplican, aunque la ventana sea angosta.
+export const TOUCH_COMPACT_MQ = '@media (max-width:899.95px) and (pointer: coarse)';
+export const PHONE_MQ = '@media (max-width:599.95px)';
 
 const theme = createTheme({
   palette: {
@@ -107,6 +118,12 @@ const theme = createTheme({
           borderRadius: 8,
           boxShadow: 'none',
           fontWeight: 700,
+          [TOUCH_COMPACT_MQ]: {
+            minHeight: premiumTokens.touch.minTarget,
+            '&.MuiButton-sizeSmall': {
+              minHeight: premiumTokens.touch.minTargetSmall,
+            },
+          },
         },
         containedPrimary: {
           background: `linear-gradient(135deg, ${premiumTokens.colors.brandLight}, ${premiumTokens.colors.brand})`,
@@ -188,6 +205,10 @@ const theme = createTheme({
         },
         input: {
           color: premiumTokens.colors.text,
+          // Evita el zoom automático de iOS al tocar un campo en el celular.
+          [PHONE_MQ]: {
+            fontSize: premiumTokens.touch.inputFontSize,
+          },
           '&::placeholder': {
             color: premiumTokens.colors.textSubtle,
             opacity: 1,

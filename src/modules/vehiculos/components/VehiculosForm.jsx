@@ -16,6 +16,7 @@ import { vehiculoService } from '../services/vehiculosService';
 import ClientesForm from '../../clientes/components/ClientesForm';
 import { compressImage } from '../../../utils/imageCompressor';
 import { getMediaUrl } from '../../../core/utils/mediaUrl';
+import { useResponsive } from '../../../shared/hooks/useResponsive';
 
 // Regla 4.3: Validación con Zod
 const schema = z.object({
@@ -35,6 +36,7 @@ const schema = z.object({
 });
 
 const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial }) => {
+  const { isMobile } = useResponsive();
   const [isSearching, setIsSearching] = useState(false);
   const [clientes, setClientes] = useState([]);
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
@@ -284,7 +286,7 @@ const VehiculosForm = ({ open, onClose, onSuccess, vehiculoEdit, clienteInicial 
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
       <DialogTitle>
         {vehiculoEdit ? 'Editar Vehículo' : 'Nuevo Vehículo'}
         <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
